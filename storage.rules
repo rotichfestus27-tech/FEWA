@@ -1,0 +1,61 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    match /applications/{applicantUid}/{documentId} {
+      allow read: if request.auth != null && request.auth.uid == applicantUid;
+      allow write: if request.auth != null && request.auth.uid == applicantUid
+        && request.resource.size <= 5 * 1024 * 1024
+        && request.resource.contentType.matches('application/pdf|image/jpeg|image/png');
+    }
+
+    match /applications/{applicationId}/documents/{documentId}/{fileName} {
+      function isStaff() {
+        return request.auth != null
+          && (
+            (request.auth.token.get('roles', []) is list && ('admin' in request.auth.token.get('roles', []) || 'superadmin' in request.auth.token.get('roles', []) || 'admissions' in request.auth.token.get('roles', [])))
+            || (request.auth.token.get('roles', {}) is map && (request.auth.token.get('roles', {}).get('admin', false) == true || request.auth.token.get('roles', {}).get('superadmin', false) == true || request.auth.token.get('roles', {}).get('admissions', false) == true))
+          );
+      }
+
+      function ownsApplication() {
+        return request.auth != null
+          && firestore.get(/databases/(default)/documents/applications/$(applicationId)).data.applicantUid == request.auth.uid;
+      }
+
+      allow read: if ownsApplication() || isStaff();
+      allow write: if (ownsApplication() || isStaff())
+        && request.resource.size <= 5 * 1024 * 1024
+        && request.resource.contentType.matches('application/pdf|image/jpeg|image/png');
+    }
+
+    match /students/{studentUid}/submissions/{submissionId}/{fileName} {
+      allow read: if request.auth != null && (request.auth.uid == studentUid
+        || (request.auth.token.get('roles', []) is list && 'admin' in request.auth.token.get('roles', []))
+        || (request.auth.token.get('roles', []) is list && 'superadmin' in request.auth.token.get('roles', []))
+        || request.auth.token.get('roles', {}).get('admin', false) == true
+        || request.auth.token.get('roles', {}).get('superadmin', false) == true);
+      allow write: if request.auth != null && request.auth.uid == studentUid
+        && request.resource.size <= 10 * 1024 * 1024
+        && request.resource.contentType.matches('application/pdf|image/jpeg|image/png|application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    }
+
+    match /students/{studentUid}/documents/{documentId}/{fileName} {
+      allow read: if request.auth != null && (request.auth.uid == studentUid
+        || (request.auth.token.get('roles', []) is list && 'admin' in request.auth.token.get('roles', []))
+        || (request.auth.token.get('roles', []) is list && 'superadmin' in request.auth.token.get('roles', []))
+        || request.auth.token.get('roles', {}).get('admin', false) == true
+        || request.auth.token.get('roles', {}).get('superadmin', false) == true);
+      allow write: if false;
+    }
+
+    match /public/{documentId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

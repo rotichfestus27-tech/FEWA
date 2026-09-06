@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description"
+        content="Explore professional beauty, wellness and fashion programmes at FEWA Beauty & Fashion College.">
+    <title>Courses | FEWA Beauty &amp; Fashion College</title>
+    <link rel="stylesheet" href="style.css?v=20260820-luxury">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body class="courses-page">
+    <header class="main-header">
+        <div class="header-inner">
+            <a href="index.html" class="logo-link">
+                <img src="assets/logo.png" alt="FEWA Beauty and Fashion College" class="logo-img">
+                <span class="logo-brand-text"><span class="brand-name">FEWA</span><span class="brand-tagline">BEAUTY
+                        &amp; FASHION COLLEGE</span></span>
+            </a>
+            <button class="menu-toggle" id="mobile-menu" aria-label="Open navigation" aria-expanded="false"
+                type="button">
+                <span class="bar"></span><span class="bar"></span><span class="bar"></span>
+            </button>
+            <nav class="nav-links" aria-label="Main navigation">
+                <a href="index.html" class="nav-item">Home</a>
+                <a href="about.html" class="nav-item">About Us</a>
+                <a href="courses.html" class="nav-item active" aria-current="page">Courses</a>
+                <a href="admissions.html" class="nav-item">Admission</a>
+                <a href="portal.html" class="nav-item">Student Portal</a>
+                <a href="contact.html" class="nav-item">Contact Us</a>
+            </nav>
+            <div class="header-cta"><a href="apply.html" class="header-cta-btn">Apply Now <i class="fas fa-arrow-right"
+                        aria-hidden="true"></i></a></div>
+        </div>
+    </header>
+
+    <main>
+        <section class="courses-intro" aria-labelledby="courses-heading">
+            <span class="courses-eyebrow">Our Programmes</span>
+            <h1 id="courses-heading">Build practical, professional skills</h1>
+            <p>Discover industry-relevant courses in Beauty, Wellness and Fashion Design.<br class="intro-break"> Learn
+                from experts and turn your passion into a rewarding career.</p>
+        </section>
+
+        <section class="catalogue-section" aria-label="FEWA course catalogue">
+            <div class="course-filter" role="tablist" aria-label="Filter courses">
+                <button class="filter-button is-active" type="button" role="tab" aria-selected="true"
+                    data-filter="All Courses">All Courses</button>
+                <button class="filter-button" type="button" role="tab" aria-selected="false"
+                    data-filter="Beauty &amp; Wellness">Beauty &amp; Wellness</button>
+                <button class="filter-button" type="button" role="tab" aria-selected="false"
+                    data-filter="Hair &amp; Barbering">Hair &amp; Barbering</button>
+                <button class="filter-button" type="button" role="tab" aria-selected="false"
+                    data-filter="Fashion Design">Fashion Design</button>
+                <button class="filter-button" type="button" role="tab" aria-selected="false"
+                    data-filter="Short Courses">Short Courses</button>
+            </div>
+            <div class="premium-course-grid" id="course-grid" aria-live="polite"></div>
+        </section>
+
+        <section class="course-cta" aria-label="Course advice">
+            <div><span class="cta-kicker">Your next chapter starts here</span>
+                <h2>Not sure which course is right for you?</h2>
+                <p>Our advisors are here to help you choose the perfect path.</p>
+            </div>
+            <a class="cta-button" href="contact.html">Talk to Advisor <span aria-hidden="true">&rarr;</span></a>
+        </section>
+    </main>
+    <script src="scripts/courses.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Course Details | FEWA Beauty &amp; Fashion College</title>
+    <link rel="stylesheet" href="/style.css?v=20260820-luxury">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body class="courses-page course-detail-page">
+    <header class="main-header">
+        <div class="header-inner">
+            <a href="/index.html" class="logo-link"><img src="/assets/logo.png" alt="FEWA Beauty and Fashion College"
+                    class="logo-img"><span class="logo-brand-text"><span class="brand-name">FEWA</span><span
+                        class="brand-tagline">BEAUTY &amp; FASHION COLLEGE</span></span></a>
+            <button class="menu-toggle" id="mobile-menu" aria-label="Open navigation" aria-expanded="false"
+                type="button"><span class="bar"></span><span class="bar"></span><span class="bar"></span></button>
+            <nav class="nav-links" aria-label="Main navigation"><a href="/index.html" class="nav-item">Home</a><a
+                    href="/about.html" class="nav-item">About Us</a><a href="/courses.html"
+                    class="nav-item active">Courses</a><a href="/admissions.html" class="nav-item">Admission</a><a
+                    href="/portal.html" class="nav-item">Student Portal</a><a href="/contact.html"
+                    class="nav-item">Contact Us</a></nav>
+            <div class="header-cta"><a href="/apply.html" class="header-cta-btn">Apply Now <i class="fas fa-arrow-right"
+                        aria-hidden="true"></i></a></div>
+        </div>
+    </header>
+    <main id="course-detail" class="course-detail-content"></main>
+    <script src="/scripts/courses.js"></script>
+    <script>
+        const pathSlug = window.location.pathname.split('/').filter(Boolean).pop();
+        const slug = pathSlug && pathSlug !== 'course-detail.html' ? pathSlug : new URLSearchParams(window.location.search).get('course');
+        const course = window.FEWA_COURSES.find((item) => item.slug === slug);
+        const detail = document.querySelector('#course-detail');
+        if (course) {
+            document.title = 'Course Details | FEWA Beauty & Fashion College';
+            const courseImage = course.image.startsWith('/') ? course.image : `/${course.image}`;
+            detail.innerHTML = `<section class="detail-hero"><div class="detail-hero-image"><img src="${courseImage}" alt="${course.title}"></div><div class="detail-hero-copy"><span class="courses-eyebrow">${course.category}</span><h1>${course.title}</h1><p>${course.description}</p><div class="course-meta"><span><i class="fas fa-award"></i>${course.qualification}</span><span><i class="fas fa-clock"></i>${course.duration}</span></div><a class="cta-button" href="/apply.html">Apply for this course <span aria-hidden="true">&rarr;</span></a></div></section>`;
+        } else {
+            detail.innerHTML = '<section class="courses-intro"><span class="courses-eyebrow">Programme not found</span><h1>Explore our courses</h1><a class="cta-button" href="/courses.html">Back to Courses <span aria-hidden="true">&rarr;</span></a></section>';
+        }
+        document.querySelector('#mobile-menu').addEventListener('click', () => document.querySelector('.nav-links').classList.toggle('active'));
+    </script>
+</body>
+
+</html>

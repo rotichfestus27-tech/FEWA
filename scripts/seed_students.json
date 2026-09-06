@@ -1,0 +1,28 @@
+[
+    {
+        "uid": "UID_PLACEHOLDER_1",
+        "studentId": "FEWA2026-001",
+        "fullName": "Amina Mwangi",
+        "email": "amina@example.com",
+        "phone": "+254700000001",
+        "program": "Cosmetology",
+        "intake": "September 2026",
+        "admissionStatus": "admitted",
+        "results": [],
+        "timetable": [],
+        "fees": {}
+    },
+    {
+        "uid": "UID_PLACEHOLDER_2",
+        "studentId": "FEWA2026-002",
+        "fullName": "John Otieno",
+        "email": "john@example.com",
+        "phone": "+254700000002",
+        "program": "Fashion Design",
+        "intake": "September 2026",
+        "admissionStatus": "admitted",
+        "results": [],
+        "timetable": [],
+        "fees": {}
+    }
+]

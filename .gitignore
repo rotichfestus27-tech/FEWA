@@ -1,0 +1,24 @@
+node_modules/
+server/node_modules/
+functions/node_modules/
+server/serviceAccountKey.json
+serviceAccountKey*.json
+config.js
+.env
+.env.local
+.env.*.local
+
+# Logs and debug files
+*.log
+firestore-debug.log
+ui-debug.log
+*-test-output.txt
+firebase-test-error.txt
+
+# Editor and system files
+.vscode/
+.firebase/
+.kilo/
+.DS_Store
+Thumbs.db
+

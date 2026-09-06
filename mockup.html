@@ -1,0 +1,1033 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FEWA Beauty & Fashion College — Online Application Portal</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --purple-primary: #6B1FA8;
+            --purple-deep: #24002F;
+            --purple-soft: #F7F4FA;
+            --gold: #D4AF37;
+            --gold-hover: #b8962e;
+            --gold-light: rgba(212, 175, 55, 0.15);
+            --black: #000000;
+            --white: #FFFFFF;
+            --text-primary: #1a1a1a;
+            --text-secondary: #6d6870;
+            --text-muted: #9a949d;
+            --border-light: #e7e2e8;
+            --border-focus: #d4c4e8;
+            --shadow-sm: 0 1px 3px rgba(36, 0, 47, 0.04);
+            --shadow-md: 0 4px 12px rgba(36, 0, 47, 0.06);
+            --shadow-lg: 0 12px 40px rgba(36, 0, 47, 0.10);
+            --shadow-xl: 0 20px 60px rgba(36, 0, 47, 0.14);
+            --font-serif: 'Playfair Display', Georgia, serif;
+            --font-sans: 'Montserrat', 'Segoe UI', system-ui, sans-serif;
+            --radius-sm: 6px;
+            --radius-md: 10px;
+            --radius-lg: 16px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            font-size: 16px;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        body {
+            font-family: var(--font-sans);
+            background: var(--purple-soft);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        /* ── TOP HEADER ── */
+        .app-header {
+            background: var(--white);
+            border-bottom: 1px solid var(--border-light);
+            padding: 0 40px;
+            height: 72px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .header-brand {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .header-logo {
+            height: 44px;
+            width: auto;
+            object-fit: contain;
+        }
+
+        .header-brand-text {
+            display: flex;
+            flex-direction: column;
+            line-height: 1.15;
+        }
+
+        .header-brand-text .brand-name {
+            font-family: var(--font-serif);
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: var(--purple-deep);
+            letter-spacing: -0.01em;
+        }
+
+        .header-brand-text .brand-sub {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--gold);
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+        }
+
+        .header-nav {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .header-nav-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            border-radius: var(--radius-sm);
+            text-decoration: none;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+            background: transparent;
+            font-family: inherit;
+        }
+
+        .header-nav-item:hover {
+            background: var(--purple-soft);
+            color: var(--purple-primary);
+        }
+
+        .header-nav-item i {
+            font-size: 0.95rem;
+            opacity: 0.8;
+        }
+
+        .header-profile {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 6px 14px 6px 6px;
+            border-radius: 999px;
+            border: 1px solid var(--border-light);
+            background: var(--white);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .header-profile:hover {
+            border-color: var(--purple-primary);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .profile-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--purple-primary), var(--purple-deep));
+            color: var(--white);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-serif);
+            font-size: 0.9rem;
+            font-weight: 700;
+        }
+
+        .profile-info {
+            display: flex;
+            flex-direction: column;
+            line-height: 1.2;
+        }
+
+        .profile-name {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .profile-role {
+            font-size: 0.68rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .profile-chevron {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            margin-left: 2px;
+        }
+
+        /* ── MAIN LAYOUT ── */
+        .app-layout {
+            display: grid;
+            grid-template-columns: 280px 1fr 300px;
+            max-width: 1440px;
+            margin: 0 auto;
+            min-height: calc(100vh - 72px);
+        }
+
+        /* ── LEFT SIDEBAR ── */
+        .sidebar {
+            background: var(--white);
+            border-right: 1px solid var(--border-light);
+            padding: 32px 24px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-brand {
+            margin-bottom: 40px;
+        }
+
+        .sidebar-brand-title {
+            font-family: var(--font-serif);
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--purple-deep);
+            line-height: 1.2;
+        }
+
+        .sidebar-brand-sub {
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: var(--gold);
+            text-transform: uppercase;
+            letter-spacing: 0.14em;
+            margin-top: 4px;
+        }
+
+        .sidebar-heading {
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 20px;
+        }
+
+        .progress-stepper {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+            position: relative;
+        }
+
+        .stepper-item {
+            display: flex;
+            gap: 14px;
+            position: relative;
+            padding-bottom: 24px;
+        }
+
+        .stepper-item:last-child {
+            padding-bottom: 0;
+        }
+
+        .stepper-item:not(:last-child)::before {
+            content: '';
+            position: absolute;
+            left: 15px;
+            top: 32px;
+            bottom: 0;
+            width: 1.5px;
+            background: var(--border-light);
+        }
+
+        .stepper-item.completed:not(:last-child)::before {
+            background: var(--gold);
+        }
+
+        .stepper-item.active:not(:last-child)::before {
+            background: linear-gradient(to bottom, var(--purple-primary), var(--border-light));
+        }
+
+        .stepper-marker {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 800;
+            flex-shrink: 0;
+            position: relative;
+            z-index: 2;
+        }
+
+        .stepper-item.completed .stepper-marker {
+            background: var(--gold);
+            color: var(--white);
+            box-shadow: 0 2px 8px rgba(212, 175, 55, 0.3);
+        }
+
+        .stepper-item.active .stepper-marker {
+            background: var(--purple-primary);
+            color: var(--white);
+            box-shadow: 0 2px 10px rgba(107, 31, 168, 0.3);
+            border: 2px solid var(--gold);
+        }
+
+        .stepper-item.inactive .stepper-marker {
+            background: var(--purple-soft);
+            color: var(--text-muted);
+            border: 1.5px solid var(--border-light);
+        }
+
+        .stepper-content {
+            padding-top: 4px;
+            flex: 1;
+        }
+
+        .stepper-title {
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            line-height: 1.3;
+        }
+
+        .stepper-item.inactive .stepper-title {
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .stepper-status {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            margin-top: 2px;
+            font-weight: 500;
+        }
+
+        .stepper-item.active .stepper-status {
+            color: var(--purple-primary);
+            font-weight: 700;
+        }
+
+        .stepper-item.completed .stepper-status {
+            color: var(--gold-hover);
+            font-weight: 700;
+        }
+
+        /* ── MAIN CONTENT ── */
+        .main-content {
+            padding: 40px 48px;
+            overflow-y: auto;
+        }
+
+        .content-header {
+            margin-bottom: 32px;
+        }
+
+        .content-header h1 {
+            font-family: var(--font-serif);
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: var(--purple-deep);
+            margin-bottom: 6px;
+            letter-spacing: -0.02em;
+        }
+
+        .content-header p {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        .progress-bar-container {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 28px;
+        }
+
+        .progress-label {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            white-space: nowrap;
+        }
+
+        .progress-track {
+            flex: 1;
+            height: 8px;
+            background: var(--border-light);
+            border-radius: 999px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-fill {
+            height: 100%;
+            width: 17%;
+            background: linear-gradient(90deg, var(--purple-primary), var(--purple-deep));
+            border-radius: 999px;
+            position: relative;
+        }
+
+        .progress-fill::after {
+            content: '';
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 14px;
+            height: 14px;
+            background: var(--gold);
+            border-radius: 50%;
+            border: 3px solid var(--white);
+            box-shadow: var(--shadow-sm);
+        }
+
+        /* ── FORM CARD ── */
+        .form-card {
+            background: var(--white);
+            border-radius: var(--radius-lg);
+            padding: 40px;
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--border-light);
+        }
+
+        .form-card-header {
+            margin-bottom: 32px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .form-card-header h2 {
+            font-family: var(--font-serif);
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: var(--purple-deep);
+            margin-bottom: 6px;
+        }
+
+        .form-card-header p {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+        }
+
+        .form-group.span-2 {
+            grid-column: span 2;
+        }
+
+        .form-group.span-3 {
+            grid-column: span 3;
+        }
+
+        .form-label {
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            letter-spacing: 0.01em;
+        }
+
+        .form-label .required {
+            color: #c0392b;
+            margin-left: 2px;
+        }
+
+        .form-input,
+        .form-select,
+        .form-textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1.5px solid var(--border-light);
+            border-radius: var(--radius-sm);
+            background: var(--white);
+            color: var(--text-primary);
+            font-family: var(--font-sans);
+            font-size: 0.88rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            outline: none;
+        }
+
+        .form-input:hover,
+        .form-select:hover,
+        .form-textarea:hover {
+            border-color: #c4b8d4;
+        }
+
+        .form-input:focus,
+        .form-select:focus,
+        .form-textarea:focus {
+            border-color: var(--purple-primary);
+            box-shadow: 0 0 0 3px rgba(107, 31, 168, 0.08);
+        }
+
+        .form-input::placeholder,
+        .form-textarea::placeholder {
+            color: var(--text-muted);
+            font-weight: 400;
+        }
+
+        .form-select {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236d6870' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 14px center;
+            padding-right: 36px;
+            cursor: pointer;
+        }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 100px;
+            line-height: 1.6;
+        }
+
+        .form-hint {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        /* ── ACTION FOOTER ── */
+        .form-actions {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 36px;
+            padding-top: 24px;
+            border-top: 1px solid var(--border-light);
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 14px 28px;
+            font-family: var(--font-sans);
+            font-size: 0.85rem;
+            font-weight: 700;
+            text-decoration: none;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all 0.25s ease;
+            border: none;
+            white-space: nowrap;
+        }
+
+        .btn-primary {
+            background: var(--purple-primary);
+            color: var(--white);
+            box-shadow: 0 4px 14px rgba(107, 31, 168, 0.25);
+        }
+
+        .btn-primary:hover {
+            background: var(--purple-deep);
+            box-shadow: 0 6px 20px rgba(107, 31, 168, 0.35);
+            transform: translateY(-1px);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: var(--white);
+            color: var(--text-primary);
+            border: 1.5px solid var(--border-light);
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--purple-primary);
+            color: var(--purple-primary);
+            background: var(--purple-soft);
+        }
+
+        .btn-ghost {
+            background: transparent;
+            color: var(--text-secondary);
+            border: none;
+            padding: 14px 8px;
+        }
+
+        .btn-ghost:hover {
+            color: var(--purple-primary);
+        }
+
+        .btn i {
+            font-size: 0.8rem;
+        }
+
+        .actions-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .actions-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        /* ── RIGHT SIDEBAR ── */
+        .right-sidebar {
+            background: var(--white);
+            border-left: 1px solid var(--border-light);
+            padding: 32px 24px;
+        }
+
+        .summary-card {
+            background: var(--white);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-md);
+            padding: 24px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .summary-card-title {
+            font-family: var(--font-serif);
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--purple-deep);
+            margin-bottom: 20px;
+            padding-bottom: 14px;
+            border-bottom: 2px solid var(--gold);
+            display: inline-block;
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #f5f2f7;
+        }
+
+        .summary-row:last-child {
+            border-bottom: none;
+        }
+
+        .summary-label {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .summary-value {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            text-align: right;
+        }
+
+        .summary-value.status-draft {
+            color: var(--gold-hover);
+        }
+
+        .summary-value.status-empty {
+            color: var(--text-muted);
+            font-weight: 500;
+            font-style: italic;
+        }
+
+        .summary-divider {
+            height: 1px;
+            background: var(--border-light);
+            margin: 16px 0;
+        }
+
+        .summary-note {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 14px 16px;
+            background: var(--gold-light);
+            border-radius: var(--radius-sm);
+            border-left: 3px solid var(--gold);
+        }
+
+        .summary-note i {
+            color: var(--gold);
+            margin-top: 2px;
+            font-size: 0.85rem;
+        }
+
+        .summary-note p {
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            margin: 0;
+        }
+
+        /* ── DECORATIVE ELEMENTS ── */
+        .gold-accent-line {
+            width: 48px;
+            height: 3px;
+            background: var(--gold);
+            border-radius: 2px;
+            margin: 16px 0 24px;
+        }
+
+        .step-indicator-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 14px;
+            background: var(--purple-soft);
+            border-radius: 999px;
+            margin-bottom: 24px;
+        }
+
+        .step-indicator-badge .step-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--purple-primary);
+        }
+
+        .step-indicator-badge span {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--purple-primary);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
+        /* ── RESPONSIVE (within 1440px mockup) ── */
+        @media (max-width: 1300px) {
+            .app-layout {
+                grid-template-columns: 260px 1fr 280px;
+            }
+
+            .main-content {
+                padding: 32px 36px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- TOP HEADER                                  -->
+    <!-- ═══════════════════════════════════════════ -->
+    <header class="app-header">
+        <div class="header-brand">
+            <img src="assets/logo.svg" alt="FEWA Logo" class="header-logo">
+            <div class="header-brand-text">
+                <span class="brand-name">FEWA</span>
+                <span class="brand-sub">Beauty &amp; Fashion College</span>
+            </div>
+        </div>
+
+        <nav class="header-nav">
+            <a href="index.html#contact" target="_blank" rel="noopener" class="header-nav-item">
+                <i class="fas fa-circle-question"></i>
+                Help &amp; Support
+            </a>
+            <a href="index.html#portal" target="_blank" rel="noopener" class="header-nav-item">
+                <i class="fas fa-bell"></i>
+                Notifications
+            </a>
+            <div class="header-profile">
+                <div class="profile-avatar">JO</div>
+                <div class="profile-info">
+                    <span class="profile-name">Jane Okoth</span>
+                    <span class="profile-role">Applicant</span>
+                </div>
+                <i class="fas fa-chevron-down profile-chevron"></i>
+            </div>
+        </nav>
+    </header>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- MAIN LAYOUT                                 -->
+    <!-- ═══════════════════════════════════════════ -->
+    <div class="app-layout">
+
+        <!-- ── LEFT SIDEBAR ── -->
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <div class="sidebar-brand-title">FEWA</div>
+                <div class="sidebar-brand-sub">Online Application</div>
+            </div>
+
+            <div class="sidebar-heading">Application Progress</div>
+
+            <div class="progress-stepper">
+                <!-- Step 1 - Active -->
+                <div class="stepper-item active">
+                    <div class="stepper-marker">1</div>
+                    <div class="stepper-content">
+                        <div class="stepper-title">Personal Information</div>
+                        <div class="stepper-status">In progress</div>
+                    </div>
+                </div>
+
+                <!-- Step 2 -->
+                <div class="stepper-item inactive">
+                    <div class="stepper-marker">2</div>
+                    <div class="stepper-content">
+                        <div class="stepper-title">Academic Background</div>
+                        <div class="stepper-status">Not started</div>
+                    </div>
+                </div>
+
+                <!-- Step 3 -->
+                <div class="stepper-item inactive">
+                    <div class="stepper-marker">3</div>
+                    <div class="stepper-content">
+                        <div class="stepper-title">Program Selection</div>
+                        <div class="stepper-status">Not started</div>
+                    </div>
+                </div>
+
+                <!-- Step 4 -->
+                <div class="stepper-item inactive">
+                    <div class="stepper-marker">4</div>
+                    <div class="stepper-content">
+                        <div class="stepper-title">Documents</div>
+                        <div class="stepper-status">Not started</div>
+                    </div>
+                </div>
+
+                <!-- Step 5 -->
+                <div class="stepper-item inactive">
+                    <div class="stepper-marker">5</div>
+                    <div class="stepper-content">
+                        <div class="stepper-title">Additional Information</div>
+                        <div class="stepper-status">Not started</div>
+                    </div>
+                </div>
+
+                <!-- Step 6 -->
+                <div class="stepper-item inactive">
+                    <div class="stepper-marker">6</div>
+                    <div class="stepper-content">
+                        <div class="stepper-title">Review &amp; Submit</div>
+                        <div class="stepper-status">Not started</div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- ── MAIN CONTENT ── -->
+        <main class="main-content">
+            <div class="content-header">
+                <h1>Application Portal</h1>
+                <p>Let's build your FEWA journey. Complete your application step by step. Your progress can be saved and
+                    continued at any time.</p>
+            </div>
+
+            <div class="step-indicator-badge">
+                <span class="step-dot"></span>
+                <span>Step 1 of 6 — Personal Information</span>
+            </div>
+
+            <div class="progress-bar-container">
+                <span class="progress-label">Application Progress</span>
+                <div class="progress-track">
+                    <div class="progress-fill"></div>
+                </div>
+            </div>
+
+            <div class="form-card">
+                <div class="form-card-header">
+                    <h2>Personal Information</h2>
+                    <p>Tell us about yourself.</p>
+                </div>
+
+                <form class="form-grid" onsubmit="return false;">
+                    <!-- Row 1 -->
+                    <div class="form-group">
+                        <label class="form-label">First Name <span class="required">*</span></label>
+                        <input type="text" class="form-input" placeholder="e.g. Jane" value="Jane">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Middle Name</label>
+                        <input type="text" class="form-input" placeholder="Optional">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Last Name <span class="required">*</span></label>
+                        <input type="text" class="form-input" placeholder="e.g. Okoth" value="Okoth">
+                    </div>
+
+                    <!-- Row 2 -->
+                    <div class="form-group">
+                        <label class="form-label">Date of Birth <span class="required">*</span></label>
+                        <input type="date" class="form-input" value="2002-04-15">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Gender <span class="required">*</span></label>
+                        <select class="form-select">
+                            <option>Female</option>
+                            <option>Male</option>
+                            <option>Prefer not to say</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Nationality <span class="required">*</span></label>
+                        <input type="text" class="form-input" placeholder="Kenyan" value="Kenyan">
+                    </div>
+
+                    <!-- Row 3 -->
+                    <div class="form-group span-3">
+                        <label class="form-label">National ID / Passport Number <span class="required">*</span></label>
+                        <input type="text" class="form-input" placeholder="e.g. 12345678" value="34567892">
+                    </div>
+
+                    <!-- Row 4 -->
+                    <div class="form-group">
+                        <label class="form-label">Phone Number <span class="required">*</span></label>
+                        <input type="tel" class="form-input" placeholder="+254 7XX XXX XXX" value="+254 712 345 678">
+                        <span class="form-hint">Include country code</span>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Alternative Phone</label>
+                        <input type="tel" class="form-input" placeholder="Optional">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Email Address <span class="required">*</span></label>
+                        <input type="email" class="form-input" placeholder="you@example.com"
+                            value="jane.okoth@example.com">
+                    </div>
+
+                    <!-- Row 5 -->
+                    <div class="form-group">
+                        <label class="form-label">County <span class="required">*</span></label>
+                        <input type="text" class="form-input" placeholder="e.g. Nairobi" value="Nairobi">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Town / City <span class="required">*</span></label>
+                        <input type="text" class="form-input" placeholder="e.g. Westlands" value="Westlands">
+                    </div>
+                    <div class="form-group span-3">
+                        <label class="form-label">Physical Address <span class="required">*</span></label>
+                        <input type="text" class="form-input" placeholder="e.g. 123 Moi Avenue, Westlands"
+                            value="123 Moi Avenue, Westlands">
+                    </div>
+
+                    <!-- Row 6 -->
+                    <div class="form-group">
+                        <label class="form-label">Emergency Contact Name <span class="required">*</span></label>
+                        <input type="text" class="form-input" placeholder="Full name" value="Mary Okoth">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Emergency Contact Phone <span class="required">*</span></label>
+                        <input type="tel" class="form-input" placeholder="+254 7XX XXX XXX" value="+254 723 456 789">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Relationship <span class="required">*</span></label>
+                        <input type="text" class="form-input" placeholder="e.g. Mother" value="Mother">
+                    </div>
+                </form>
+
+                <div class="form-actions">
+                    <div class="actions-left">
+                        <button type="button" class="btn btn-ghost"
+                            onclick="window.open('index.html', '_blank', 'noopener')">
+                            <i class="fas fa-arrow-left"></i>
+                            Back
+                        </button>
+                        <button type="button" class="btn btn-secondary"
+                            onclick="localStorage.setItem('fewa-mockup-draft', new Date().toISOString()); window.open('apply.html', '_blank', 'noopener')">
+                            <i class="fas fa-floppy-disk"></i>
+                            Save Draft
+                        </button>
+                    </div>
+                    <div class="actions-right">
+                        <button type="button" class="btn btn-primary"
+                            onclick="window.open('apply.html', '_blank', 'noopener')">
+                            Continue
+                            <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- ── RIGHT SIDEBAR ── -->
+        <aside class="right-sidebar">
+            <div class="summary-card">
+                <div class="summary-card-title">Your Application</div>
+
+                <div class="summary-row">
+                    <span class="summary-label">Progress</span>
+                    <span class="summary-value">17%</span>
+                </div>
+                <div class="summary-row">
+                    <span class="summary-label">Status</span>
+                    <span class="summary-value status-draft">Draft</span>
+                </div>
+                <div class="summary-divider"></div>
+                <div class="summary-row">
+                    <span class="summary-label">Program</span>
+                    <span class="summary-value status-empty">Not selected</span>
+                </div>
+                <div class="summary-row">
+                    <span class="summary-label">Intake</span>
+                    <span class="summary-value">May 2026</span>
+                </div>
+                <div class="summary-row">
+                    <span class="summary-label">Campus</span>
+                    <span class="summary-value status-empty">Not selected</span>
+                </div>
+
+                <div class="gold-accent-line"></div>
+
+                <div class="summary-note">
+                    <i class="fas fa-circle-info"></i>
+                    <p>Your information is saved automatically as you progress through each step.</p>
+                </div>
+            </div>
+        </aside>
+
+    </div>
+
+</body>
+
+</html>

@@ -1,0 +1,334 @@
+[
+    {
+        "name": "1 - Unauthenticated valid application - ALLOW",
+        "auth": null,
+        "path": "/databases/(default)/documents/applications/app1",
+        "method": "create",
+        "requestTime": "2026-08-13T12:00:00Z",
+        "requestResource": {
+            "fullName": "Amina Okoth",
+            "email": "amina@example.com",
+            "phone": "+254712345678",
+            "programme": "Cosmetology",
+            "intake": "2026 May",
+            "createdAt": "2026-08-13T12:00:00Z"
+        },
+        "expected": "ALLOW",
+        "explanation": "Required fields present, no forbidden fields, createdAt == request.time, whitelist matched."
+    },
+    {
+        "name": "2 - Unauthenticated application with isAdmin - DENY",
+        "auth": null,
+        "path": "/databases/(default)/documents/applications/app2",
+        "method": "create",
+        "requestTime": "2026-08-13T12:00:00Z",
+        "requestResource": {
+            "fullName": "Malik",
+            "email": "malik@example.com",
+            "phone": "+254700000000",
+            "programme": "Fashion",
+            "intake": "2026 May",
+            "createdAt": "2026-08-13T12:00:00Z",
+            "isAdmin": true
+        },
+        "expected": "DENY",
+        "explanation": "Forbidden field `isAdmin` present."
+    },
+    {
+        "name": "3 - Unauthenticated application with admissionStatus - DENY",
+        "auth": null,
+        "path": "/databases/(default)/documents/applications/app3",
+        "method": "create",
+        "requestTime": "2026-08-13T12:00:00Z",
+        "requestResource": {
+            "fullName": "Sara",
+            "email": "sara@example.com",
+            "phone": "+254733333333",
+            "programme": "Cosmetology",
+            "intake": "2026 May",
+            "createdAt": "2026-08-13T12:00:00Z",
+            "admissionStatus": "accepted"
+        },
+        "expected": "DENY",
+        "explanation": "Forbidden field `admissionStatus` present."
+    },
+    {
+        "name": "4 - Unauthenticated application with studentId - DENY",
+        "auth": null,
+        "path": "/databases/(default)/documents/applications/app4",
+        "method": "create",
+        "requestTime": "2026-08-13T12:00:00Z",
+        "requestResource": {
+            "fullName": "John Doe",
+            "email": "john@example.com",
+            "phone": "+254711111111",
+            "programme": "Hair",
+            "intake": "2026 May",
+            "createdAt": "2026-08-13T12:00:00Z",
+            "studentId": "FEWA2026-001"
+        },
+        "expected": "DENY",
+        "explanation": "Forbidden field `studentId` present."
+    },
+    {
+        "name": "5 - Authenticated applicant reading own application - ALLOW",
+        "auth": {
+            "uid": "uid-app-1",
+            "token": {}
+        },
+        "path": "/databases/(default)/documents/applications/appOwned",
+        "method": "get",
+        "resource": {
+            "applicantUid": "uid-app-1",
+            "fullName": "Owner"
+        },
+        "expected": "ALLOW",
+        "explanation": "Owner may read their own application."
+    },
+    {
+        "name": "6 - Applicant reading another's application - DENY",
+        "auth": {
+            "uid": "uid-app-2",
+            "token": {}
+        },
+        "path": "/databases/(default)/documents/applications/appOwned",
+        "method": "get",
+        "resource": {
+            "applicantUid": "uid-app-1",
+            "fullName": "Owner"
+        },
+        "expected": "DENY",
+        "explanation": "Only owner or admissions/superadmin may read."
+    },
+    {
+        "name": "7 - Student reading own profile - ALLOW",
+        "auth": {
+            "uid": "student-123",
+            "token": {}
+        },
+        "path": "/databases/(default)/documents/students/student-123",
+        "method": "get",
+        "resource": {
+            "fullName": "Me"
+        },
+        "expected": "ALLOW",
+        "explanation": "Students can read their own profile."
+    },
+    {
+        "name": "8 - Student reading another student's profile - DENY",
+        "auth": {
+            "uid": "student-123",
+            "token": {}
+        },
+        "path": "/databases/(default)/documents/students/student-456",
+        "method": "get",
+        "resource": {
+            "fullName": "Other"
+        },
+        "expected": "DENY",
+        "explanation": "Students cannot read other students' profiles."
+    },
+    {
+        "name": "9 - Student changing their phone number - ALLOW",
+        "auth": {
+            "uid": "student-123",
+            "token": {}
+        },
+        "path": "/databases/(default)/documents/students/student-123",
+        "method": "update",
+        "resource": {
+            "phone": "0712000000",
+            "fullName": "Me"
+        },
+        "requestResource": {
+            "phone": "0712111111",
+            "fullName": "Me"
+        },
+        "expected": "ALLOW",
+        "explanation": "Phone is allowed in allowedStudentUpdateFields()."
+    },
+    {
+        "name": "10 - Student changing their programme - DENY",
+        "auth": {
+            "uid": "student-123",
+            "token": {}
+        },
+        "path": "/databases/(default)/documents/students/student-123",
+        "method": "update",
+        "resource": {
+            "programme": "Cosmetology"
+        },
+        "requestResource": {
+            "programme": "Fashion"
+        },
+        "expected": "DENY",
+        "explanation": "`program` is protected and cannot be changed by student."
+    },
+    {
+        "name": "11 - Student changing fees - DENY",
+        "auth": {
+            "uid": "student-123",
+            "token": {}
+        },
+        "path": "/databases/(default)/documents/students/student-123",
+        "method": "update",
+        "resource": {
+            "fees": {
+                "balance": 0
+            }
+        },
+        "requestResource": {
+            "fees": {
+                "balance": 100
+            }
+        },
+        "expected": "DENY",
+        "explanation": "`fees` is protected."
+    },
+    {
+        "name": "12 - Student changing results - DENY",
+        "auth": {
+            "uid": "student-123",
+            "token": {}
+        },
+        "path": "/databases/(default)/documents/students/student-123",
+        "method": "update",
+        "resource": {
+            "results": {}
+        },
+        "requestResource": {
+            "results": {
+                "exam": 80
+            }
+        },
+        "expected": "DENY",
+        "explanation": "`results` is protected."
+    },
+    {
+        "name": "13 - Lecturer reading student results - ALLOW",
+        "auth": {
+            "uid": "lect-1",
+            "token": {
+                "roles": {
+                    "lecturer": true
+                }
+            }
+        },
+        "path": "/databases/(default)/documents/students/student-123/results/result1",
+        "method": "get",
+        "resource": {
+            "score": 75
+        },
+        "expected": "ALLOW",
+        "explanation": "Lecturer may read results."
+    },
+    {
+        "name": "14 - Lecturer modifying results - ALLOW",
+        "auth": {
+            "uid": "lect-1",
+            "token": {
+                "roles": {
+                    "lecturer": true
+                }
+            }
+        },
+        "path": "/databases/(default)/documents/students/student-123/results/result1",
+        "method": "create",
+        "requestTime": "2026-08-13T12:00:00Z",
+        "requestResource": {
+            "score": 82,
+            "course": "Anatomy",
+            "createdAt": "2026-08-13T12:00:00Z"
+        },
+        "expected": "ALLOW",
+        "explanation": "Lecturer can create/update/delete results."
+    },
+    {
+        "name": "15 - Finance staff modifying fees - ALLOW",
+        "auth": {
+            "uid": "fin-1",
+            "token": {
+                "roles": {
+                    "finance": true
+                }
+            }
+        },
+        "path": "/databases/(default)/documents/students/student-123/fees/fee1",
+        "method": "update",
+        "requestResource": {
+            "amountDue": 5000,
+            "status": "invoiced"
+        },
+        "expected": "ALLOW",
+        "explanation": "Finance role may manage fees."
+    },
+    {
+        "name": "16 - Admissions staff managing applications - ALLOW",
+        "auth": {
+            "uid": "adm-1",
+            "token": {
+                "roles": {
+                    "admissions": true
+                }
+            }
+        },
+        "path": "/databases/(default)/documents/applications/app1",
+        "method": "update",
+        "resource": {
+            "fullName": "Applicant"
+        },
+        "requestResource": {
+            "fullName": "Applicant",
+            "admissionStatus": "accepted"
+        },
+        "expected": "ALLOW",
+        "explanation": "Admissions staff can update/delete/create applications."
+    },
+    {
+        "name": "17 - Ordinary student trying to manage applications - DENY",
+        "auth": {
+            "uid": "student-123",
+            "token": {}
+        },
+        "path": "/databases/(default)/documents/applications/app1",
+        "method": "delete",
+        "expected": "DENY",
+        "explanation": "Only admissions/superadmin may update/delete applications."
+    },
+    {
+        "name": "18 - Unauthenticated reading private student profile - DENY",
+        "auth": null,
+        "path": "/databases/(default)/documents/students/student-123",
+        "method": "get",
+        "expected": "DENY",
+        "explanation": "Private student data not readable by unauthenticated users."
+    },
+    {
+        "name": "19 - Public reading programmes/news/events - ALLOW",
+        "auth": null,
+        "tests": [
+            {
+                "path": "/databases/(default)/documents/programmes/prog1",
+                "method": "get"
+            },
+            {
+                "path": "/databases/(default)/documents/news/news1",
+                "method": "get"
+            },
+            {
+                "path": "/databases/(default)/documents/events/event1",
+                "method": "get"
+            }
+        ],
+        "expected": "ALLOW",
+        "explanation": "Public read allowed for these collections."
+    },
+    {
+        "name": "20 - Unknown collection access - DENY",
+        "auth": null,
+        "path": "/databases/(default)/documents/some_unknown_collection/doc1",
+        "method": "get",
+        "expected": "DENY",
+        "explanation": "Default deny rule blocks unknown collections."
+    }
+]

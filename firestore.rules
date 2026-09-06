@@ -1,0 +1,590 @@
+// ============================================================
+// FEWA BEAUTY & FASHION COLLEGE
+// FIRESTORE SECURITY RULES
+// ============================================================
+//
+// Security model:
+// - Students can access only their own private student data.
+// - Staff access is controlled using Firebase custom claims.
+// - Public applications are strictly validated.
+// - Programmes, news and events are publicly readable.
+// - Unknown collections are denied by default.
+//
+// Expected custom claims:
+//
+// {
+//   "roles": {
+//     "superadmin": true,
+//     "admissions": true,
+//     "finance": true,
+//     "lecturer": true
+//   }
+// }
+//
+// ============================================================
+
+rules_version = '2';
+
+service cloud.firestore {
+
+  match /databases/{database}/documents {
+
+    // ==========================================================
+    // GLOBAL HELPERS
+    // ==========================================================
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Safely read nested roles claim.
+    // Using get() prevents an evaluation error when roles
+    // does not exist on the authentication token.
+    function hasRole(role) {
+      return isSignedIn()
+        && (
+          (
+            request.auth.token.get('roles', {}) is list
+            && role in request.auth.token.get('roles', [])
+          )
+          || (
+            request.auth.token.get('roles', {}) is map
+            && request.auth.token.get('roles', {}).get(role, false) == true
+          )
+        );
+    }
+
+    function isAdmin() {
+      return hasRole('admin') || hasRole('superadmin');
+    }
+
+    function isStudent(uid) {
+      return isSignedIn()
+        && request.auth.uid == uid;
+    }
+
+    match /users/{uid} {
+      allow get: if isStudent(uid) || isAdmin();
+      allow list: if false;
+      allow create, update: if isAdmin();
+      allow delete: if hasRole('superadmin');
+    }
+
+
+    // ==========================================================
+    // STUDENTS
+    // ==========================================================
+
+    match /students/{uid} {
+
+      // --------------------------------------------------------
+      // READ
+      // --------------------------------------------------------
+
+      allow get: if
+        isStudent(uid)
+        || isAdmin()
+        || hasRole('superadmin')
+        || hasRole('lecturer')
+        || hasRole('admissions')
+        || hasRole('finance');
+
+      // Never allow client-side listing of students.
+      allow list: if isAdmin() || hasRole('admissions');
+
+
+      // --------------------------------------------------------
+      // STUDENT CREATION
+      // --------------------------------------------------------
+
+      allow create: if
+        isAdmin()
+        || hasRole('admissions')
+        || (
+          isStudent(uid)
+          && request.resource.data.keys().hasOnly([
+            'fullName',
+            'phone',
+            'profilePicture',
+            'address',
+            'emergencyContact',
+            'email'
+          ])
+          && request.resource.data.get('email', '') ==
+             request.auth.token.get('email', '')
+        );
+
+
+      // --------------------------------------------------------
+      // STUDENT UPDATE
+      // --------------------------------------------------------
+
+      allow update: if
+        hasRole('superadmin')
+        || hasRole('admissions')
+        || (
+          isStudent(uid)
+
+          && request.resource.data
+            .diff(resource.data)
+            .affectedKeys()
+            .hasOnly([
+              'fullName',
+              'phone',
+              'profilePicture',
+              'address',
+              'emergencyContact'
+            ])
+        );
+
+
+      // --------------------------------------------------------
+      // STUDENT DELETE
+      // --------------------------------------------------------
+
+      allow delete: if hasRole('superadmin');
+
+
+      // ========================================================
+      // RESULTS
+      // ========================================================
+
+      match /results/{docId} {
+
+        allow read: if
+          isStudent(uid)
+          || isAdmin()
+          || hasRole('lecturer')
+          || hasRole('superadmin');
+
+        allow create, update, delete: if
+          isAdmin()
+          ||
+          hasRole('lecturer')
+          || hasRole('superadmin');
+      }
+
+
+      // ========================================================
+      // TIMETABLE
+      // ========================================================
+
+      match /timetable/{docId} {
+
+        allow read: if
+          isStudent(uid)
+          || isAdmin()
+          || hasRole('lecturer')
+          || hasRole('superadmin');
+
+        allow create, update, delete: if
+          isAdmin()
+          ||
+          hasRole('lecturer')
+          || hasRole('superadmin');
+      }
+
+
+      // ========================================================
+      // FEES
+      // ========================================================
+
+      match /fees/{docId} {
+
+        allow read: if
+          isStudent(uid)
+          || isAdmin()
+          || hasRole('finance')
+          || hasRole('superadmin');
+
+        allow create, update, delete: if
+          isAdmin()
+          ||
+          hasRole('finance')
+          || hasRole('superadmin');
+      }
+
+
+      match /assignments/{assignmentId} {
+        allow read: if isStudent(uid) || isAdmin() || hasRole('lecturer');
+        allow create, update, delete: if isAdmin() || hasRole('lecturer');
+      }
+
+
+      match /submissions/{submissionId} {
+        allow read: if isStudent(uid) || isAdmin() || hasRole('lecturer');
+        allow create: if
+          (
+            isStudent(uid)
+            && request.resource.data.studentUid == uid
+            && request.resource.data.keys().hasOnly([
+              'assignmentId', 'studentUid', 'fileName', 'filePath',
+              'submittedAt', 'status'
+            ])
+            && request.resource.data.status == 'Submitted'
+          )
+          || isAdmin()
+          || hasRole('lecturer');
+        allow update: if
+          (
+            isStudent(uid)
+            && resource.data.studentUid == uid
+            && request.resource.data.studentUid == uid
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+              'fileName', 'filePath', 'submittedAt', 'status'
+            ])
+            && request.resource.data.status == 'Submitted'
+          )
+          || isAdmin()
+          || hasRole('lecturer');
+        allow delete: if isAdmin() || hasRole('lecturer');
+      }
+
+
+      match /attendance/{attendanceId} {
+        allow read: if isStudent(uid) || isAdmin() || hasRole('lecturer');
+        allow create, update, delete: if isAdmin() || hasRole('lecturer');
+      }
+
+
+      match /notifications/{notificationId} {
+        allow read: if isStudent(uid) || isAdmin() || hasRole('lecturer') || hasRole('admissions');
+        allow create: if isAdmin() || hasRole('lecturer') || hasRole('admissions');
+        allow update: if
+          isStudent(uid)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read', 'readAt'])
+          && request.resource.data.get('studentUid', uid) == uid;
+        allow delete: if isAdmin() || hasRole('admissions');
+      }
+
+
+      match /documents/{documentId} {
+        allow read: if isStudent(uid) || isAdmin() || hasRole('finance') || hasRole('admissions');
+        allow create, update, delete: if isAdmin() || hasRole('finance') || hasRole('admissions');
+      }
+
+
+      match /messages/{messageId} {
+        allow read: if isStudent(uid) || isAdmin() || hasRole('lecturer') || hasRole('admissions');
+        allow create: if isAdmin() || hasRole('lecturer') || hasRole('admissions');
+        allow update: if
+          isStudent(uid)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read', 'readAt'])
+          && request.resource.data.get('studentUid', uid) == uid;
+        allow delete: if isAdmin() || hasRole('admissions');
+      }
+    }
+
+
+    // ==========================================================
+    // LEARNING MATERIALS
+    // ==========================================================
+
+    match /learning_materials/{docId} {
+
+      allow read: if
+        resource.data.get('public', false) == true
+
+        || (
+          isSignedIn()
+          && (
+            (
+              request.auth.token.get('program', null) != null
+              && resource.data.get('programIds', []) is list
+              && request.auth.token.get('program', '') in
+                 resource.data.get('programIds', [])
+            )
+
+            || (
+              resource.data.get('allowedUids', []) is list
+              && request.auth.uid in
+                 resource.data.get('allowedUids', [])
+            )
+
+            || hasRole('lecturer')
+            || hasRole('superadmin')
+          )
+        );
+
+      allow create, update, delete: if
+        hasRole('lecturer')
+        || hasRole('superadmin');
+    }
+
+
+    // ==========================================================
+    // APPLICATIONS
+    // ==========================================================
+
+    match /applications/{appId} {
+
+      // --------------------------------------------------------
+      // VALIDATION HELPERS
+      // --------------------------------------------------------
+
+      function isNonEmptyString(value) {
+        return value is string
+          && value.size() > 0
+          && value.size() <= 256;
+      }
+
+      function isValidEmail(email) {
+        return email is string
+          && email.size() <= 254
+          && email.matches('^[^@ ]+@[^@ ]+\\.[^@ ]+$');
+      }
+
+      function isValidPhone(phone) {
+        return phone is string
+          && phone.size() >= 7
+          && phone.size() <= 32
+          && phone.matches('^[0-9+ ()-]+$');
+      }
+
+      function isValidProgramme(program) {
+        return program is string
+          && program.size() > 1
+          && program.size() <= 128;
+      }
+
+      function isValidIntake(intake) {
+        return intake is string
+          && intake.size() > 0
+          && intake.size() <= 64;
+      }
+
+
+      // --------------------------------------------------------
+      // FORBIDDEN PRIVILEGED FIELDS
+      // --------------------------------------------------------
+
+      function forbiddenFields() {
+        return [
+          'roles',
+          'role',
+          'isAdmin',
+          'admissionStatus',
+          'studentId',
+          'uid',
+          'fees',
+          'results',
+          'staffPermissions',
+          'accountStatus'
+        ];
+      }
+
+
+      function isApplicant() {
+        return isSignedIn()
+          && appId == request.auth.uid
+          && request.resource.data.get('applicantUid', '') == request.auth.uid;
+      }
+
+      function isApplicationStaff() {
+        return isAdmin() || hasRole('admissions');
+      }
+
+      function validDraft() {
+        return request.resource.data.status == 'Draft'
+          && request.resource.data.applicationNumber is string
+          && request.resource.data.applicationNumber.matches('^FEWA-[0-9]{4}-[0-9]{6}$')
+          && request.resource.data.personalInformation is map
+          && request.resource.data.academicInformation is map
+          && request.resource.data.programInformation is map
+          && request.resource.data.additionalInformation is map
+          && request.resource.data.documents is list
+          && request.resource.data.progress is map;
+      }
+
+      function validStatus(status) {
+        return status in ['Draft', 'Submitted', 'Under Review', 'More Information Required', 'Accepted', 'Rejected'];
+      }
+
+      function validStaffClientStatus(status) {
+        return status in ['Draft', 'Submitted', 'Under Review', 'More Information Required', 'Rejected'];
+      }
+
+      function validSubmitted() {
+        return request.resource.data.status == 'Submitted'
+          && request.resource.data.submittedAt == request.time
+          && request.resource.data.updatedAt == request.time
+          && isNonEmptyString(request.resource.data.personalInformation.firstName)
+          && isNonEmptyString(request.resource.data.personalInformation.lastName)
+            && isNonEmptyString(request.resource.data.personalInformation.identityNumber)
+          && isValidEmail(request.resource.data.personalInformation.email)
+            && request.resource.data.personalInformation.email == request.auth.token.get('email', '')
+          && isValidPhone(request.resource.data.personalInformation.phone)
+            && isNonEmptyString(request.resource.data.personalInformation.emergencyName)
+            && isValidPhone(request.resource.data.personalInformation.emergencyPhone)
+            && isNonEmptyString(request.resource.data.personalInformation.emergencyRelationship)
+            && isNonEmptyString(request.resource.data.academicInformation.educationLevel)
+            && isNonEmptyString(request.resource.data.academicInformation.institution)
+            && request.resource.data.academicInformation.yearCompleted is string
+          && isValidProgramme(request.resource.data.programInformation.program)
+          && isValidIntake(request.resource.data.programInformation.intake)
+            && request.resource.data.documents is list
+            && request.resource.data.documents.size() >= 3
+            && request.resource.data.additionalInformation.get('declaration', false) == true;
+      }
+
+      allow create: if isSignedIn()
+        && isApplicant()
+        && validDraft()
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.keys().hasOnly([
+          'applicationNumber', 'applicantUid', 'status', 'personalInformation',
+          'academicInformation', 'programInformation', 'documents',
+          'additionalInformation', 'progress', 'createdAt', 'updatedAt'
+        ]);
+
+
+      // --------------------------------------------------------
+      // APPLICATION READ
+      // --------------------------------------------------------
+
+      allow read: if isApplicationStaff()
+        || (isSignedIn() && request.auth.uid == resource.data.get('applicantUid', null));
+
+
+      // --------------------------------------------------------
+      // APPLICATION UPDATE
+      // --------------------------------------------------------
+
+      allow update: if (
+          isApplicationStaff()
+          && request.resource.data.applicantUid == resource.data.applicantUid
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt'])
+          && validStaffClientStatus(request.resource.data.status)
+          && request.resource.data.updatedAt == request.time
+        )
+        || (
+          isSignedIn()
+          && resource.data.get('applicantUid', null) == request.auth.uid
+          && resource.data.get('status', '') == 'Draft'
+          && request.resource.data.get('applicantUid', '') == request.auth.uid
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'applicationNumber', 'status', 'personalInformation',
+            'academicInformation', 'programInformation', 'documents',
+            'additionalInformation', 'progress', 'updatedAt', 'submittedAt'
+          ])
+          && (
+            (request.resource.data.status == 'Draft' && validDraft())
+            || (request.resource.data.status == 'Submitted' && validSubmitted())
+          )
+        );
+
+
+      // --------------------------------------------------------
+      // APPLICATION DELETE
+      // --------------------------------------------------------
+
+      allow delete: if
+        isApplicationStaff();
+
+      match /notifications/{notificationId} {
+        allow read: if isApplicationStaff()
+          || (isSignedIn() && get(/databases/$(database)/documents/applications/$(appId)).data.get('applicantUid', null) == request.auth.uid);
+        allow update: if isSignedIn()
+          && get(/databases/$(database)/documents/applications/$(appId)).data.get('applicantUid', null) == request.auth.uid
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read', 'readAt']);
+        allow create, delete: if isApplicationStaff();
+      }
+    }
+
+
+    match /assignments/{assignmentId} {
+      allow read: if
+        isAdmin()
+        || hasRole('lecturer')
+        || (
+          isSignedIn()
+          && resource.data.get('status', '') == 'Published'
+          && resource.data.get('programmeId', '') ==
+             get(/databases/$(database)/documents/students/$(request.auth.uid)).data.get('program', '')
+          && resource.data.get('semester', '') ==
+             get(/databases/$(database)/documents/students/$(request.auth.uid)).data.get('semester', '')
+        );
+      allow create, update, delete: if isAdmin() || hasRole('lecturer');
+    }
+
+
+    // ==========================================================
+    // PROGRAMMES
+    // ==========================================================
+
+    match /programmes/{docId} {
+
+      allow read: if true;
+
+      allow create, update, delete: if
+        isAdmin()
+        ||
+        hasRole('superadmin')
+        || hasRole('admissions');
+    }
+
+
+    // ==========================================================
+    // NEWS
+    // ==========================================================
+
+    match /news/{docId} {
+
+      allow read: if true;
+
+      allow create, update, delete: if
+        isAdmin()
+        ||
+        hasRole('superadmin')
+        || hasRole('admissions');
+    }
+
+
+    // ==========================================================
+    // EVENTS
+    // ==========================================================
+
+    match /events/{docId} {
+
+      allow read: if true;
+
+      allow create, update, delete: if
+        isAdmin()
+        ||
+        hasRole('superadmin')
+        || hasRole('admissions');
+    }
+
+
+    // ==========================================================
+    // ADMIN LOGS
+    // ==========================================================
+
+    match /admin_logs/{docId} {
+
+      allow read: if hasRole('superadmin');
+
+      allow create: if isAdmin()
+        && request.resource.data.actorUid == request.auth.uid
+        && request.resource.data.keys().hasOnly([
+          'actorUid', 'action', 'target', 'targetId', 'createdAt'
+        ]);
+
+      // Logs cannot be changed or deleted from clients.
+      allow update, delete: if false;
+    }
+
+    match /trainers/{docId} {
+      allow read, write: if isAdmin();
+    }
+
+
+    // ==========================================================
+    // DEFAULT DENY
+    // ==========================================================
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

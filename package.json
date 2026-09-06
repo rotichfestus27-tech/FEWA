@@ -1,0 +1,16 @@
+{
+    "name": "fewa-firestore-tests",
+    "version": "1.0.0",
+    "private": true,
+    "scripts": {
+        "emu:start": "firebase emulators:start --only firestore,auth,storage",
+        "test:rules": "firebase emulators:exec --project fewa-rules-test --only firestore \"node test/run-tests-ci.js\"",
+        "test:ci": "npm run test:rules"
+    },
+    "devDependencies": {
+        "@firebase/rules-unit-testing": "^5.0.1",
+        "firebase": "^12.0.0",
+        "firebase-tools": "^15.29.0",
+        "jsdom": "^30.0.1"
+    }
+}
