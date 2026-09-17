@@ -93,6 +93,53 @@
             box-shadow: inset 3px 0 var(--portal-gold);
         }
 
+        .portal-nav-label {
+            margin: 24px 13px 6px;
+            font-size: 10px;
+            letter-spacing: .14em;
+            text-transform: uppercase;
+            color: #8b8178;
+        }
+
+        .portal-nav-secondary {
+            margin-top: 0;
+        }
+
+        .portal-nav-secondary button {
+            font-size: 14px;
+            color: #a99f96;
+        }
+
+        .portal-bell {
+            position: relative;
+            border: 1px solid var(--portal-line);
+            background: #fff;
+            color: var(--portal-muted);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 16px;
+            display: grid;
+            place-items: center;
+        }
+
+        .portal-bell:hover {
+            border-color: var(--portal-gold);
+            color: var(--portal-ink);
+        }
+
+        .portal-bell .portal-badge {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            background: var(--portal-gold);
+            color: #fff;
+            padding: 1px 6px;
+            font-size: 10px;
+            font-weight: 700;
+        }
+
         .portal-sidebar .portal-logout {
             margin-top: auto;
             color: #e6b2a6;
@@ -229,6 +276,65 @@
 
         .portal-card-full {
             grid-column: 1/-1;
+        }
+
+        .portal-quick-grid {
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            margin-bottom: 16px;
+        }
+
+        .portal-quick {
+            display: grid;
+            gap: 6px;
+            justify-items: start;
+            text-align: left;
+            border: 1px solid var(--portal-line);
+            background: var(--portal-white);
+            border-radius: 7px;
+            padding: 20px;
+            cursor: pointer;
+            font: inherit;
+            color: var(--portal-ink);
+            transition: border-color .15s, box-shadow .15s;
+        }
+
+        .portal-quick:hover {
+            border-color: var(--portal-gold);
+            box-shadow: 0 6px 20px #17131014;
+        }
+
+        .portal-quick strong {
+            font: 600 17px Georgia, serif;
+        }
+
+        .portal-quick-icon {
+            font-size: 22px;
+            line-height: 1;
+        }
+
+        .portal-course-grid {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        .portal-course-card {
+            display: grid;
+            gap: 8px;
+            align-content: start;
+        }
+
+        .portal-course-card h3 {
+            margin: 0;
+            font: 600 19px Georgia, serif;
+        }
+
+        .portal-course-card .portal-button {
+            justify-self: start;
+            margin-top: 6px;
+        }
+
+        .portal-elearning-detail {
+            display: grid;
+            gap: 16px;
         }
 
         .portal-list {
@@ -481,6 +587,12 @@
             font-size: 14px;
         }
 
+        .portal-login-links {
+            margin-top: 16px;
+            display: grid;
+            gap: 10px;
+        }
+
         .portal-reset {
             text-align: right;
             margin-top: 4px;
@@ -492,6 +604,23 @@
             color: #89652e;
             cursor: pointer;
             padding: 0;
+        }
+
+        .portal-applicant {
+            margin: 0;
+            font-size: 13px;
+            color: var(--portal-muted);
+            text-align: center;
+        }
+
+        .portal-applicant a {
+            color: var(--portal-gold);
+            font-weight: 700;
+            text-decoration: none;
+        }
+
+        .portal-applicant a:hover {
+            text-decoration: underline;
         }
 
         .portal-mobile-toggle {
@@ -586,16 +715,19 @@
                 <div><strong>FEWA</strong><span>BEAUTY &amp; FASHION COLLEGE</span></div>
             </div>
             <h1 id="login-title">Student Portal</h1>
-            <p>Sign in with your FEWA student account to access your private academic records.</p>
+            <p>Access your academic information, learning materials and student services.</p>
             <form id="login-form" class="portal-form">
-                <label for="login-email">Email address</label><input id="login-email" type="email"
+                <label for="login-email">Student Email</label><input id="login-email" type="email"
                     autocomplete="username" required>
                 <label for="login-password">Password</label><input id="login-password" type="password"
                     autocomplete="current-password" required>
                 <button class="portal-button" type="submit" id="login-button">Sign in</button>
                 <p id="login-message" class="portal-message" role="alert"></p>
             </form>
-            <div class="portal-reset"><button type="button" id="reset-button">Forgot password?</button></div>
+            <div class="portal-login-links">
+                <div class="portal-reset"><button type="button" id="reset-button">Forgot password?</button></div>
+                <p class="portal-applicant">New applicant? <a href="apply.html">Apply for Admission</a></p>
+            </div>
         </section>
     </div>
     <div id="app-screen" class="portal-shell" hidden>
@@ -605,18 +737,19 @@
             </div>
             <nav class="portal-nav" aria-label="Student portal navigation">
                 <button class="active" data-view="dashboard"><i class="fa-solid fa-grid-2"></i> Dashboard</button>
-                <button data-view="profile"><i class="fa-solid fa-user"></i> My Profile</button>
-                <button data-view="course"><i class="fa-solid fa-book-open"></i> My Course</button>
-                <button data-view="results"><i class="fa-solid fa-chart-line"></i> Results</button>
+                <button data-view="elearning"><i class="fa-solid fa-book-open"></i> E-Learning</button>
                 <button data-view="timetable"><i class="fa-solid fa-calendar-days"></i> Timetable</button>
-                <button data-view="fees"><i class="fa-solid fa-receipt"></i> Fees &amp; Payments</button>
-                <button data-view="assignments"><i class="fa-solid fa-list-check"></i> Assignments</button>
-                <button data-view="attendance"><i class="fa-solid fa-user-check"></i> Attendance</button>
+                <button data-view="results"><i class="fa-solid fa-chart-line"></i> Results</button>
+                <button data-view="fees"><i class="fa-solid fa-receipt"></i> Fees</button>
+                <button data-view="profile"><i class="fa-solid fa-user"></i> My Profile</button>
+            </nav>
+            <p class="portal-nav-label">More</p>
+            <nav class="portal-nav portal-nav-secondary" aria-label="More student services">
                 <button data-view="announcements"><i class="fa-solid fa-bullhorn"></i> Announcements</button>
-                <button data-view="notifications"><i class="fa-solid fa-bell"></i> Notifications <span
-                        id="notification-count" class="portal-badge" hidden>0</span></button>
                 <button data-view="messages"><i class="fa-solid fa-message"></i> Messages</button>
                 <button data-view="documents"><i class="fa-solid fa-folder-open"></i> Documents</button>
+                <button data-view="attendance"><i class="fa-solid fa-user-check"></i> Attendance</button>
+                <button data-view="course"><i class="fa-solid fa-graduation-cap"></i> My Course</button>
                 <button data-view="settings"><i class="fa-solid fa-gear"></i> Settings</button>
             </nav>
             <button id="logout-button" class="portal-nav portal-logout"><i
@@ -629,6 +762,9 @@
                     <h1 id="view-title">Dashboard</h1>
                 </div>
                 <div class="portal-user">
+                    <button class="portal-bell" id="notifications-bell" type="button" aria-label="Notifications">
+                        <i class="fa-solid fa-bell"></i><span id="notification-count" class="portal-badge" hidden>0</span>
+                    </button>
                     <div id="top-name">Student</div>
                     <div class="portal-avatar" id="top-avatar">S</div>
                 </div>
@@ -636,10 +772,32 @@
             <div class="portal-content">
                 <section class="portal-view active" id="view-dashboard">
                     <div class="portal-hero">
-                        <div><span class="portal-kicker">Student dashboard</span>
-                            <h2>Welcome, <span id="welcome-name">Student</span></h2>
+                        <div><span class="portal-kicker">Welcome back</span>
+                            <h2>Welcome back, <span id="welcome-name">Student</span></h2>
                             <p id="welcome-detail">Your FEWA academic overview.</p>
                         </div><a class="portal-button" href="contact.html">Contact support</a>
+                    </div>
+                    <div class="portal-grid portal-quick-grid">
+                        <button class="portal-card portal-quick" data-view="elearning" type="button">
+                            <span class="portal-quick-icon" aria-hidden="true">📚</span>
+                            <strong>E-Learning</strong><span class="portal-muted">Continue your courses</span>
+                        </button>
+                        <button class="portal-card portal-quick" data-view="timetable" type="button">
+                            <span class="portal-quick-icon" aria-hidden="true">📅</span>
+                            <strong>Timetable</strong><span class="portal-muted">View your classes</span>
+                        </button>
+                        <button class="portal-card portal-quick" data-view="results" type="button">
+                            <span class="portal-quick-icon" aria-hidden="true">📝</span>
+                            <strong>Results</strong><span class="portal-muted">Examination results</span>
+                        </button>
+                        <button class="portal-card portal-quick" data-view="fees" type="button">
+                            <span class="portal-quick-icon" aria-hidden="true">💰</span>
+                            <strong>Fees</strong><span class="portal-muted">Fee information</span>
+                        </button>
+                        <button class="portal-card portal-quick" data-view="profile" type="button">
+                            <span class="portal-quick-icon" aria-hidden="true">👤</span>
+                            <strong>Profile</strong><span class="portal-muted">Manage your profile</span>
+                        </button>
                     </div>
                     <div class="portal-grid">
                         <div class="portal-card portal-stat"><span>Programme</span><strong id="stat-programme">Not
@@ -661,6 +819,47 @@
                             <div id="dashboard-timetable" class="portal-list">
                                 <div class="portal-empty">No timetable has been published yet.</div>
                             </div>
+                        </div>
+                    </div>
+                </section>
+                <section class="portal-view" id="view-elearning">
+                    <div class="portal-hero">
+                        <div><span class="portal-kicker">E-Learning</span>
+                            <h2>Welcome, <span id="elearning-name">Student</span></h2>
+                            <p>Your courses, learning materials and assignments in one place.</p>
+                        </div>
+                    </div>
+                    <div id="elearning-courses-wrap">
+                        <div class="portal-section-heading">
+                            <h3>My Courses</h3>
+                        </div>
+                        <div id="elearning-courses" class="portal-grid portal-course-grid">
+                            <div class="portal-empty portal-card-full">No enrolled programme has been published for your
+                                account yet.</div>
+                        </div>
+                    </div>
+                    <div id="elearning-course-detail" class="portal-elearning-detail" hidden>
+                        <div class="portal-section-heading">
+                            <h3 id="elearning-course-title">Course</h3>
+                            <button class="portal-action" id="elearning-back" type="button">Back to My Courses</button>
+                        </div>
+                        <div class="portal-card portal-card-full">
+                            <h3>Learning materials</h3>
+                            <div id="materials-content" class="portal-empty">No learning materials have been published
+                                for this course yet.</div>
+                        </div>
+                        <div class="portal-card portal-card-full">
+                            <h3>Assignments</h3>
+                            <div class="portal-toolbar"><select id="assignment-filter" aria-label="Filter assignments">
+                                    <option value="all">All</option>
+                                    <option value="pending">Pending</option>
+                                    <option value="submitted">Submitted</option>
+                                    <option value="overdue">Overdue</option>
+                                    <option value="graded">Graded</option>
+                                </select></div>
+                            <div id="assignments-content" class="portal-empty">No assignments have been published for
+                                your account.</div>
+                            <div id="assignment-detail" class="portal-detail" hidden></div>
                         </div>
                     </div>
                 </section>
@@ -707,21 +906,6 @@
                         <h3>Fees &amp; payments</h3>
                         <div id="fees-content" class="portal-empty">No verified fee records have been published for your
                             account.</div>
-                    </div>
-                </section>
-                <section class="portal-view" id="view-assignments">
-                    <div class="portal-card portal-card-full">
-                        <h3>Assignments</h3>
-                        <div class="portal-toolbar"><select id="assignment-filter" aria-label="Filter assignments">
-                                <option value="all">All</option>
-                                <option value="pending">Pending</option>
-                                <option value="submitted">Submitted</option>
-                                <option value="overdue">Overdue</option>
-                                <option value="graded">Graded</option>
-                            </select></div>
-                        <div id="assignments-content" class="portal-empty">No assignments have been published for your
-                            account.</div>
-                        <div id="assignment-detail" class="portal-detail" hidden></div>
                     </div>
                 </section>
                 <section class="portal-view" id="view-attendance">
@@ -802,6 +986,7 @@
             let attendance = [];
             let notifications = [];
             let messages = [];
+            let materials = [];
             const validConfig = firebaseConfig && firebaseConfig.apiKey && firebaseConfig.appId && !String(firebaseConfig.apiKey).match(/^(YOUR_|REPLACE_)/) && !String(firebaseConfig.appId).match(/^(YOUR_|REPLACE_)/);
 
             function message(element, text, type) { element.textContent = text; element.className = 'portal-message' + (type ? ' ' + type : ''); }
@@ -820,10 +1005,11 @@
                 currentStudent = snapshot.exists ? snapshot.data() : {};
                 const student = currentStudent;
                 const name = student.fullName || user.displayName || user.email.split('@')[0];
-                text('welcome-name', name.split(' ')[0]); text('top-name', name); text('top-avatar', name.charAt(0).toUpperCase()); text('welcome-detail', student.studentId ? `Student ${student.studentId} | ${student.program || 'Programme not published'}` : 'Your FEWA academic overview.');
+                text('welcome-name', name.split(' ')[0]); text('elearning-name', name.split(' ')[0]); text('top-name', name); text('top-avatar', name.charAt(0).toUpperCase()); text('welcome-detail', student.studentId ? `Student ${student.studentId} | ${student.program || 'Programme not published'}` : 'Your FEWA academic overview.');
                 text('stat-programme', student.program || 'Not available'); text('stat-status', student.admissionStatus || 'Academic status unavailable');
                 document.getElementById('profile-name').value = name; document.getElementById('profile-student-id').value = student.studentId || 'Not available'; document.getElementById('profile-email').value = student.email || user.email || ''; document.getElementById('profile-phone').value = student.phone || ''; document.getElementById('profile-address').value = student.address || ''; document.getElementById('profile-emergency').value = student.emergencyContact || '';
                 text('course-content', student.program, 'Programme information has not been published for your account.');
+                renderElearningCourses();
                 await Promise.all([loadSubcollection('results'), loadSubcollection('timetable'), loadSubcollection('fees'), loadSubcollection('attendance'), loadSubcollection('notifications'), loadSubcollection('documents'), loadSubcollection('messages'), loadPublic('news')]);
                 await loadSharedAssignments();
                 await loadSubcollection('submissions');
@@ -836,6 +1022,12 @@
             function renderAssignments() { const target = document.getElementById('assignments-content'); const filter = document.getElementById('assignment-filter').value; const filtered = assignments.filter(record => filter === 'all' || assignmentStatus(record) === filter); if (!filtered.length) { target.className = 'portal-empty'; target.textContent = 'No assignments match this filter.'; return; } target.className = 'portal-list'; target.innerHTML = filtered.map(record => `<div class="portal-list-item"><span><strong>${escapeHtml(record.title || 'Untitled assignment')}</strong><br><span class="portal-muted">${escapeHtml(record.unit || record.module || 'Unit not specified')} | Due ${escapeHtml(record.dueDate || 'Not specified')}</span></span><span><span class="portal-badge">${escapeHtml(assignmentStatus(record))}</span> <button class="portal-action" data-assignment="${escapeHtml(record.id)}" type="button">Open</button></span></div>`).join(''); target.querySelectorAll('[data-assignment]').forEach(button => button.addEventListener('click', () => openAssignment(button.dataset.assignment))); }
             function openAssignment(id) { const record = assignments.find(item => item.id === id); const target = document.getElementById('assignment-detail'); if (!record) return; target.hidden = false; target.innerHTML = `<h4>${escapeHtml(record.title || 'Assignment')}</h4><p>${escapeHtml(record.description || 'No description provided.')}</p><p class="portal-muted">Trainer: ${escapeHtml(record.trainer || 'Not specified')} | Assigned: ${escapeHtml(record.assignedDate || 'Not specified')} | Due: ${escapeHtml(record.dueDate || 'Not specified')}</p><form id="submission-form"><label for="submission-file">Submit your work</label><input id="submission-file" type="file" accept=".pdf,.jpg,.jpeg,.png,.docx" required><button class="portal-button" type="submit">Upload submission</button><p id="submission-message" class="portal-message" role="status"></p></form>`; document.getElementById('submission-form').addEventListener('submit', event => submitAssignment(event, record)); }
             async function submitAssignment(event, assignment) { event.preventDefault(); const file = document.getElementById('submission-file').files[0]; const output = document.getElementById('submission-message'); if (!storage) { message(output, 'File submissions require Firebase Storage configuration.', 'error'); return; } if (!file || file.size > 10 * 1024 * 1024 || !/^(application\/pdf|image\/(jpeg|png)|application\/vnd\.openxmlformats-officedocument\.wordprocessingml\.document)$/.test(file.type)) { message(output, 'Choose a PDF, JPG, PNG, or DOCX file up to 10 MB.', 'error'); return; } const button = event.target.querySelector('button'); button.disabled = true; try { const path = `students/${currentUser.uid}/submissions/${assignment.id}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`; await storage.ref(path).put(file); await db.collection('students').doc(currentUser.uid).collection('submissions').doc(assignment.id).set({ assignmentId: assignment.id, studentUid: currentUser.uid, fileName: file.name, filePath: path, submittedAt: firebase.firestore.FieldValue.serverTimestamp(), status: 'Submitted' }, { merge: true }); message(output, 'Submission uploaded successfully.', 'success'); } catch (error) { message(output, 'Submission could not be uploaded. Please try again.', 'error'); } finally { button.disabled = false; } }
+            function renderElearningCourses() { const wrap = document.getElementById('elearning-courses'); const student = currentStudent || {}; if (!student.program) { wrap.innerHTML = '<div class="portal-empty portal-card-full">No enrolled programme has been published for your account yet.</div>'; return; } wrap.innerHTML = `<div class="portal-card portal-course-card"><span class="portal-kicker">Programme</span><h3>${escapeHtml(student.program)}</h3><p class="portal-muted">${escapeHtml(student.semester ? 'Semester: ' + student.semester : 'Your enrolled course')}</p><button class="portal-button" id="continue-learning" type="button">Continue Learning</button></div>`; const button = document.getElementById('continue-learning'); if (button) button.addEventListener('click', () => openCourse(student.program)); }
+            function openCourse(program) { document.getElementById('elearning-courses-wrap').hidden = true; document.getElementById('elearning-course-detail').hidden = false; text('elearning-course-title', program); renderAssignments(); loadMaterials(); }
+            function closeCourse() { document.getElementById('elearning-course-detail').hidden = true; document.getElementById('elearning-courses-wrap').hidden = false; }
+            async function loadMaterials() { const target = document.getElementById('materials-content'); try { const uid = currentUser.uid; const snapshots = await Promise.all([db.collection('learning_materials').where('public', '==', true).get(), db.collection('learning_materials').where('allowedUids', 'array-contains', uid).get()]); const unique = new Map(); snapshots.forEach(snapshot => snapshot.docs.forEach(doc => unique.set(doc.id, { id: doc.id, ...doc.data() }))); materials = [...unique.values()]; renderMaterials(); } catch (error) { materials = []; target.className = 'portal-empty'; target.textContent = 'Learning materials are not available right now.'; } }
+            function renderMaterials() { const target = document.getElementById('materials-content'); if (!materials.length) { target.className = 'portal-empty'; target.textContent = 'No learning materials have been published for this course yet.'; return; } target.className = 'portal-list'; target.innerHTML = materials.map(record => { const title = record.title || record.name || 'Learning material'; const type = record.type || record.category || 'Resource'; return `<div class="portal-list-item"><span><strong>${escapeHtml(title)}</strong><br><span class="portal-muted">${escapeHtml(type)}${record.trainer ? ' | ' + escapeHtml(record.trainer) : ''}</span></span><button class="portal-action" data-material="${escapeHtml(record.id)}" type="button">Open</button></div>`; }).join(''); target.querySelectorAll('[data-material]').forEach(button => button.addEventListener('click', () => openMaterial(button.dataset.material))); }
+            async function openMaterial(id) { const record = materials.find(item => item.id === id); if (!record) return; const link = record.url || record.link; if (link) { window.open(link, '_blank', 'noopener'); return; } if (record.filePath && storage) { try { const url = await storage.ref(record.filePath).getDownloadURL(); window.open(url, '_blank', 'noopener'); } catch (error) { } } }
             function renderAttendance() { const target = document.getElementById('attendance-content'); const semester = document.getElementById('attendance-semester').value; const unit = document.getElementById('attendance-unit').value; const records = attendance.filter(record => (semester === 'all' || record.semester === semester) && (unit === 'all' || (record.unit || record.module) === unit)); const present = records.filter(record => String(record.status).toLowerCase() === 'present').length; const late = records.filter(record => String(record.status).toLowerCase() === 'late').length; const missed = records.filter(record => String(record.status).toLowerCase() === 'absent').length; const percentage = records.length ? `${Math.round(((present + late) / records.length) * 100)}%` : 'Not available'; text('stat-attendance', percentage); document.getElementById('attendance-summary').innerHTML = [['Overall', percentage], ['Attended', present], ['Missed', missed], ['Late', late]].map(item => `<div class="portal-card portal-stat"><span>${item[0]}</span><strong>${escapeHtml(item[1])}</strong></div>`).join(''); if (!records.length) { target.className = 'portal-empty'; target.textContent = 'No attendance records match these filters.'; return; } target.className = 'portal-table-wrap'; renderTable(target, records, [{ key: 'date', label: 'Date' }, { key: 'unit', label: 'Unit' }, { key: 'status', label: 'Status' }, { key: 'trainer', label: 'Trainer' }]); }
             function populateAttendanceFilters() { const semesters = [...new Set(attendance.map(record => record.semester).filter(Boolean))]; const units = [...new Set(attendance.map(record => record.unit || record.module).filter(Boolean))]; document.getElementById('attendance-semester').innerHTML += semesters.map(value => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`).join(''); document.getElementById('attendance-unit').innerHTML += units.map(value => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`).join(''); }
             function renderNotifications() { const target = document.getElementById('notifications-content'); const unread = notifications.filter(record => !record.read).length; const badge = document.getElementById('notification-count'); badge.hidden = !unread; badge.textContent = unread; if (!notifications.length) { target.className = 'portal-empty'; target.textContent = 'No notifications have been published for your account.'; return; } target.className = 'portal-list'; target.innerHTML = notifications.map(record => `<div class="portal-list-item ${record.read ? '' : 'portal-unread'}"><span><strong>${escapeHtml(record.title || 'Notification')}</strong><br>${escapeHtml(record.message || '')}</span><span><span class="portal-muted">${escapeHtml(safeDate(record.createdAt))}</span>${record.read ? '' : ` <button class="portal-action" data-notification="${escapeHtml(record.id)}" type="button">Mark read</button>`}</span></div>`).join(''); target.querySelectorAll('[data-notification]').forEach(button => button.addEventListener('click', () => markNotification(button.dataset.notification))); }
@@ -844,9 +1036,12 @@
             function renderDocuments(records) { const target = document.getElementById('documents-content'); if (!records.length) return; target.className = 'portal-list'; target.innerHTML = records.map(record => `<div class="portal-list-item"><span><strong>${escapeHtml(record.name || record.title || 'Document')}</strong><br><span class="portal-muted">${escapeHtml(record.category || 'Academic document')} | ${escapeHtml(safeDate(record.createdAt || record.issuedAt))}</span></span><button class="portal-action" data-document="${escapeHtml(record.id)}" type="button">View</button></div>`).join(''); target.querySelectorAll('[data-document]').forEach(button => button.addEventListener('click', () => openDocument(button.dataset.document, records))); }
             async function openDocument(id, records) { const record = records.find(item => item.id === id); if (!record || !storage || !record.filePath) return; const url = await storage.ref(record.filePath).getDownloadURL(); window.open(url, '_blank', 'noopener'); }
             function renderMessages() { const target = document.getElementById('messages-content'); if (!messages.length) return; target.className = 'portal-list'; target.innerHTML = messages.map(record => `<div class="portal-list-item ${record.read ? '' : 'portal-unread'}"><span><strong>${escapeHtml(record.subject || 'Message')}</strong><br>${escapeHtml(record.body || record.message || '')}<br><span class="portal-muted">From ${escapeHtml(record.senderName || record.senderRole || 'FEWA staff')}</span></span><span><span class="portal-muted">${escapeHtml(safeDate(record.createdAt))}</span>${record.read ? '' : ` <button class="portal-action" data-message="${escapeHtml(record.id)}" type="button">Mark read</button>`}</span></div>`).join(''); target.querySelectorAll('[data-message]').forEach(button => button.addEventListener('click', async () => { await db.collection('students').doc(currentUser.uid).collection('messages').doc(button.dataset.message).update({ read: true, readAt: firebase.firestore.FieldValue.serverTimestamp() }); const record = messages.find(item => item.id === button.dataset.message); if (record) record.read = true; renderMessages(); })); }
-            function openView(view) { document.querySelectorAll('.portal-view').forEach(section => section.classList.toggle('active', section.id === `view-${view}`)); document.querySelectorAll('.portal-nav button[data-view]').forEach(button => button.classList.toggle('active', button.dataset.view === view)); text('view-title', view.charAt(0).toUpperCase() + view.slice(1)); document.getElementById('app-screen').classList.remove('menu-open'); }
+            function openView(view) { const titles = { dashboard: 'Dashboard', elearning: 'E-Learning', timetable: 'Timetable', results: 'Results', fees: 'Fees', profile: 'My Profile', course: 'My Course', attendance: 'Attendance', announcements: 'Announcements', notifications: 'Notifications', messages: 'Messages', documents: 'Documents', settings: 'Settings' }; document.querySelectorAll('.portal-view').forEach(section => section.classList.toggle('active', section.id === `view-${view}`)); document.querySelectorAll('.portal-nav button[data-view]').forEach(button => button.classList.toggle('active', button.dataset.view === view)); text('view-title', titles[view] || view.charAt(0).toUpperCase() + view.slice(1)); document.getElementById('app-screen').classList.remove('menu-open'); }
 
             document.querySelectorAll('.portal-nav button[data-view]').forEach(button => button.addEventListener('click', () => openView(button.dataset.view)));
+            document.querySelectorAll('.portal-quick[data-view]').forEach(button => button.addEventListener('click', () => openView(button.dataset.view)));
+            document.getElementById('notifications-bell').addEventListener('click', () => openView('notifications'));
+            document.getElementById('elearning-back').addEventListener('click', closeCourse);
             document.getElementById('assignment-filter').addEventListener('change', renderAssignments);
             document.getElementById('attendance-semester').addEventListener('change', renderAttendance);
             document.getElementById('attendance-unit').addEventListener('change', renderAttendance);
