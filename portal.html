@@ -587,6 +587,58 @@
             font-size: 14px;
         }
 
+        .portal-divider {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 18px 0;
+            color: var(--portal-muted);
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: .06em;
+        }
+
+        .portal-divider::before,
+        .portal-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--portal-line);
+        }
+
+        .portal-google-button {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 12px;
+            border: 1px solid var(--portal-line);
+            border-radius: 4px;
+            background: #fff;
+            color: var(--portal-ink);
+            font: inherit;
+            font-weight: 700;
+            cursor: pointer;
+            transition: border-color .15s, box-shadow .15s, background .15s;
+        }
+
+        .portal-google-button svg {
+            width: 18px;
+            height: 18px;
+            flex-shrink: 0;
+        }
+
+        .portal-google-button:hover {
+            border-color: var(--portal-gold);
+            background: #fcfaf7;
+        }
+
+        .portal-google-button:disabled {
+            opacity: .6;
+            cursor: wait;
+        }
+
         .portal-login-links {
             margin-top: 16px;
             display: grid;
@@ -724,6 +776,17 @@
                 <button class="portal-button" type="submit" id="login-button">Sign in</button>
                 <p id="login-message" class="portal-message" role="alert"></p>
             </form>
+            <div class="portal-divider"><span>or</span></div>
+            <button type="button" id="google-signin-button" class="portal-google-button">
+                <svg viewBox="0 0 48 48" aria-hidden="true" focusable="false">
+                    <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+                    <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.9-2.26 5.36-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+                    <path fill="#FBBC05" d="M10.53 28.59a14.5 14.5 0 0 1-.76-4.59c0-1.59.27-3.13.76-4.59l-7.98-6.19A23.94 23.94 0 0 0 0 24c0 3.87.92 7.53 2.56 10.78l7.97-6.19z"/>
+                    <path fill="#34A853" d="M24 48c6.48 0 11.92-2.14 15.89-5.82l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.97 6.19C6.51 42.62 14.62 48 24 48z"/>
+                </svg>
+                Sign in with Google
+            </button>
+            <p id="google-signin-message" class="portal-message" role="alert"></p>
             <div class="portal-login-links">
                 <div class="portal-reset"><button type="button" id="reset-button">Forgot password?</button></div>
                 <p class="portal-applicant">New applicant? <a href="apply.html">Apply for Admission</a></p>
@@ -982,6 +1045,7 @@
             let storage;
             let currentUser;
             let currentStudent;
+            let pendingGoogleCredential = null;
             let assignments = [];
             let attendance = [];
             let notifications = [];
@@ -1052,7 +1116,83 @@
             async function sendReset(element) { if (!currentUser) { message(element, 'Sign in before requesting a password reset.', 'error'); return; } try { await auth.sendPasswordResetEmail(currentUser.email); message(element, 'If an account exists for this email, a reset message has been sent.', 'success'); } catch (error) { message(element, 'If an account exists for this email, a reset message has been sent.', 'success'); } }
             document.getElementById('reset-button').addEventListener('click', async () => { const email = document.getElementById('login-email').value.trim(); if (!email || !validConfig) { message(loginMessage, 'Enter your account email and configure Firebase Authentication.', 'error'); return; } try { await auth.sendPasswordResetEmail(email); message(loginMessage, 'If an account exists for this email, a reset message has been sent.', 'success'); } catch (error) { message(loginMessage, 'If an account exists for this email, a reset message has been sent.', 'success'); } });
             document.getElementById('settings-reset').addEventListener('click', () => sendReset(document.getElementById('settings-message')));
-            loginForm.addEventListener('submit', async event => { event.preventDefault(); if (!validConfig) { message(loginMessage, 'Firebase Authentication is not configured. Add valid values to config.js.', 'error'); return; } const button = document.getElementById('login-button'); button.disabled = true; message(loginMessage, 'Signing in...', ''); try { await auth.signInWithEmailAndPassword(document.getElementById('login-email').value.trim(), document.getElementById('login-password').value); } catch (error) { message(loginMessage, 'Sign-in failed. Check your email and password.', 'error'); } finally { button.disabled = false; } });
+            const googleMessage = document.getElementById('google-signin-message');
+
+            // Standard Firebase "link accounts with the same email" flow. When Google sign-in
+            // reports auth/account-exists-with-different-credential, we hold onto the Google
+            // credential and guide the applicant to prove ownership with their existing password
+            // — once that succeeds, linkWithCredential() attaches Google to the SAME uid, so their
+            // existing students/{uid} record (and everything else keyed to that uid) is preserved.
+            async function startAccountLinking(error) {
+                const email = error.email;
+                pendingGoogleCredential = error.credential;
+                let methods = [];
+                try { methods = await auth.fetchSignInMethodsForEmail(email); } catch (lookupError) { methods = []; }
+
+                if (methods.length && !methods.includes('password')) {
+                    // This app only ever creates password-based accounts, so any other provider here is unexpected.
+                    pendingGoogleCredential = null;
+                    message(googleMessage, 'This email is already registered with a different sign-in method. Please use your original sign-in method.', 'error');
+                    return;
+                }
+
+                document.getElementById('login-email').value = email;
+                document.getElementById('login-password').value = '';
+                message(googleMessage, `An account already exists for ${email}. Enter your password below to securely link Google sign-in to it.`, '');
+                loginForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                document.getElementById('login-password').focus();
+            }
+
+            loginForm.addEventListener('submit', async event => {
+                event.preventDefault();
+                if (!validConfig) { message(loginMessage, 'Firebase Authentication is not configured. Add valid values to config.js.', 'error'); return; }
+                const button = document.getElementById('login-button');
+                const linking = Boolean(pendingGoogleCredential);
+                button.disabled = true;
+                message(loginMessage, linking ? 'Verifying your password to link Google sign-in...' : 'Signing in...', '');
+                try {
+                    const result = await auth.signInWithEmailAndPassword(document.getElementById('login-email').value.trim(), document.getElementById('login-password').value);
+                    document.getElementById('login-password').value = '';
+                    if (linking) {
+                        const credentialToLink = pendingGoogleCredential;
+                        pendingGoogleCredential = null;
+                        try {
+                            await result.user.linkWithCredential(credentialToLink);
+                            message(googleMessage, 'Google sign-in is now linked to your account. You can use either method next time.', 'success');
+                        } catch (linkError) {
+                            // Sign-in itself already succeeded, so the student can still continue.
+                            message(googleMessage, 'Signed in, but we could not link Google this time. You can keep using your email and password.', 'error');
+                        }
+                    }
+                    // Falls through to the existing auth.onAuthStateChanged listener below either way.
+                } catch (error) {
+                    message(loginMessage, 'Sign-in failed. Check your email and password.', 'error');
+                } finally {
+                    button.disabled = false;
+                }
+            });
+
+            document.getElementById('google-signin-button').addEventListener('click', async () => {
+                if (!validConfig) { message(googleMessage, 'Firebase Authentication is not configured. Add valid values to config.js.', 'error'); return; }
+                const button = document.getElementById('google-signin-button');
+                button.disabled = true; message(googleMessage, 'Opening Google sign-in...', '');
+                try {
+                    const provider = new firebase.auth.GoogleAuthProvider();
+                    await auth.signInWithPopup(provider);
+                    // Success falls through to the existing auth.onAuthStateChanged listener below,
+                    // which loads the student record and shows the app screen exactly as it does for email/password sign-in.
+                } catch (error) {
+                    if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
+                        message(googleMessage, '', '');
+                    } else if (error.code === 'auth/account-exists-with-different-credential') {
+                        await startAccountLinking(error);
+                    } else {
+                        message(googleMessage, 'Google sign-in failed. Please try again.', 'error');
+                    }
+                } finally {
+                    button.disabled = false;
+                }
+            });
             showLoading();
             if (validConfig && window.firebase) { try { if (!firebase.apps.length) firebase.initializeApp(firebaseConfig); auth = firebase.auth(); db = firebase.firestore(); storage = firebase.storage(); auth.onAuthStateChanged(user => user ? loadStudent(user).then(showApp).catch(() => showLogin('Your account is signed in, but student records could not be loaded.')) : showLogin()); } catch (error) { showLogin('Firebase could not be initialized. Check config.js.'); } } else { showLogin('Firebase Authentication is not configured.'); }
         })();

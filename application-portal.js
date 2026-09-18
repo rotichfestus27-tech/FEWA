@@ -4,12 +4,24 @@
     const form = document.getElementById('application-form');
     const steps = [...document.querySelectorAll('.application-step')];
     const progress = [...document.querySelectorAll('.progress-step')];
-    const authGate = document.getElementById('applicant-auth-gate');
+    const entry = document.getElementById('application-entry');
     const dashboard = document.getElementById('application-dashboard');
     const shell = document.getElementById('application-shell');
     const intro = document.querySelector('.application-intro');
+    const confirmationPanel = document.getElementById('confirmation');
     const authMessage = document.getElementById('applicant-auth-message');
     const formMessage = document.getElementById('form-message');
+    const startButton = document.getElementById('start-application-button');
+    const continueEntryButton = document.getElementById('continue-application-entry');
+    const continueHint = document.getElementById('continue-application-hint');
+    const entrySigninPanel = document.querySelector('.entry-signin-panel');
+    const secureOverlay = document.getElementById('secure-application-overlay');
+    const secureForm = document.getElementById('secure-application-form');
+    const secureMessage = document.getElementById('secure-application-message');
+    const secureEmailDisplay = document.getElementById('secure-application-email');
+    const secureCancelButton = document.getElementById('secure-application-cancel');
+    const shellSecurityText = document.getElementById('shell-security-text');
+    const shellSecureLink = document.getElementById('shell-secure-link');
     const config = window.FEWA_CONFIG?.firebase;
     const validConfig = config && config.apiKey && config.projectId && config.appId
         && !String(config.apiKey).match(/^(YOUR_|REPLACE_)/)
@@ -36,8 +48,9 @@
     };
 
     const showMessage = (element, text, type = '') => {
+        if (!element) return;
         element.textContent = text || '';
-        element.className = element.id === 'applicant-auth-message' ? `form-message ${type}` : `form-message ${type}`;
+        element.className = `form-message ${type}`;
     };
 
     const escapeHtml = (value) => String(value ?? '').replace(/[&<>'"]/g, (character) => ({
@@ -54,31 +67,56 @@
 
     const fieldLabel = (field) => field.closest('label')?.firstChild?.textContent?.replace(' *', '').trim() || field.name;
 
-    function setAccountMode(mode) {
-        document.querySelectorAll('[data-auth-mode]').forEach((button) => {
-            const active = button.dataset.authMode === mode;
-            button.classList.toggle('active', active);
-            button.setAttribute('aria-selected', String(active));
-        });
-        document.getElementById('applicant-register-form').hidden = mode !== 'register';
-        document.getElementById('applicant-signin-form').hidden = mode !== 'signin';
-        showMessage(authMessage, '');
+    function showEntry() {
+        entry.hidden = false;
+        dashboard.hidden = true;
+        shell.hidden = true;
+        intro.hidden = true;
+        if (confirmationPanel) confirmationPanel.hidden = true;
+        if (entrySigninPanel) entrySigninPanel.hidden = false;
+        document.title = 'Apply Online | FEWA Beauty & Fashion College';
+    }
+
+    function updateEntryContinueState() {
+        if (!continueHint) return;
+        if (currentUser && currentApplication) {
+            const step = currentApplication.progress?.currentStep || 1;
+            continueHint.hidden = false;
+            continueHint.textContent = currentApplication.status === 'Draft'
+                ? `You have an application in progress — step ${step} of ${steps.length}.`
+                : `Your application status: ${currentApplication.status}.`;
+        } else {
+            continueHint.hidden = true;
+            continueHint.textContent = '';
+        }
+    }
+
+    function updateSecurityBadge() {
+        if (!shellSecurityText || !shellSecureLink) return;
+        if (currentUser?.isAnonymous) {
+            shellSecurityText.textContent = 'Applying securely as a guest — your progress is private to this device.';
+            shellSecureLink.hidden = false;
+        } else if (currentUser) {
+            shellSecurityText.textContent = `Signed in securely as ${currentUser.email || 'your account'}.`;
+            shellSecureLink.hidden = true;
+        }
     }
 
     function showAuthenticatedExperience(user, application) {
         currentUser = user;
         currentApplication = application;
-        authGate.hidden = true;
+        entry.hidden = true;
         dashboard.hidden = false;
         shell.hidden = true;
         intro.hidden = true;
         document.title = 'Application Dashboard | FEWA Beauty & Fashion College';
-        document.getElementById('applicant-dashboard-name').textContent = application?.personalInformation?.firstName || user.displayName?.split(' ')[0] || user.email.split('@')[0];
+        document.getElementById('applicant-dashboard-name').textContent = application?.personalInformation?.firstName || user.displayName?.split(' ')[0] || (user.email ? user.email.split('@')[0] : 'Applicant');
         renderDashboard(application);
     }
 
     function showApplicationForm(step = currentApplication?.progress?.currentStep || 1) {
         currentStep = Math.min(Math.max(Number(step) || 1, 1), steps.length);
+        entry.hidden = true;
         dashboard.hidden = true;
         shell.hidden = false;
         intro.hidden = false;
@@ -87,6 +125,7 @@
         Object.entries(flattened).forEach(([key, value]) => { const field = form.elements[key]; if (field && field.type !== 'file') field.value = value || ''; });
         const program = form.elements.program?.value;
         if (program) document.getElementById('program-summary').innerHTML = `<strong>${escapeHtml(program)}</strong><br><span>${escapeHtml(programDetails[program] || '')}</span>`;
+        updateSecurityBadge();
         renderStep();
     }
 
@@ -263,17 +302,42 @@
             const draft = await ensureDraft();
             if (!storage) throw new Error('Secure document storage is unavailable. Please try again later.');
             await uploadDocuments(draft);
-            const payload = applicationPayload(values(), 'Submitted');
-            payload.submittedAt = firebase.firestore.FieldValue.serverTimestamp();
-            await db.collection('applications').doc(draft.id).set(payload, { merge: true });
+            // Persist the latest field values as a Draft first -- anonymous sessions are always
+            // permitted to save a Draft. The actual Draft -> Submitted transition (including
+            // validation and generating the applicant's backend account) is then performed
+            // server-side by the finalizeApplicationSubmission Cloud Function, using the Admin
+            // SDK, so applicants never need to create a password before submitting.
+            const draftPayload = applicationPayload(values(), 'Draft');
+            await db.collection('applications').doc(draft.id).set(draftPayload, { merge: true });
+            currentApplication = { ...currentApplication, ...draftPayload };
+
+            if (typeof firebase.functions !== 'function') throw new Error('Secure submission service is unavailable. Please try again later.');
+            const finalize = firebase.functions().httpsCallable('finalizeApplicationSubmission');
+            await finalize();
+
             document.getElementById('application-shell').hidden = true;
             document.getElementById('application-dashboard').hidden = true;
             document.getElementById('confirmation').hidden = false;
-            document.getElementById('application-number').textContent = payload.applicationNumber;
+            document.getElementById('application-number').textContent = currentApplication.applicationNumber;
         } catch (error) {
             showMessage(formMessage, error.message || 'We could not submit your application. Please try again.', 'error');
             button.disabled = false; submitting = false;
         }
+    }
+
+    function openSecurePanel() {
+        const email = values().email || currentApplication?.personalInformation?.email || '';
+        if (secureEmailDisplay) secureEmailDisplay.textContent = email || 'your email address';
+        showMessage(secureMessage, '');
+        if (secureForm) secureForm.reset();
+        if (secureOverlay) secureOverlay.hidden = false;
+        document.getElementById('secure-application-password')?.focus();
+    }
+
+    function closeSecurePanel() {
+        if (secureOverlay) secureOverlay.hidden = true;
+        if (secureForm) secureForm.reset();
+        showMessage(secureMessage, '');
     }
 
     async function authenticate() {
@@ -281,24 +345,72 @@
         if (!firebase.apps.length) firebase.initializeApp(config);
         auth = firebase.auth(); db = firebase.firestore(); storage = firebase.storage();
         auth.onAuthStateChanged(async (user) => {
-            if (!user) { authGate.hidden = false; dashboard.hidden = true; shell.hidden = true; intro.hidden = true; return; }
+            if (!user) {
+                currentUser = undefined;
+                currentApplication = undefined;
+                showEntry();
+                return;
+            }
             currentUser = user;
             currentApplication = await loadApplication(user);
-            showAuthenticatedExperience(user, currentApplication);
+            updateSecurityBadge();
+            if (currentApplication) {
+                showAuthenticatedExperience(user, currentApplication);
+            } else if (user.isAnonymous) {
+                showApplicationForm(1);
+            } else {
+                updateEntryContinueState();
+                showEntry();
+            }
         });
     }
 
-    document.querySelectorAll('[data-auth-mode]').forEach((button) => button.addEventListener('click', () => setAccountMode(button.dataset.authMode)));
-    document.getElementById('applicant-register-form').addEventListener('submit', async (event) => {
-        event.preventDefault();
-        const fullName = document.getElementById('applicant-full-name').value.trim(); const email = document.getElementById('applicant-auth-email').value.trim(); const phone = document.getElementById('applicant-phone').value.trim(); const password = document.getElementById('applicant-auth-password').value; const confirm = document.getElementById('applicant-confirm-password').value;
-        if (password !== confirm) return showMessage(authMessage, 'Passwords do not match.', 'error');
-        const button = document.getElementById('applicant-register-button'); button.disabled = true; showMessage(authMessage, 'Creating your secure applicant account...', 'loading');
-        try { const result = await auth.createUserWithEmailAndPassword(email, password); await result.user.updateProfile({ displayName: fullName }); currentUser = result.user; currentApplication = null; const draft = applicationPayload({ firstName: fullName.split(' ')[0], lastName: fullName.split(' ').slice(1).join(' '), email, phone }, 'Draft'); const reference = db.collection('applications').doc(result.user.uid); await reference.set({ ...draft, createdAt: firebase.firestore.FieldValue.serverTimestamp() }); currentApplication = { id: reference.id, ...draft }; showAuthenticatedExperience(result.user, currentApplication); } catch (error) { showMessage(authMessage, error.message || 'Account creation failed.', 'error'); button.disabled = false; }
+    startButton?.addEventListener('click', async () => {
+        if (!validConfig || !window.firebase) { showMessage(authMessage, 'Firebase Authentication is not configured. Add valid Firebase web settings to config.js.', 'error'); return; }
+        startButton.disabled = true;
+        try {
+            if (!auth.currentUser) {
+                const result = await auth.signInAnonymously();
+                currentUser = result.user;
+            } else {
+                currentUser = auth.currentUser;
+            }
+            currentApplication = await loadApplication(currentUser);
+            updateSecurityBadge();
+            showApplicationForm();
+        } catch (error) {
+            showMessage(authMessage, (error?.code === 'auth/operation-not-allowed' || error?.code === 'auth/admin-restricted-operation')
+                ? 'Guest applications are not enabled yet. Please contact FEWA admissions.'
+                : (error.message || 'We could not start your application. Please try again in a moment.'), 'error');
+        } finally {
+            startButton.disabled = false;
+        }
     });
+
+    continueEntryButton?.addEventListener('click', async () => {
+        if (auth?.currentUser) {
+            continueEntryButton.disabled = true;
+            try {
+                currentUser = auth.currentUser;
+                currentApplication = await loadApplication(currentUser);
+                updateSecurityBadge();
+                if (currentApplication) showAuthenticatedExperience(currentUser, currentApplication);
+                else showApplicationForm(1);
+            } finally {
+                continueEntryButton.disabled = false;
+            }
+        } else {
+            entrySigninPanel?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            document.getElementById('applicant-signin-email')?.focus();
+        }
+    });
+
     document.getElementById('applicant-signin-form').addEventListener('submit', async (event) => { event.preventDefault(); const button = document.getElementById('applicant-signin-button'); button.disabled = true; showMessage(authMessage, 'Signing you in...', 'loading'); try { await auth.signInWithEmailAndPassword(document.getElementById('applicant-signin-email').value.trim(), document.getElementById('applicant-signin-password').value); } catch (error) { showMessage(authMessage, error.message || 'Sign in failed.', 'error'); button.disabled = false; } });
     document.getElementById('applicant-reset-button').addEventListener('click', async () => { const email = document.getElementById('applicant-signin-email').value.trim(); if (!email) return showMessage(authMessage, 'Enter your email address first.', 'error'); try { await auth.sendPasswordResetEmail(email); } catch (error) { } showMessage(authMessage, 'If an account exists for that email, a password reset link has been sent.', 'success'); });
-    document.getElementById('applicant-logout').addEventListener('click', () => auth.signOut());
+    document.getElementById('applicant-logout').addEventListener('click', () => {
+        if (currentUser?.isAnonymous && !window.confirm('You have not secured your application with a password yet. If you sign out now on this device, you will not be able to access it again unless you sign back in. Sign out anyway?')) return;
+        auth.signOut();
+    });
     document.getElementById('continue-application').addEventListener('click', () => showApplicationForm());
     document.getElementById('view-application').addEventListener('click', () => showApplicationForm(6));
     document.getElementById('next-button').addEventListener('click', async () => { if (!validateStep(currentStep)) return; try { await saveDraft(false); currentStep++; await saveDraft(false); renderStep(); } catch (error) { showMessage(formMessage, error.message || 'Draft could not be saved.', 'error'); } });
@@ -307,5 +419,41 @@
     form.addEventListener('input', (event) => { if (event.target.name === 'program') document.getElementById('program-summary').innerHTML = event.target.value ? `<strong>${escapeHtml(event.target.value)}</strong><br><span>${escapeHtml(programDetails[event.target.value] || '')}</span>` : '<strong>Select a program to see its summary.</strong>'; if (event.target.type === 'file' && event.target.files[0]) event.target.closest('.upload-card').querySelector('.upload-status').textContent = event.target.files[0].name; });
     form.addEventListener('submit', (event) => { event.preventDefault(); submitApplication(); });
     progress.forEach((button, index) => button.addEventListener('click', () => { if (index + 1 < currentStep) { currentStep = index + 1; renderStep(); } }));
+
+    secureForm?.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const password = document.getElementById('secure-application-password').value;
+        const confirmPassword = document.getElementById('secure-application-confirm').value;
+        if (password !== confirmPassword) return showMessage(secureMessage, 'Passwords do not match.', 'error');
+        const email = secureEmailDisplay?.textContent?.trim();
+        if (!email || email === 'your email address') return showMessage(secureMessage, 'We could not find your email address. Please go back and complete Step 1 first.', 'error');
+        const button = document.getElementById('secure-application-button');
+        if (button) button.disabled = true;
+        showMessage(secureMessage, 'Securing your application...', 'loading');
+        try {
+            if (auth.currentUser && auth.currentUser.isAnonymous) {
+                const credential = firebase.auth.EmailAuthProvider.credential(email, password);
+                const result = await auth.currentUser.linkWithCredential(credential);
+                currentUser = result.user;
+            } else if (!auth.currentUser) {
+                const result = await auth.createUserWithEmailAndPassword(email, password);
+                currentUser = result.user;
+            }
+            await currentUser.getIdToken(true);
+            updateSecurityBadge();
+            closeSecurePanel();
+            showMessage(formMessage, 'Your application is now secured with a password.', 'success');
+        } catch (error) {
+            const inUse = error?.code === 'auth/email-already-in-use' || error?.code === 'auth/credential-already-in-use';
+            showMessage(secureMessage, inUse
+                ? 'An application already exists for this email. Sign out and sign in with that email to continue it instead.'
+                : (error.message || 'We could not secure your application. Please try again.'), 'error');
+        } finally {
+            if (button) button.disabled = false;
+        }
+    });
+    secureCancelButton?.addEventListener('click', closeSecurePanel);
+    shellSecureLink?.addEventListener('click', () => openSecurePanel());
+
     authenticate();
 })();

@@ -14,12 +14,26 @@
     <a href="index.html" class="portal-back-link"><i class="fas fa-arrow-left" aria-hidden="true"></i> Back to Home</a>
 </header>
 <main class="application-main">
-<section id="applicant-auth-gate" class="applicant-auth-gate" aria-labelledby="applicant-auth-title">
-    <div class="auth-gate-copy"><span class="section-tag"><i class="fas fa-lock" aria-hidden="true"></i> Secure admissions portal</span><h2 id="applicant-auth-title">Start your FEWA application</h2><p>Create an applicant account or sign in to save your progress, upload documents securely, and track your admission status.</p></div>
-    <div class="auth-panel">
-        <div class="auth-mode-tabs" role="tablist" aria-label="Applicant account access"><button type="button" class="auth-mode active" data-auth-mode="register" role="tab" aria-selected="true">New applicant</button><button type="button" class="auth-mode" data-auth-mode="signin" role="tab" aria-selected="false">Returning applicant</button></div>
-        <form id="applicant-register-form" class="auth-form"><label>Full name<input id="applicant-full-name" type="text" autocomplete="name" required></label><label>Email address<input id="applicant-auth-email" type="email" autocomplete="email" required></label><label>Phone number<input id="applicant-phone" type="tel" autocomplete="tel" required></label><label>Password<input id="applicant-auth-password" type="password" autocomplete="new-password" minlength="6" required></label><label>Confirm password<input id="applicant-confirm-password" type="password" autocomplete="new-password" minlength="6" required></label><button type="submit" class="btn btn-primary btn-block" id="applicant-register-button">Create Application Account <i class="fas fa-arrow-right" aria-hidden="true"></i></button></form>
-        <form id="applicant-signin-form" class="auth-form" hidden><label>Email address<input id="applicant-signin-email" type="email" autocomplete="email" required></label><label>Password<input id="applicant-signin-password" type="password" autocomplete="current-password" required></label><button type="submit" class="btn btn-primary btn-block" id="applicant-signin-button">Sign In <i class="fas fa-arrow-right" aria-hidden="true"></i></button><button type="button" class="auth-reset-link" id="applicant-reset-button">Forgot password?</button></form>
+<section id="application-entry" class="applicant-auth-gate application-entry" aria-labelledby="application-entry-title">
+    <div class="auth-gate-copy entry-copy">
+        <span class="section-tag"><i class="fas fa-graduation-cap" aria-hidden="true"></i> Admissions 2026</span>
+        <h2 id="application-entry-title">Start Your FEWA Journey</h2>
+        <p>Your application is completed in six simple, guided steps — personal details, education, your program choice, documents, additional information and a final review. Save your progress at any time and pick up exactly where you left off.</p>
+        <div class="entry-actions">
+            <button type="button" id="start-application-button" class="btn btn-hero-primary">Start Application <i class="fas fa-arrow-right" aria-hidden="true"></i></button>
+            <button type="button" id="continue-application-entry" class="btn btn-hero-secondary"><i class="fas fa-rotate-right" aria-hidden="true"></i> Continue Application</button>
+        </div>
+        <p id="continue-application-hint" class="entry-hint" hidden></p>
+        <div class="auth-gate-points entry-trust">
+            <span><i class="fas fa-shield-halved" aria-hidden="true"></i> Secure &amp; encrypted</span>
+            <span><i class="fas fa-floppy-disk" aria-hidden="true"></i> Saves your progress automatically</span>
+            <span><i class="fas fa-clock" aria-hidden="true"></i> Takes about 15 minutes</span>
+        </div>
+    </div>
+    <div class="auth-panel entry-signin-panel">
+        <span class="entry-signin-label"><i class="fas fa-user-check" aria-hidden="true"></i> Returning applicant?</span>
+        <p class="entry-signin-copy">Sign in to securely continue an application you've already started on another device.</p>
+        <form id="applicant-signin-form" class="auth-form"><label>Email address<input id="applicant-signin-email" type="email" autocomplete="email" required></label><label>Password<input id="applicant-signin-password" type="password" autocomplete="current-password" required></label><button type="submit" class="btn btn-primary btn-block" id="applicant-signin-button">Sign In <i class="fas fa-arrow-right" aria-hidden="true"></i></button><button type="button" class="auth-reset-link" id="applicant-reset-button">Forgot password?</button></form>
         <p id="applicant-auth-message" class="form-message" role="alert" aria-live="polite"></p>
     </div>
 </section>
@@ -30,6 +44,7 @@
 <section class="application-intro" hidden><span class="section-tag">Admissions 2026</span><h2>Build your FEWA future</h2><p>Complete your application in stages. You can save your progress and return before submitting.</p></section>
 <section id="application-shell" class="application-shell" aria-label="FEWA application form" hidden>
     <div class="application-progress-heading"><span>Your application journey</span><small>Complete each section to continue</small></div>
+    <div class="shell-security-status" id="shell-security-status"><i class="fas fa-shield-halved" aria-hidden="true"></i><span id="shell-security-text">Applying securely as a guest.</span><button type="button" id="shell-secure-link" class="shell-secure-link">Secure your application</button></div>
     <nav class="application-progress" aria-label="Application progress"><button type="button" class="progress-step active" data-progress="1"><span>1</span><b>Personal</b></button><button type="button" class="progress-step" data-progress="2"><span>2</span><b>Education</b></button><button type="button" class="progress-step" data-progress="3"><span>3</span><b>Program</b></button><button type="button" class="progress-step" data-progress="4"><span>4</span><b>Documents</b></button><button type="button" class="progress-step" data-progress="5"><span>5</span><b>Additional</b></button><button type="button" class="progress-step" data-progress="6"><span>6</span><b>Review</b></button></nav>
     <form id="application-form" novalidate>
         <div class="application-step active" data-step="1"><div class="step-heading"><span>Step 1 of 6</span><h3>Personal information</h3><p>Tell us how to reach you and who to contact in an emergency.</p></div><div class="form-grid"><label>First name *<input name="firstName" required autocomplete="given-name"></label><label>Middle name<input name="middleName" autocomplete="additional-name"></label><label>Last name *<input name="lastName" required autocomplete="family-name"></label><label>Date of birth *<input name="dateOfBirth" type="date" required></label><label>Gender *<select name="gender" required><option value="">Select gender</option><option>Female</option><option>Male</option><option>Prefer not to say</option></select></label><label>Nationality *<input name="nationality" value="Kenyan" required></label><label>National ID / Passport number *<input name="identityNumber" required></label><label>Phone number *<input name="phone" type="tel" pattern="[0-9+ ()-]{7,32}" required autocomplete="tel"></label><label>Alternative phone<input name="alternativePhone" type="tel" pattern="[0-9+ ()-]{7,32}"></label><label>Email address *<input name="email" type="email" required autocomplete="email"></label><label>County *<input name="county" required></label><label>Town / City *<input name="town" required></label><label class="form-span-2">Physical address *<input name="address" required></label><label>Emergency contact name *<input name="emergencyName" required></label><label>Emergency contact phone *<input name="emergencyPhone" type="tel" pattern="[0-9+ ()-]{7,32}" required></label><label>Relationship to emergency contact *<input name="emergencyRelationship" required></label></div></div>
@@ -42,7 +57,20 @@
     </form>
 </section>
 <section id="confirmation" class="confirmation-panel" hidden><span class="confirmation-icon"><i class="fas fa-check"></i></span><span class="section-tag">Application received</span><h2>Application submitted successfully</h2><p>Your application has been received by FEWA Beauty &amp; Fashion College.</p><p>Application number: <strong id="application-number"></strong></p><p>Status: <strong>Submitted</strong></p><p>Our admissions team will be in touch with your next steps.</p><button type="button" id="print-summary" class="btn btn-primary" onclick="window.print()">Print Application Summary</button><a href="index.html" class="btn btn-ghost">Go to Home</a></section>
+<div id="secure-application-overlay" class="secure-application-overlay" hidden>
+    <div class="secure-application-panel" role="dialog" aria-modal="true" aria-labelledby="secure-application-title">
+        <span class="section-tag"><i class="fas fa-lock" aria-hidden="true"></i> Secure your application</span>
+        <h3 id="secure-application-title">Create a password to continue</h3>
+        <p>You're applying as <strong id="secure-application-email">—</strong>. Choose a password so you can finish submitting now, and securely sign back in to this exact application from any device later.</p>
+        <form id="secure-application-form" class="auth-form">
+            <label>Password<input id="secure-application-password" type="password" autocomplete="new-password" minlength="6" required></label>
+            <label>Confirm password<input id="secure-application-confirm" type="password" autocomplete="new-password" minlength="6" required></label>
+            <div class="secure-application-actions"><button type="button" id="secure-application-cancel" class="btn btn-ghost">Maybe later</button><button type="submit" id="secure-application-button" class="btn btn-primary">Secure My Application <i class="fas fa-arrow-right" aria-hidden="true"></i></button></div>
+        </form>
+        <p id="secure-application-message" class="form-message" role="alert" aria-live="polite"></p>
+    </div>
+</div>
 </main>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script><script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-storage-compat.js"></script><script src="config.js"></script><script src="application-portal.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script><script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-storage-compat.js"></script><script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-functions-compat.js"></script><script src="config.js"></script><script src="application-portal.js"></script>
 </body>
 </html>

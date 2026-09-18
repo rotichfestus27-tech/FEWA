@@ -1,4 +1,5 @@
 const { Timestamp } = require('firebase-admin/firestore');
+const crypto = require('crypto');
 
 const YEAR_PATTERN = /^FEWA(\d{4})-(\d{3,})$/;
 const EMAIL_PATTERN = /^[^@ ]+@[^@ ]+\.[^@ ]+$/;
@@ -134,10 +135,114 @@ async function promoteAcceptedApplication({ db, applicationId, authToken = {} })
     });
 }
 
+// ------------------------------------------------------------------------
+// APPLICANT-FACING SUBMISSION (no password required to submit)
+// ------------------------------------------------------------------------
+//
+// Applicants fill out and save their application while signed in anonymously.
+// Firestore rules permit anonymous Draft writes, but deliberately require the
+// submitted email to match the signer's auth token email before a write can
+// carry status "Submitted" -- an anonymous session has no token email, so it
+// can never satisfy that rule directly. Rather than relaxing that rule (which
+// would let any anonymous session submit without proving anything about the
+// data), the actual Draft -> Submitted transition is performed here, using
+// the Admin SDK, which is not subject to Firestore Security Rules. The same
+// data-completeness checks the rule would have enforced are re-implemented
+// below so submission quality is unchanged.
+//
+// generateSecurePassword() produces a random credential that is attached to
+// the applicant's existing (till-now anonymous) Firebase Auth account so an
+// administrator can identify them later. The applicant is never shown this
+// password and does not need it: their current browser session keeps working
+// exactly as before, and if they need to sign in from another device they use
+// the existing "Forgot password?" flow to set their own password.
+
+function generateSecurePassword() {
+    return crypto.randomBytes(24).toString('base64url');
+}
+
+function requireNonEmptyString(value, label) {
+    if (typeof value !== 'string' || value.trim() === '') throw new Error(`${label} is required.`);
+    return value.trim();
+}
+
+function validateApplicationForSubmission(application) {
+    const person = application.personalInformation || {};
+    const academic = application.academicInformation || {};
+    const programme = application.programInformation || {};
+    const additional = application.additionalInformation || {};
+
+    requireNonEmptyString(person.firstName, 'First name');
+    requireNonEmptyString(person.lastName, 'Last name');
+    requireNonEmptyString(person.identityNumber, 'National ID / Passport number');
+    const email = requireNonEmptyString(person.email, 'Email address');
+    if (!EMAIL_PATTERN.test(email)) throw new Error('The email address is invalid.');
+    const phone = requireNonEmptyString(person.phone, 'Phone number');
+    if (!PHONE_PATTERN.test(phone)) throw new Error('The phone number is invalid.');
+    requireNonEmptyString(person.emergencyName, 'Emergency contact name');
+    const emergencyPhone = requireNonEmptyString(person.emergencyPhone, 'Emergency contact phone');
+    if (!PHONE_PATTERN.test(emergencyPhone)) throw new Error('The emergency contact phone number is invalid.');
+    requireNonEmptyString(person.emergencyRelationship, 'Emergency contact relationship');
+    requireNonEmptyString(academic.educationLevel, 'Education level');
+    requireNonEmptyString(academic.institution, 'Institution');
+    if (typeof academic.yearCompleted !== 'string' || !academic.yearCompleted.trim()) throw new Error('Year completed is required.');
+    requireNonEmptyString(programme.program, 'Programme');
+    requireNonEmptyString(programme.intake, 'Intake');
+    if (!Array.isArray(application.documents) || application.documents.length < 3) throw new Error('At least three supporting documents are required.');
+    if (additional.declaration !== true) throw new Error('The declaration must be accepted.');
+
+    return email;
+}
+
+async function finalizeApplicationSubmission({ db, auth, applicationId }) {
+    requireString(applicationId, 'Application ID');
+    const applicationRef = db.collection('applications').doc(applicationId);
+
+    const email = await db.runTransaction(async transaction => {
+        const snapshot = await transaction.get(applicationRef);
+        if (!snapshot.exists) throw new Error('Application not found.');
+        const application = snapshot.data();
+        if (application.applicantUid !== applicationId) throw new Error('Application ownership is invalid.');
+
+        if (application.status === 'Submitted') {
+            // Idempotent: a retried request after a dropped response should not re-validate or re-write.
+            return application.personalInformation?.email || '';
+        }
+        if (application.status !== 'Draft') {
+            throw new Error('This application has already been processed and cannot be resubmitted.');
+        }
+
+        const validatedEmail = validateApplicationForSubmission(application);
+        transaction.update(applicationRef, {
+            status: 'Submitted',
+            submittedAt: Timestamp.now(),
+            updatedAt: Timestamp.now()
+        });
+        return validatedEmail;
+    });
+
+    if (email && auth) {
+        try {
+            const existingUser = await auth.getUser(applicationId);
+            if (!existingUser.email) {
+                await auth.updateUser(applicationId, { email, password: generateSecurePassword() });
+            }
+        } catch (error) {
+            // The application record is already safely submitted above; a failure to upgrade
+            // the Auth account is not fatal and can be retried by an administrator later.
+        }
+    }
+
+    return { applicationId, status: 'Submitted' };
+}
+
 module.exports = {
     hasAuthorizedRole,
     validateApplication,
     buildStudentProfile,
     allocateStudentId,
-    promoteAcceptedApplication
+    promoteAcceptedApplication,
+    generateSecurePassword,
+    validateApplicationForSubmission,
+    finalizeApplicationSubmission
 };

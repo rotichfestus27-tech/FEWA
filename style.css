@@ -2056,6 +2056,194 @@ h4 {
     font-size: 0.74rem;
 }
 
+/* ==========================================================================
+   FORM / STATUS MESSAGES (shared by every application step)
+   ========================================================================== */
+
+.form-message {
+    min-height: 20px;
+    margin: 14px 0 0;
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+    font-weight: 600;
+}
+
+.form-message:empty {
+    margin: 0;
+}
+
+.form-message.error {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    border-radius: var(--radius-sm);
+    color: #8c2f26;
+    background: #fbebe9;
+    border: 1px solid #f0c9c5;
+}
+
+.form-message.error::before {
+    content: '\f06a';
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900;
+}
+
+.form-message.success {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    border-radius: var(--radius-sm);
+    color: #205c39;
+    background: #e9f5ee;
+    border: 1px solid #bfe3cd;
+}
+
+.form-message.success::before {
+    content: '\f058';
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900;
+}
+
+.form-message.loading {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--purple-medium);
+    font-style: italic;
+}
+
+/* ==========================================================================
+   APPLICATION ENTRY (LANDING) SCREEN
+   ========================================================================== */
+
+.entry-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    margin-top: 28px;
+}
+
+.entry-hint {
+    margin: 14px 0 0;
+    color: var(--gold-light);
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+.entry-trust {
+    justify-content: flex-start;
+}
+
+.entry-signin-panel .entry-signin-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--purple-deep);
+    font-size: 0.85rem;
+    font-weight: 800;
+    margin-bottom: 6px;
+}
+
+.entry-signin-panel .entry-signin-copy {
+    color: var(--text-secondary);
+    font-size: 0.78rem;
+    line-height: 1.6;
+    margin-bottom: 18px;
+}
+
+/* ==========================================================================
+   APPLICATION SHELL SECURITY STATUS
+   ========================================================================== */
+
+.shell-security-status {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 9px;
+    margin: 14px 0 22px;
+    padding: 11px 16px;
+    border-radius: var(--radius-sm);
+    background: var(--purple-soft);
+    color: var(--purple-medium);
+    font-size: 0.78rem;
+    font-weight: 600;
+}
+
+.shell-security-status i {
+    color: var(--gold-dark);
+}
+
+.shell-secure-link {
+    margin-left: auto;
+    border: 0;
+    padding: 0;
+    background: none;
+    color: var(--purple-primary);
+    font-weight: 700;
+    font-size: 0.76rem;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.shell-secure-link[hidden] {
+    display: none;
+}
+
+/* ==========================================================================
+   SECURE-APPLICATION OVERLAY
+   ========================================================================== */
+
+.secure-application-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    display: grid;
+    place-items: center;
+    padding: 20px;
+    background: rgba(20, 0, 28, 0.6);
+    backdrop-filter: blur(3px);
+}
+
+.secure-application-panel {
+    width: min(100%, 440px);
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 34px;
+    border-radius: 18px;
+    background: var(--white);
+    box-shadow: var(--shadow-lg);
+}
+
+.secure-application-panel h3 {
+    margin: 10px 0 12px;
+    font-size: 1.4rem;
+}
+
+.secure-application-panel > p {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    line-height: 1.6;
+    margin-bottom: 20px;
+}
+
+.secure-application-panel .form-message {
+    min-height: 20px;
+    margin: 13px 0 0;
+    font-size: 0.74rem;
+}
+
+.secure-application-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 6px;
+}
+
+.secure-application-actions .btn {
+    flex: 1;
+}
+
 .application-dashboard {
     max-width: 1120px;
     margin: 42px auto 48px;
@@ -2731,6 +2919,16 @@ h4 {
         grid-column: span 2;
         grid-row: span 1;
     }
+
+    .applicant-auth-gate {
+        grid-template-columns: 1fr;
+        gap: 34px;
+        padding: 40px 34px;
+    }
+
+    .entry-signin-panel {
+        max-width: 480px;
+    }
 }
 
 @media (max-width: 600px) {
@@ -2957,6 +3155,33 @@ h4 {
 
     .confirmation-panel h2 {
         font-size: 1.9rem;
+    }
+
+    .entry-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .entry-actions .btn {
+        width: 100%;
+    }
+
+    .shell-security-status {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
+    }
+
+    .shell-secure-link {
+        margin-left: 0;
+    }
+
+    .secure-application-panel {
+        padding: 26px 20px;
+    }
+
+    .secure-application-actions {
+        flex-direction: column;
     }
 }
 

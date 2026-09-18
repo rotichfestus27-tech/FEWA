@@ -7,7 +7,26 @@
         "ignore": [
             "firebase.json",
             "**/.*",
-            "**/node_modules/**"
+            "**/node_modules/**",
+            "firestore.rules",
+            "firestore.indexes.json",
+            "storage.rules",
+            "functions/**",
+            "server/**",
+            "test/**",
+            "scripts/README.md",
+            "scripts/roles.md",
+            "scripts/seed_students.js",
+            "scripts/seed_students.json",
+            "package.json",
+            "package-lock.json",
+            "README.md",
+            "README_TESTS.md",
+            "mockup.html",
+            "rules_playground_tests.json",
+            "**/*.log",
+            "*-test-output.txt",
+            "*-test-error.txt"
         ],
         "cleanUrls": true,
         "rewrites": [
@@ -24,6 +43,9 @@
     "firestore": {
         "rules": "firestore.rules",
         "indexes": "firestore.indexes.json"
+    },
+    "storage": {
+        "rules": "storage.rules"
     },
     "emulators": {
         "singleProjectMode": false,
