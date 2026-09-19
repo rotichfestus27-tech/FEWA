@@ -6,71 +6,622 @@
     <meta name="description" content="FEWA authorized administration portal">
     <title>Admin Portal | FEWA Beauty &amp; Fashion College</title>
     <link rel="stylesheet" href="style.css?v=20260820-luxury">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        .admin-page { min-height: 100vh; background: #f8f5f0; color: #211f1d; padding: 32px; }
-        .admin-shell { max-width: 1280px; margin: auto; }
-        .admin-header, .admin-toolbar, .admin-card, .admin-login { background: #fff; border: 1px solid #e7dfd6; padding: 24px; margin-bottom: 18px; }
-        .admin-header { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
-        .admin-header h1, .admin-login h1 { margin: 0 0 6px; font-family: Georgia, serif; }
-        .admin-muted, .admin-message { color: #756d67; }
-        .admin-message.error { color: #a33b31; } .admin-message.success { color: #28704b; }
-        .admin-nav { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
-        .admin-nav button, .admin-action { border: 1px solid #b88a44; background: #fff; color: #211f1d; padding: 10px 14px; cursor: pointer; }
-        .admin-nav button.active, .admin-action:hover { background: #b88a44; color: #fff; }
-        .admin-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
-        .admin-stat strong { display: block; font-size: 28px; margin-top: 8px; }
-        .admin-toolbar { display: flex; gap: 12px; flex-wrap: wrap; }
-        .admin-toolbar input, .admin-toolbar select, .admin-form input, .admin-form select { padding: 11px; border: 1px solid #d6ccc1; min-width: 220px; }
+        /* ==========================================================
+           ADMIN PORTAL — layout shell
+           ========================================================== */
+        .admin-page {
+            min-height: 100vh;
+            background: var(--purple-soft);
+            color: var(--ink);
+            font-family: var(--font-sans);
+        }
+
+        .admin-page h1, .admin-page h2, .admin-page h3 {
+            font-family: var(--font-serif);
+            color: var(--purple-deep);
+        }
+
+        .admin-muted { color: var(--text-secondary); font-size: 0.85rem; }
+
+        /* ---------- loading screen ---------- */
+        .admin-loading-screen {
+            min-height: 100vh;
+            display: grid;
+            place-items: center;
+            background: var(--purple-deep);
+            color: var(--white);
+            text-align: center;
+            padding: 24px;
+        }
+
+        .admin-loading-screen[hidden] { display: none; }
+
+        .admin-loading-mark strong {
+            display: block;
+            font-family: var(--font-serif);
+            font-size: 1.8rem;
+            color: var(--gold-primary);
+            margin-bottom: 8px;
+        }
+
+        .admin-loading-mark span { color: rgba(255, 255, 255, 0.75); font-size: 0.9rem; }
+
+        /* ---------- login screen ---------- */
+        .admin-login-shell {
+            min-height: 100vh;
+            display: grid;
+            place-items: center;
+            padding: 24px;
+            background: linear-gradient(135deg, var(--purple-deep), #574a3d);
+        }
+
+        .admin-login-shell[hidden] { display: none; }
+
+        .admin-login-card {
+            width: min(100%, 420px);
+            background: var(--white);
+            border-radius: var(--radius-lg);
+            padding: 40px 36px;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .admin-login-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 26px;
+        }
+
+        .admin-login-brand img { width: 42px; height: 42px; object-fit: contain; }
+        .admin-login-brand strong { display: block; font-family: var(--font-serif); font-size: 1.1rem; color: var(--purple-deep); }
+        .admin-login-brand span { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.14em; color: var(--gold-dark); text-transform: uppercase; }
+
+        .admin-login-card h1 { font-size: 1.6rem; margin: 0 0 6px; }
+        .admin-login-card > p.admin-muted { margin: 0 0 24px; }
+
+        .admin-auth-form { display: grid; gap: 14px; }
+        .admin-auth-form label { display: block; font-size: 0.76rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 6px; }
+        .admin-auth-form input {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 12px 14px;
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-sm);
+            font: inherit;
+            background: var(--purple-soft);
+            transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+        }
+        .admin-auth-form input:focus {
+            outline: none;
+            border-color: var(--gold-primary);
+            background: var(--white);
+            box-shadow: 0 0 0 3px var(--gold-soft);
+        }
+        .admin-auth-form .btn { width: 100%; margin-top: 4px; }
+
+        .admin-reset-link {
+            display: block;
+            width: 100%;
+            text-align: center;
+            border: 0;
+            padding: 16px 0 0;
+            background: none;
+            color: var(--gold-dark);
+            cursor: pointer;
+            text-decoration: underline;
+            font: inherit;
+            font-size: 0.82rem;
+            font-weight: 600;
+        }
+        .admin-reset-link:hover { color: var(--purple-primary); }
+
+        /* ---------- app shell: sidebar + main ---------- */
+        .admin-shell {
+            min-height: 100vh;
+            display: grid;
+            grid-template-columns: 260px 1fr;
+        }
+
+        .admin-shell[hidden] { display: none; }
+
+        .admin-sidebar {
+            background: var(--purple-deep);
+            color: var(--white);
+            padding: 26px 16px;
+            display: flex;
+            flex-direction: column;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+        }
+
+        .admin-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 0 10px 24px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+            margin-bottom: 18px;
+        }
+
+        .admin-brand img { width: 38px; height: 38px; object-fit: contain; }
+        .admin-brand strong { display: block; font-family: var(--font-serif); font-size: 1.1rem; }
+        .admin-brand span { font-size: 0.62rem; font-weight: 700; letter-spacing: 0.14em; color: var(--gold-primary); text-transform: uppercase; }
+
+        .admin-nav { display: grid; gap: 4px; flex: 1; }
+
+        .admin-nav button {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border: 0;
+            background: transparent;
+            color: rgba(255, 255, 255, 0.78);
+            text-align: left;
+            padding: 12px 14px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font: inherit;
+            font-size: 0.88rem;
+            font-weight: 600;
+            transition: background 0.15s ease, color 0.15s ease;
+        }
+
+        .admin-nav button[hidden] { display: none; }
+
+        .admin-nav button i { width: 18px; text-align: center; color: rgba(255, 255, 255, 0.55); font-size: 0.9rem; }
+
+        .admin-nav button:hover { background: rgba(255, 255, 255, 0.08); color: var(--white); }
+
+        .admin-nav button.active {
+            background: rgba(212, 175, 55, 0.14);
+            color: var(--white);
+            box-shadow: inset 3px 0 var(--gold-primary);
+        }
+
+        .admin-nav button.active i { color: var(--gold-primary); }
+
+        .admin-logout {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border: 0;
+            background: transparent;
+            color: #e6b2a6;
+            padding: 12px 14px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font: inherit;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-top: 12px;
+        }
+        .admin-logout:hover { background: rgba(230, 178, 166, 0.12); }
+
+        .admin-menu-button {
+            display: none;
+            border: 0;
+            background: none;
+            font-size: 1.15rem;
+            color: var(--purple-deep);
+            cursor: pointer;
+            padding: 6px;
+        }
+
+        /* ---------- main column ---------- */
+        .admin-main { min-width: 0; }
+
+        .admin-topbar {
+            background: var(--white);
+            border-bottom: 1px solid var(--border-light);
+            min-height: 74px;
+            padding: 0 32px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .admin-topbar-heading { display: flex; align-items: center; gap: 12px; }
+        .admin-topbar h1 { margin: 0; font-size: 1.5rem; }
+
+        .admin-user-chip { display: flex; align-items: center; gap: 12px; }
+        .admin-user-chip strong { display: block; font-size: 0.85rem; color: var(--purple-deep); }
+        .admin-user-chip span { display: block; font-size: 0.72rem; color: var(--text-muted); }
+
+        .admin-avatar {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            display: grid;
+            place-items: center;
+            background: var(--gold-primary);
+            color: var(--purple-deep);
+            font-weight: 800;
+            font-family: var(--font-serif);
+        }
+
+        .admin-content { max-width: 1240px; padding: 32px; margin: 0 auto; }
+
+        .admin-section-heading { margin-bottom: 22px; }
+        .admin-section-heading h2 { margin: 0 0 4px; font-size: 1.35rem; }
+        .admin-section-heading p { margin: 0; }
+
+        /* ---------- cards / stats ---------- */
+        .admin-card {
+            background: var(--white);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-md);
+            padding: 22px;
+            margin-bottom: 18px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .admin-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 8px; }
+
+        .admin-stat { display: grid; gap: 8px; align-content: start; }
+        .admin-stat-icon {
+            width: 38px;
+            height: 38px;
+            display: grid;
+            place-items: center;
+            border-radius: var(--radius-sm);
+            background: var(--gold-soft);
+            color: var(--gold-dark);
+        }
+        .admin-stat-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); }
+        .admin-stat strong { display: block; font-family: var(--font-serif); font-size: 2rem; color: var(--purple-deep); }
+
+        /* ---------- toolbar / forms ---------- */
+        .admin-toolbar { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+
+        .admin-toolbar input, .admin-toolbar select, .admin-form input, .admin-form select {
+            padding: 11px 13px;
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-sm);
+            font: inherit;
+            background: var(--white);
+            min-width: 220px;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .admin-toolbar input:focus, .admin-toolbar select:focus, .admin-form input:focus, .admin-form select:focus {
+            outline: none;
+            border-color: var(--gold-primary);
+            box-shadow: 0 0 0 3px var(--gold-soft);
+        }
+
+        .admin-form { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; }
+        .admin-form label { display: grid; gap: 6px; font-size: 0.76rem; font-weight: 700; color: var(--text-secondary); }
+
+        /* ---------- buttons ---------- */
+        .admin-action {
+            border: 1.5px solid var(--border-light);
+            background: var(--white);
+            color: var(--purple-deep);
+            border-radius: var(--radius-sm);
+            padding: 9px 14px;
+            cursor: pointer;
+            font: inherit;
+            font-size: 0.82rem;
+            font-weight: 700;
+            transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+        }
+        .admin-action:hover { border-color: var(--gold-primary); color: var(--gold-dark); background: var(--gold-soft); }
+
+        .admin-icon-button {
+            border: 1px solid var(--border-light);
+            background: var(--white);
+            color: var(--text-secondary);
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            display: grid;
+            place-items: center;
+            cursor: pointer;
+        }
+        .admin-icon-button:hover { border-color: var(--gold-primary); color: var(--gold-dark); }
+
+        /* ---------- tables ---------- */
         .admin-table-wrap { overflow-x: auto; }
-        .admin-table { width: 100%; border-collapse: collapse; min-width: 760px; }
-        .admin-table th, .admin-table td { padding: 12px 10px; border-bottom: 1px solid #e7dfd6; text-align: left; vertical-align: top; }
-        .status-badge { display: inline-block; padding: 4px 8px; background: #eee7df; }
-        .status-submitted, .status-under-review { background: #f2d89f; } .status-accepted { background: #b9dec4; } .status-rejected { background: #edc0ba; }
-        .detail-grid { display: grid; grid-template-columns: minmax(150px, 220px) 1fr; gap: 10px; }
-        .detail-grid dt { font-weight: 700; } .detail-grid dd { margin: 0; }
-        .admin-form { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; }
-        .admin-reset-link { border: 0; padding: 3px 0; margin-top: 4px; background: none; color: #89652e; cursor: pointer; text-decoration: underline; font: inherit; font-size: 13px; }
-        @media (max-width: 700px) { .admin-page { padding: 16px; } .admin-header { align-items: flex-start; flex-direction: column; } .admin-grid { grid-template-columns: repeat(2, 1fr); } .detail-grid { grid-template-columns: 1fr; } }
+        .admin-table { width: 100%; border-collapse: collapse; min-width: 760px; font-size: 0.87rem; }
+        .admin-table th {
+            text-align: left;
+            padding: 12px 14px;
+            color: var(--text-muted);
+            font-size: 0.68rem;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            border-bottom: 2px solid var(--border-light);
+        }
+        .admin-table td {
+            padding: 14px;
+            border-bottom: 1px solid var(--border-light);
+            text-align: left;
+            vertical-align: top;
+            color: var(--ink);
+        }
+        .admin-table tbody tr:hover { background: var(--purple-soft); }
+        .admin-table td[colspan] { text-align: center; color: var(--text-muted); padding: 30px 14px; }
+
+        /* ---------- status badges ---------- */
+        .status-badge {
+            display: inline-block;
+            padding: 5px 11px;
+            border-radius: var(--radius-full);
+            font-size: 0.72rem;
+            font-weight: 700;
+            background: #eee7df;
+            color: var(--ink);
+        }
+        .status-draft { background: #e9e2eb; color: #4A0E68; }
+        .status-submitted { background: #f2d89f; color: #6b4d10; }
+        .status-under-review { background: #f5e3b3; color: #6b4d10; }
+        .status-more-information-required { background: #f0c9a0; color: #7a3b0c; }
+        .status-accepted { background: #b9dec4; color: #1c5033; }
+        .status-rejected { background: #edc0ba; color: #7a2a1f; }
+
+        /* ---------- application detail: modal overlay ---------- */
+        .admin-detail-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 100;
+            display: grid;
+            place-items: center;
+            padding: 20px;
+            background: rgba(20, 0, 28, 0.55);
+            backdrop-filter: blur(2px);
+        }
+
+        .admin-detail-overlay[hidden] { display: none; }
+
+        .admin-detail-panel {
+            width: min(100%, 640px);
+            max-height: 88vh;
+            overflow-y: auto;
+            background: var(--white);
+            border-radius: var(--radius-lg);
+            padding: 28px;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .admin-detail-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 14px;
+        }
+        .admin-detail-header h3 { margin: 0; font-size: 1.15rem; }
+
+        .detail-grid { display: grid; grid-template-columns: minmax(150px, 220px) 1fr; gap: 12px; margin: 4px 0 20px; }
+        .detail-grid dt { font-weight: 700; color: var(--text-secondary); font-size: 0.82rem; }
+        .detail-grid dd { margin: 0; font-size: 0.88rem; }
+
+        .admin-detail-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: end;
+            padding-top: 16px;
+            border-top: 1px solid var(--border-light);
+        }
+        .admin-detail-actions label { display: grid; gap: 6px; font-size: 0.76rem; font-weight: 700; color: var(--text-secondary); }
+        .admin-detail-actions select { padding: 10px 12px; border: 1px solid var(--border-light); border-radius: var(--radius-sm); font: inherit; }
+
+        /* .btn (from style.css) sets display:inline-flex, which overrides the browser's
+           default [hidden]{display:none} at equal cascade priority -- #accept-create-student
+           is toggled via .hidden by admin-portal.js, so it needs an explicit override here. */
+        #accept-create-student[hidden] { display: none; }
+
+        /* ---------- messages ---------- */
+        .admin-message {
+            min-height: 20px;
+            margin: 0 0 16px;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+        .admin-message:empty { margin: 0; min-height: 0; }
+        .admin-message.error {
+            display: flex; align-items: center; gap: 8px;
+            padding: 10px 14px; border-radius: var(--radius-sm);
+            color: #8c2f26; background: #fbebe9; border: 1px solid #f0c9c5;
+        }
+        .admin-message.success {
+            display: flex; align-items: center; gap: 8px;
+            padding: 10px 14px; border-radius: var(--radius-sm);
+            color: #205c39; background: #e9f5ee; border: 1px solid #bfe3cd;
+        }
+
+        /* ==========================================================
+           RESPONSIVE
+           ========================================================== */
+        @media (max-width: 900px) {
+            .admin-shell { grid-template-columns: 1fr; }
+            .admin-sidebar {
+                position: fixed;
+                z-index: 50;
+                width: 260px;
+                height: 100vh;
+                transform: translateX(-100%);
+                transition: transform 0.2s ease;
+                box-sizing: border-box;
+            }
+            .admin-shell.menu-open .admin-sidebar { transform: none; }
+            .admin-menu-button { display: block; }
+            .admin-topbar { padding: 0 18px; }
+            .admin-content { padding: 22px 18px; }
+            .admin-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        @media (max-width: 600px) {
+            .admin-login-card { padding: 30px 22px; }
+            .admin-grid { grid-template-columns: 1fr; }
+            .admin-toolbar input, .admin-toolbar select, .admin-form input, .admin-form select { min-width: 0; width: 100%; }
+            .admin-detail-panel { padding: 20px; }
+            .detail-grid { grid-template-columns: 1fr; }
+            .admin-user-chip span { display: none; }
+        }
     </style>
 </head>
 <body class="admin-page">
-<main class="admin-shell">
-    <section id="admin-loading" class="admin-login"><h1>Loading administration</h1><p class="admin-muted">Verifying your FEWA account...</p></section>
-    <section id="admin-login" class="admin-login" hidden><h1>Administrator sign in</h1><p class="admin-muted">Use an authorized FEWA account to manage college records.</p><form id="login-form" class="admin-form"><label>Email address<input id="login-email" type="email" autocomplete="username" required></label><label>Password<input id="login-password" type="password" autocomplete="current-password" required></label><button id="login-button" type="submit" class="btn btn-primary">Sign in</button></form><p id="login-message" class="admin-message" role="alert"></p><button type="button" id="reset-button" class="admin-reset-link">Forgot password?</button></section>
-    <section id="admin-app" hidden>
-        <header class="admin-header"><div><h1 id="admin-title">Dashboard</h1><p class="admin-muted">Signed in as <span id="admin-user"></span> | Roles: <span id="admin-role"></span></p></div><button id="logout-button" type="button" class="btn btn-ghost">Sign out</button></header>
-        <nav class="admin-nav" aria-label="Administration navigation"><button type="button" data-admin-nav="dashboard" class="active">Dashboard</button><button type="button" data-admin-nav="applications">Applications</button><button type="button" data-admin-nav="students">Students</button><button type="button" data-admin-nav="programmes">Programmes</button><button type="button" data-admin-nav="trainers">Trainers</button><button type="button" data-admin-nav="superadmin" id="superadmin-panel" hidden>Superadmin</button></nav>
-        <p id="admin-message" class="admin-message" role="status"></p>
-        <section data-admin-view="dashboard"><div class="admin-grid"><article class="admin-card admin-stat"><span>Total applications</span><strong id="stat-total">0</strong></article><article class="admin-card admin-stat"><span>Submitted</span><strong id="stat-submitted">0</strong></article><article class="admin-card admin-stat"><span>Needs review</span><strong id="stat-review">0</strong></article><article class="admin-card admin-stat"><span>Accepted</span><strong id="stat-accepted">0</strong></article></div></section>
-        <section data-admin-view="applications" hidden><div class="admin-toolbar"><input id="application-search" type="search" placeholder="Search applicant, email or programme"><select id="application-filter"><option value="">All statuses</option><option>Draft</option><option>Submitted</option><option>Under Review</option><option>More Information Required</option><option>Accepted</option><option>Rejected</option></select></div><div class="admin-card admin-table-wrap"><table class="admin-table"><thead><tr><th>Application</th><th>Applicant</th><th>Programme</th><th>Status</th><th>Updated</th><th></th></tr></thead><tbody id="applications-body"></tbody></table></div><section id="application-detail" class="admin-card" hidden><button id="detail-close" type="button" class="admin-action">Close</button><div id="application-detail-content"></div><label>Status <select id="application-status"><option>Draft</option><option>Submitted</option><option>Under Review</option><option>More Information Required</option><option disabled>Accepted</option><option>Rejected</option></select></label><button id="save-application-status" type="button" class="admin-action">Save status</button><button id="accept-create-student" type="button" class="admin-action" hidden>Accept and create student</button></section></section>
-        <section data-admin-view="students" hidden><div class="admin-card admin-table-wrap"><table class="admin-table"><thead><tr><th>Student ID</th><th>Name</th><th>Email</th><th>Programme</th><th>Status</th></tr></thead><tbody id="students-body"></tbody></table></div></section>
-        <section data-admin-view="programmes" hidden><div class="admin-card"><form id="programme-form" class="admin-form"><label>Title<input id="programme-title" required></label><label>Category<input id="programme-category"></label><label>Qualification<input id="programme-qualification"></label><label>Duration<input id="programme-duration"></label><button type="submit" class="btn btn-primary">Create programme</button></form></div><div class="admin-card admin-table-wrap"><table class="admin-table"><thead><tr><th>Title</th><th>Category</th><th>Qualification</th><th>Duration</th></tr></thead><tbody id="programmes-body"></tbody></table></div></section>
-        <section data-admin-view="trainers" hidden><div class="admin-card admin-table-wrap"><table class="admin-table"><thead><tr><th>Name</th><th>Email</th><th>Speciality</th><th>Status</th></tr></thead><tbody id="trainers-body"></tbody></table></div></section>
-        <section data-admin-view="superadmin" hidden>
-            <div class="admin-card">
-                <h2>Grant or revoke a role</h2>
-                <p class="admin-muted">The person must have signed in to FEWA at least once before a role can be granted to their account.</p>
-                <form id="role-form" class="admin-form">
-                    <label>Email address<input id="role-email" type="email" required></label>
-                    <label>Role<select id="role-select" required>
-                        <option value="admin">Admin</option>
-                        <option value="admissions">Admissions</option>
-                        <option value="finance">Finance</option>
-                        <option value="lecturer">Lecturer</option>
-                        <option value="superadmin">Superadmin</option>
-                    </select></label>
-                    <button type="submit" id="role-grant-button" class="btn btn-primary">Grant role</button>
-                    <button type="button" id="role-revoke-button" class="admin-action">Revoke role</button>
-                </form>
-                <p id="role-message" class="admin-message" role="status"></p>
-            </div>
-            <div class="admin-card admin-table-wrap">
-                <h2>Current staff accounts</h2>
-                <table class="admin-table"><thead><tr><th>Email</th><th>Roles</th><th></th></tr></thead><tbody id="staff-body"></tbody></table>
-            </div>
-        </section>
+<div id="admin-loading" class="admin-loading-screen">
+    <div class="admin-loading-mark"><strong>FEWA</strong><span>Verifying your secure administrator session...</span></div>
+</div>
+<div id="admin-login" class="admin-login-shell" hidden>
+    <section class="admin-login-card" aria-labelledby="admin-login-title">
+        <div class="admin-login-brand"><img src="assets/logo.png" alt="FEWA logo"><div><strong>FEWA</strong><span>Administration</span></div></div>
+        <h1 id="admin-login-title">Administrator sign in</h1>
+        <p class="admin-muted">Use an authorized FEWA account to manage college records.</p>
+        <form id="login-form" class="admin-auth-form">
+            <div><label for="login-email">Email address</label><input id="login-email" type="email" autocomplete="username" required></div>
+            <div><label for="login-password">Password</label><input id="login-password" type="password" autocomplete="current-password" required></div>
+            <button id="login-button" type="submit" class="btn btn-primary">Sign in</button>
+            <p id="login-message" class="admin-message" role="alert"></p>
+        </form>
+        <button type="button" id="reset-button" class="admin-reset-link">Forgot password?</button>
     </section>
-</main>
+</div>
+<div id="admin-app" class="admin-shell" hidden>
+    <aside class="admin-sidebar" id="admin-sidebar">
+        <div class="admin-brand"><img src="assets/logo.png" alt="FEWA logo"><div><strong>FEWA</strong><span>Administration</span></div></div>
+        <nav class="admin-nav" aria-label="Administration navigation">
+            <button type="button" data-admin-nav="dashboard" class="active"><i class="fa-solid fa-gauge" aria-hidden="true"></i> Dashboard</button>
+            <button type="button" data-admin-nav="applications"><i class="fa-solid fa-inbox" aria-hidden="true"></i> Applications</button>
+            <button type="button" data-admin-nav="students"><i class="fa-solid fa-graduation-cap" aria-hidden="true"></i> Students</button>
+            <button type="button" data-admin-nav="programmes"><i class="fa-solid fa-book-open" aria-hidden="true"></i> Programmes</button>
+            <button type="button" data-admin-nav="trainers"><i class="fa-solid fa-chalkboard-user" aria-hidden="true"></i> Trainers</button>
+            <button type="button" data-admin-nav="superadmin" id="superadmin-panel" hidden><i class="fa-solid fa-user-shield" aria-hidden="true"></i> Superadmin</button>
+        </nav>
+        <button id="logout-button" type="button" class="admin-logout"><i class="fa-solid fa-arrow-right-from-bracket" aria-hidden="true"></i> Sign out</button>
+    </aside>
+    <main class="admin-main">
+        <header class="admin-topbar">
+            <div class="admin-topbar-heading">
+                <button class="admin-menu-button" id="admin-menu-button" type="button" aria-label="Open navigation"><i class="fa-solid fa-bars"></i></button>
+                <h1 id="admin-title">Dashboard</h1>
+            </div>
+            <div class="admin-user-chip">
+                <div><strong id="admin-user"></strong><span>Roles: <span id="admin-role"></span></span></div>
+                <div class="admin-avatar" aria-hidden="true"><i class="fa-solid fa-user-tie"></i></div>
+            </div>
+        </header>
+        <div class="admin-content">
+            <p id="admin-message" class="admin-message" role="status"></p>
+
+            <section data-admin-view="dashboard">
+                <div class="admin-section-heading"><h2>Overview</h2><p class="admin-muted">A snapshot of admissions activity across FEWA.</p></div>
+                <div class="admin-grid">
+                    <article class="admin-card admin-stat"><span class="admin-stat-icon"><i class="fa-solid fa-file-lines"></i></span><span class="admin-stat-label">Total applications</span><strong id="stat-total">0</strong></article>
+                    <article class="admin-card admin-stat"><span class="admin-stat-icon"><i class="fa-solid fa-paper-plane"></i></span><span class="admin-stat-label">Submitted</span><strong id="stat-submitted">0</strong></article>
+                    <article class="admin-card admin-stat"><span class="admin-stat-icon"><i class="fa-solid fa-magnifying-glass"></i></span><span class="admin-stat-label">Needs review</span><strong id="stat-review">0</strong></article>
+                    <article class="admin-card admin-stat"><span class="admin-stat-icon"><i class="fa-solid fa-circle-check"></i></span><span class="admin-stat-label">Accepted</span><strong id="stat-accepted">0</strong></article>
+                </div>
+            </section>
+
+            <section data-admin-view="applications" hidden>
+                <div class="admin-section-heading"><h2>Applications</h2><p class="admin-muted">Review, filter and update every application submitted to FEWA.</p></div>
+                <div class="admin-toolbar">
+                    <input id="application-search" type="search" placeholder="Search applicant, email or programme">
+                    <select id="application-filter">
+                        <option value="">All statuses</option>
+                        <option>Draft</option>
+                        <option>Submitted</option>
+                        <option>Under Review</option>
+                        <option>More Information Required</option>
+                        <option>Accepted</option>
+                        <option>Rejected</option>
+                    </select>
+                </div>
+                <div class="admin-card admin-table-wrap">
+                    <table class="admin-table">
+                        <thead><tr><th>Application</th><th>Applicant</th><th>Programme</th><th>Status</th><th>Updated</th><th></th></tr></thead>
+                        <tbody id="applications-body"></tbody>
+                    </table>
+                </div>
+                <section id="application-detail" class="admin-detail-overlay" hidden>
+                    <div class="admin-detail-panel">
+                        <div class="admin-detail-header"><h3>Application details</h3><button id="detail-close" type="button" class="admin-icon-button" aria-label="Close"><i class="fa-solid fa-xmark"></i></button></div>
+                        <div id="application-detail-content"></div>
+                        <div class="admin-detail-actions">
+                            <label>Status <select id="application-status"><option>Draft</option><option>Submitted</option><option>Under Review</option><option>More Information Required</option><option disabled>Accepted</option><option>Rejected</option></select></label>
+                            <button id="save-application-status" type="button" class="admin-action">Save status</button>
+                            <button id="accept-create-student" type="button" class="btn btn-primary" hidden>Accept and create student</button>
+                        </div>
+                    </div>
+                </section>
+            </section>
+
+            <section data-admin-view="students" hidden>
+                <div class="admin-section-heading"><h2>Students</h2><p class="admin-muted">Every applicant accepted and promoted to an active student record.</p></div>
+                <div class="admin-card admin-table-wrap">
+                    <table class="admin-table">
+                        <thead><tr><th>Student ID</th><th>Name</th><th>Email</th><th>Programme</th><th>Status</th></tr></thead>
+                        <tbody id="students-body"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section data-admin-view="programmes" hidden>
+                <div class="admin-section-heading"><h2>Programmes</h2><p class="admin-muted">Manage the courses FEWA offers to prospective applicants.</p></div>
+                <div class="admin-card">
+                    <form id="programme-form" class="admin-form">
+                        <label>Title<input id="programme-title" required></label>
+                        <label>Category<input id="programme-category"></label>
+                        <label>Qualification<input id="programme-qualification"></label>
+                        <label>Duration<input id="programme-duration"></label>
+                        <button type="submit" class="btn btn-primary">Create programme</button>
+                    </form>
+                </div>
+                <div class="admin-card admin-table-wrap">
+                    <table class="admin-table">
+                        <thead><tr><th>Title</th><th>Category</th><th>Qualification</th><th>Duration</th></tr></thead>
+                        <tbody id="programmes-body"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section data-admin-view="trainers" hidden>
+                <div class="admin-section-heading"><h2>Trainers</h2><p class="admin-muted">FEWA's teaching staff and their areas of speciality.</p></div>
+                <div class="admin-card admin-table-wrap">
+                    <table class="admin-table">
+                        <thead><tr><th>Name</th><th>Email</th><th>Speciality</th><th>Status</th></tr></thead>
+                        <tbody id="trainers-body"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section data-admin-view="superadmin" hidden>
+                <div class="admin-section-heading"><h2>Superadmin</h2><p class="admin-muted">Grant or revoke administration roles for FEWA staff accounts.</p></div>
+                <div class="admin-card">
+                    <h3>Grant or revoke a role</h3>
+                    <p class="admin-muted">The person must have signed in to FEWA at least once before a role can be granted to their account.</p>
+                    <form id="role-form" class="admin-form">
+                        <label>Email address<input id="role-email" type="email" required></label>
+                        <label>Role<select id="role-select" required>
+                            <option value="admin">Admin</option>
+                            <option value="admissions">Admissions</option>
+                            <option value="finance">Finance</option>
+                            <option value="lecturer">Lecturer</option>
+                            <option value="superadmin">Superadmin</option>
+                        </select></label>
+                        <button type="submit" id="role-grant-button" class="btn btn-primary">Grant role</button>
+                        <button type="button" id="role-revoke-button" class="admin-action">Revoke role</button>
+                    </form>
+                    <p id="role-message" class="admin-message" role="status"></p>
+                </div>
+                <div class="admin-card admin-table-wrap">
+                    <h3>Current staff accounts</h3>
+                    <table class="admin-table"><thead><tr><th>Email</th><th>Roles</th><th></th></tr></thead><tbody id="staff-body"></tbody></table>
+                </div>
+            </section>
+        </div>
+    </main>
+</div>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script><script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-functions-compat.js"></script><script src="config.js"></script><script src="admin-portal.js"></script>
 </body>
 </html>

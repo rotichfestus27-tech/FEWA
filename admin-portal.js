@@ -26,6 +26,7 @@
         document.querySelectorAll('[data-admin-nav]').forEach(button => button.classList.toggle('active', button.dataset.adminNav === view));
         const title = $('#admin-title');
         if (title) title.textContent = view.charAt(0).toUpperCase() + view.slice(1);
+        $('#admin-app')?.classList.remove('menu-open');
     }
 
     function applicationName(application) {
@@ -346,6 +347,7 @@
         });
 
         $('#logout-button')?.addEventListener('click', signOut);
+        $('#admin-menu-button')?.addEventListener('click', () => { $('#admin-app')?.classList.toggle('menu-open'); });
         $('#application-search')?.addEventListener('input', renderApplications);
         $('#application-filter')?.addEventListener('change', renderApplications);
         $('#save-application-status')?.addEventListener('click', updateApplicationStatus);
