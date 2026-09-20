@@ -418,6 +418,45 @@
            is toggled via .hidden by admin-portal.js, so it needs an explicit override here. */
         #accept-create-student[hidden] { display: none; }
 
+        /* .admin-form sets display:flex, which needs the same [hidden] override as above --
+           the student detail tabs are the first place a .admin-form is toggled via JS. */
+        .admin-form[hidden] { display: none; }
+
+        /* ---------- student detail: tabs ---------- */
+        .student-detail-panel { width: min(100%, 900px); }
+
+        .student-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin: 4px 0 20px;
+            border-bottom: 1px solid var(--border-light);
+            padding-bottom: 12px;
+        }
+
+        .student-tab {
+            border: 0;
+            background: transparent;
+            padding: 8px 14px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font: inherit;
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: var(--text-secondary);
+        }
+
+        .student-tab:hover { background: var(--purple-soft); }
+
+        .student-tab.active { background: var(--gold-soft); color: var(--gold-dark); }
+
+        .student-overview-picture {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
         /* ---------- messages ---------- */
         .admin-message {
             min-height: 20px;
@@ -558,12 +597,83 @@
 
             <section data-admin-view="students" hidden>
                 <div class="admin-section-heading"><h2>Students</h2><p class="admin-muted">Every applicant accepted and promoted to an active student record.</p></div>
+                <div class="admin-toolbar">
+                    <input id="student-search" type="search" placeholder="Search name, student ID or email">
+                    <select id="student-programme-filter"><option value="">All programmes</option></select>
+                    <select id="student-status-filter"><option value="">All statuses</option></select>
+                </div>
                 <div class="admin-card admin-table-wrap">
                     <table class="admin-table">
-                        <thead><tr><th>Student ID</th><th>Name</th><th>Email</th><th>Programme</th><th>Status</th></tr></thead>
+                        <thead><tr><th>Student ID</th><th>Name</th><th>Email</th><th>Programme</th><th>Status</th><th></th></tr></thead>
                         <tbody id="students-body"></tbody>
                     </table>
                 </div>
+
+                <section id="student-detail" class="admin-detail-overlay" hidden>
+                    <div class="admin-detail-panel student-detail-panel">
+                        <div class="admin-detail-header"><h3 id="student-detail-title">Student</h3><button id="student-detail-close" type="button" class="admin-icon-button" aria-label="Close"><i class="fa-solid fa-xmark"></i></button></div>
+                        <p id="student-detail-message" class="admin-message" role="status"></p>
+
+                        <nav class="student-tabs" aria-label="Student record sections">
+                            <button type="button" class="student-tab active" data-student-tab="overview">Overview</button>
+                            <button type="button" class="student-tab" data-student-tab="results">Results</button>
+                            <button type="button" class="student-tab" data-student-tab="timetable">Timetable</button>
+                            <button type="button" class="student-tab" data-student-tab="attendance">Attendance</button>
+                            <button type="button" class="student-tab" data-student-tab="fees">Fees</button>
+                            <button type="button" class="student-tab" data-student-tab="documents">Documents</button>
+                            <button type="button" class="student-tab" data-student-tab="submissions">Submissions</button>
+                        </nav>
+
+                        <div class="student-tab-panel" data-student-panel="overview">
+                            <dl class="detail-grid" id="student-overview-grid"></dl>
+                            <form id="student-overview-form" class="admin-form" hidden>
+                                <label>Full name<input id="student-edit-fullName"></label>
+                                <label>Phone<input id="student-edit-phone"></label>
+                                <label>Address<input id="student-edit-address"></label>
+                                <label>Emergency contact<input id="student-edit-emergencyContact"></label>
+                                <label>Programme<input id="student-edit-program"></label>
+                                <label>Semester<input id="student-edit-semester"></label>
+                                <label>Admission status<input id="student-edit-admissionStatus"></label>
+                                <button type="submit" class="btn btn-primary">Save profile</button>
+                            </form>
+                            <p id="student-overview-permission-note" class="admin-muted"></p>
+                        </div>
+
+                        <div class="student-tab-panel" data-student-panel="results" hidden>
+                            <p class="admin-message" data-panel-permission></p>
+                            <form class="admin-form" data-panel-form hidden></form>
+                            <div class="admin-table-wrap"><table class="admin-table"><thead data-panel-thead></thead><tbody data-panel-body></tbody></table></div>
+                        </div>
+
+                        <div class="student-tab-panel" data-student-panel="timetable" hidden>
+                            <p class="admin-message" data-panel-permission></p>
+                            <form class="admin-form" data-panel-form hidden></form>
+                            <div class="admin-table-wrap"><table class="admin-table"><thead data-panel-thead></thead><tbody data-panel-body></tbody></table></div>
+                        </div>
+
+                        <div class="student-tab-panel" data-student-panel="attendance" hidden>
+                            <p class="admin-message" data-panel-permission></p>
+                            <form class="admin-form" data-panel-form hidden></form>
+                            <div class="admin-table-wrap"><table class="admin-table"><thead data-panel-thead></thead><tbody data-panel-body></tbody></table></div>
+                        </div>
+
+                        <div class="student-tab-panel" data-student-panel="fees" hidden>
+                            <p class="admin-message" data-panel-permission></p>
+                            <form class="admin-form" data-panel-form hidden></form>
+                            <div class="admin-table-wrap"><table class="admin-table"><thead data-panel-thead></thead><tbody data-panel-body></tbody></table></div>
+                        </div>
+
+                        <div class="student-tab-panel" data-student-panel="documents" hidden>
+                            <p class="admin-message" data-panel-permission></p>
+                            <div class="admin-table-wrap"><table class="admin-table"><thead data-panel-thead></thead><tbody data-panel-body></tbody></table></div>
+                        </div>
+
+                        <div class="student-tab-panel" data-student-panel="submissions" hidden>
+                            <p class="admin-message" data-panel-permission></p>
+                            <div class="admin-table-wrap"><table class="admin-table"><thead data-panel-thead></thead><tbody data-panel-body></tbody></table></div>
+                        </div>
+                    </div>
+                </section>
             </section>
 
             <section data-admin-view="programmes" hidden>

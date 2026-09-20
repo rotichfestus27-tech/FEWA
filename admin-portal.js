@@ -4,7 +4,7 @@
         && !/^(YOUR_|REPLACE_)/.test(String(config.apiKey))
         && !/^(YOUR_|REPLACE_)/.test(String(config.appId));
 
-    const state = { user: null, roles: [], applications: [], students: [], programmes: [], trainers: [], staff: [], selected: null };
+    const state = { user: null, roles: [], applications: [], students: [], programmes: [], trainers: [], staff: [], selected: null, selectedStudent: null, studentSubData: {} };
     const $ = (selector) => document.querySelector(selector);
 
     const escapeHtml = (value) => String(value ?? '').replace(/[&<>'"]/g, character => ({
@@ -20,6 +20,99 @@
     const staff = () => hasRole('admin') || hasRole('superadmin') || hasRole('admissions');
     const superadmin = () => hasRole('superadmin');
     const timestamp = (value) => value?.toDate ? value.toDate().toLocaleString() : value ? new Date(value).toLocaleString() : 'Not available';
+
+    // ------------------------------------------------------------------
+    // STUDENT MANAGEMENT -- role predicates
+    // ------------------------------------------------------------------
+    // These mirror firestore.rules exactly (see isAdmin()/hasRole() there) so the UI
+    // never offers an action a role cannot actually perform. Do not loosen these
+    // without changing firestore.rules first -- they are read-outs of that file,
+    // not an independent permission system.
+    const isAdminRole = () => hasRole('admin') || hasRole('superadmin');
+    // results/timetable/attendance/submissions: firestore.rules grants read+write to
+    // isAdmin() (admin/superadmin) and hasRole('lecturer') identically for staff.
+    const canManageAcademic = () => isAdminRole() || hasRole('lecturer');
+    // storage.rules for students/{uid}/submissions/**/{fileName} only allows admin/superadmin
+    // to read the file itself -- narrower than the Firestore submissions read rule, which also
+    // allows 'lecturer'. A lecturer can see the submission row but not download the file.
+    const canDownloadSubmissionFile = () => isAdminRole();
+    const canManageFees = () => isAdminRole() || hasRole('finance');
+    const canReadDocuments = () => isAdminRole() || hasRole('finance') || hasRole('admissions');
+    // students/{uid} update rule grants unrestricted field writes to superadmin/admissions
+    // only -- plain 'admin' is NOT included, so it must stay read-only here.
+    const canUpdateStudentProfile = () => hasRole('superadmin') || hasRole('admissions');
+
+    const OVERVIEW_FIELDS = [
+        { key: 'fullName', label: 'Full name' },
+        { key: 'phone', label: 'Phone' },
+        { key: 'address', label: 'Address' },
+        { key: 'emergencyContact', label: 'Emergency contact' },
+        { key: 'program', label: 'Programme' },
+        { key: 'semester', label: 'Semester' },
+        { key: 'admissionStatus', label: 'Admission status' }
+    ];
+
+    // Field names match what portal.html already reads/renders for each subcollection --
+    // see the architecture audit. Nothing here invents a new schema.
+    const STUDENT_SUBCOLLECTIONS = {
+        results: {
+            label: 'Results', singular: 'result', collection: 'results', actionType: 'crud',
+            fields: [
+                { key: 'course', label: 'Course/Unit', required: true },
+                { key: 'grade', label: 'Grade' },
+                { key: 'score', label: 'Score' }
+            ],
+            canRead: () => canManageAcademic(), canWrite: () => canManageAcademic()
+        },
+        timetable: {
+            label: 'Timetable', singular: 'timetable entry', collection: 'timetable', actionType: 'crud',
+            fields: [
+                { key: 'day', label: 'Day', required: true },
+                { key: 'activity', label: 'Activity', required: true }
+            ],
+            canRead: () => canManageAcademic(), canWrite: () => canManageAcademic()
+        },
+        attendance: {
+            label: 'Attendance', singular: 'attendance record', collection: 'attendance', actionType: 'crud',
+            fields: [
+                { key: 'date', label: 'Date', required: true },
+                { key: 'unit', label: 'Unit/Module' },
+                { key: 'status', label: 'Status', required: true },
+                { key: 'semester', label: 'Semester' },
+                { key: 'trainer', label: 'Trainer' }
+            ],
+            canRead: () => canManageAcademic(), canWrite: () => canManageAcademic()
+        },
+        fees: {
+            label: 'Fees', singular: 'fee record', collection: 'fees', actionType: 'crud',
+            fields: [
+                { key: 'term', label: 'Term/Period', required: true },
+                { key: 'amount', label: 'Amount' },
+                { key: 'status', label: 'Status' },
+                { key: 'balance', label: 'Balance' }
+            ],
+            canRead: () => canManageFees(), canWrite: () => canManageFees()
+        },
+        documents: {
+            label: 'Documents', collection: 'documents', actionType: 'view', viewLabel: 'View',
+            fields: [
+                { key: 'name', label: 'Name' },
+                { key: 'category', label: 'Category' }
+            ],
+            canRead: () => canReadDocuments(), canWrite: () => false,
+            readOnlyReason: 'Uploading documents is not part of this phase -- storage.rules currently blocks staff writes to student documents (allow write: if false), so this view is read-only.'
+        },
+        submissions: {
+            label: 'Submissions', collection: 'submissions', actionType: 'view', viewLabel: 'View file',
+            fields: [
+                { key: 'assignmentId', label: 'Assignment' },
+                { key: 'fileName', label: 'File' },
+                { key: 'status', label: 'Status' }
+            ],
+            canRead: () => canManageAcademic(), canWrite: () => false,
+            readOnlyReason: 'Grading is not part of this phase -- this view is for visibility only.'
+        }
+    };
 
     function show(view) {
         document.querySelectorAll('[data-admin-view]').forEach(section => { section.hidden = section.dataset.adminView !== view; });
@@ -170,13 +263,322 @@
 
     async function loadStudents() {
         if (!hasRole('admin') && !superadmin() && !hasRole('admissions')) { message('Your role cannot view student records.', 'error'); return; }
+        const bodyEl = $('#students-body');
+        if (bodyEl) bodyEl.innerHTML = '<tr><td colspan="6">Loading students...</td></tr>';
         try {
             const snapshot = await firebase.firestore().collection('students').limit(200).get();
             state.students = snapshot.docs.map(document => ({ id: document.id, ...document.data() }));
-            renderSimpleRows('#students-body', state.students, [student => student.studentId || student.id, student => student.fullName || 'Unnamed', student => student.email || '', student => student.program || '', student => student.admissionStatus || ''], 'No student records found.');
+            populateStudentFilters();
+            renderStudents();
             show('students');
         } catch (error) {
+            if (bodyEl) bodyEl.innerHTML = '<tr><td colspan="6">Student records could not be loaded.</td></tr>';
             message('Student records could not be loaded.', 'error');
+        }
+    }
+
+    function filteredStudents() {
+        const queryEl = $('#student-search');
+        const programmeEl = $('#student-programme-filter');
+        const statusEl = $('#student-status-filter');
+        const query = queryEl ? queryEl.value.trim().toLowerCase() : '';
+        const programme = programmeEl ? programmeEl.value : '';
+        const status = statusEl ? statusEl.value : '';
+        return state.students.filter(student => {
+            const haystack = `${student.fullName || ''} ${student.studentId || ''} ${student.email || ''}`.toLowerCase();
+            return (!query || haystack.includes(query))
+                && (!programme || student.program === programme)
+                && (!status || student.admissionStatus === status);
+        });
+    }
+
+    function populateStudentFilters() {
+        const programmeEl = $('#student-programme-filter');
+        const statusEl = $('#student-status-filter');
+        if (programmeEl) {
+            const current = programmeEl.value;
+            const programmes = [...new Set(state.students.map(student => student.program).filter(Boolean))].sort();
+            programmeEl.innerHTML = '<option value="">All programmes</option>' + programmes.map(value => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`).join('');
+            programmeEl.value = current;
+        }
+        if (statusEl) {
+            const current = statusEl.value;
+            const statuses = [...new Set(state.students.map(student => student.admissionStatus).filter(Boolean))].sort();
+            statusEl.innerHTML = '<option value="">All statuses</option>' + statuses.map(value => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`).join('');
+            statusEl.value = current;
+        }
+    }
+
+    function renderStudents() {
+        const bodyEl = $('#students-body');
+        if (!bodyEl) return;
+        if (!state.students.length) {
+            bodyEl.innerHTML = '<tr><td colspan="6">No student records found.</td></tr>';
+            return;
+        }
+        const students = filteredStudents();
+        bodyEl.innerHTML = students.length ? students.map(student => `
+            <tr>
+                <td>${escapeHtml(student.studentId || student.id)}</td>
+                <td>${escapeHtml(student.fullName || 'Unnamed')}</td>
+                <td>${escapeHtml(student.email || '')}</td>
+                <td>${escapeHtml(student.program || '')}</td>
+                <td>${escapeHtml(student.admissionStatus || '')}</td>
+                <td><button type="button" class="admin-action" data-student="${escapeHtml(student.id)}">View</button></td>
+            </tr>`).join('') : '<tr><td colspan="6">No students match the current filters.</td></tr>';
+        document.querySelectorAll('[data-student]').forEach(button => button.addEventListener('click', () => openStudent(button.dataset.student)));
+    }
+
+    // ------------------------------------------------------------------
+    // STUDENT DETAIL VIEW
+    // ------------------------------------------------------------------
+
+    function openStudent(uid) {
+        const student = state.students.find(item => item.id === uid);
+        if (!student) return;
+        state.selectedStudent = student;
+        state.studentSubData = {};
+        const titleEl = $('#student-detail-title'); if (titleEl) titleEl.textContent = student.fullName || student.studentId || 'Student';
+        const messageEl = $('#student-detail-message'); if (messageEl) { messageEl.textContent = ''; messageEl.className = 'admin-message'; }
+        const detailEl = $('#student-detail'); if (detailEl) detailEl.hidden = false;
+        switchStudentTab('overview');
+    }
+
+    function closeStudent() {
+        const detailEl = $('#student-detail'); if (detailEl) detailEl.hidden = true;
+        state.selectedStudent = null;
+        state.studentSubData = {};
+    }
+
+    function switchStudentTab(tab) {
+        document.querySelectorAll('[data-student-tab]').forEach(button => button.classList.toggle('active', button.dataset.studentTab === tab));
+        document.querySelectorAll('[data-student-panel]').forEach(panel => { panel.hidden = panel.dataset.studentPanel !== tab; });
+        if (tab === 'overview') renderStudentOverview();
+        else if (STUDENT_SUBCOLLECTIONS[tab]) loadStudentSubcollection(tab);
+    }
+
+    function renderStudentOverview() {
+        const student = state.selectedStudent;
+        const gridEl = $('#student-overview-grid');
+        if (gridEl && student) {
+            gridEl.innerHTML = `
+                <dt>Student ID</dt><dd>${escapeHtml(student.studentId || 'Not available')}</dd>
+                <dt>Email</dt><dd>${escapeHtml(student.email || 'Not available')}</dd>
+                <dt>Full name</dt><dd>${escapeHtml(student.fullName || 'Not available')}</dd>
+                <dt>Phone</dt><dd>${escapeHtml(student.phone || 'Not available')}</dd>
+                <dt>Address</dt><dd>${escapeHtml(student.address || 'Not available')}</dd>
+                <dt>Emergency contact</dt><dd>${escapeHtml(student.emergencyContact || 'Not available')}</dd>
+                <dt>Programme</dt><dd>${escapeHtml(student.program || 'Not available')}</dd>
+                <dt>Semester</dt><dd>${escapeHtml(student.semester || 'Not available')}</dd>
+                <dt>Admission status</dt><dd>${escapeHtml(student.admissionStatus || 'Not available')}</dd>
+                <dt>Profile picture</dt><dd>${student.profilePicture ? `<img class="student-overview-picture" src="${escapeHtml(student.profilePicture)}" alt="">` : 'Not available'}</dd>
+            `;
+        }
+        const formEl = $('#student-overview-form');
+        const noteEl = $('#student-overview-permission-note');
+        if (formEl) {
+            if (student && canUpdateStudentProfile()) {
+                formEl.hidden = false;
+                OVERVIEW_FIELDS.forEach(field => { const input = document.getElementById(`student-edit-${field.key}`); if (input) input.value = student[field.key] || ''; });
+                if (noteEl) noteEl.textContent = '';
+            } else {
+                formEl.hidden = true;
+                if (noteEl) noteEl.textContent = 'Your role can view this profile but cannot edit it. Editing student profiles is limited to Superadmin and Admissions staff (see firestore.rules).';
+            }
+        }
+    }
+
+    async function saveStudentOverview(event) {
+        event.preventDefault();
+        if (!state.selectedStudent || !canUpdateStudentProfile()) return;
+        const button = event.target.querySelector('button[type="submit"]');
+        if (button) button.disabled = true;
+        try {
+            const updates = {};
+            OVERVIEW_FIELDS.forEach(field => { const input = document.getElementById(`student-edit-${field.key}`); if (input) updates[field.key] = input.value.trim(); });
+            await firebase.firestore().collection('students').doc(state.selectedStudent.id).update({ ...updates, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+            Object.assign(state.selectedStudent, updates);
+            const index = state.students.findIndex(student => student.id === state.selectedStudent.id);
+            if (index !== -1) Object.assign(state.students[index], updates);
+            renderStudentOverview();
+            renderStudents();
+            message('Student profile updated.', 'success');
+        } catch (error) {
+            message(error?.message || 'The student profile could not be updated.', 'error');
+        } finally {
+            if (button) button.disabled = false;
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // STUDENT DETAIL -- subcollection tabs (results/timetable/attendance/fees/documents/submissions)
+    // ------------------------------------------------------------------
+
+    function subcollectionPanel(kind) {
+        return document.querySelector(`[data-student-panel="${kind}"]`);
+    }
+
+    async function loadStudentSubcollection(kind) {
+        const config = STUDENT_SUBCOLLECTIONS[kind];
+        const panel = subcollectionPanel(kind);
+        if (!config || !panel || !state.selectedStudent) return;
+        const permissionEl = panel.querySelector('[data-panel-permission]');
+        const bodyEl = panel.querySelector('[data-panel-body]');
+        const theadEl = panel.querySelector('[data-panel-thead]');
+        const formEl = panel.querySelector('[data-panel-form]');
+
+        if (!config.canRead()) {
+            if (permissionEl) { permissionEl.textContent = `Your role does not have access to ${config.label.toLowerCase()} (see firestore.rules).`; permissionEl.className = 'admin-message error'; }
+            if (bodyEl) bodyEl.innerHTML = '';
+            if (theadEl) theadEl.innerHTML = '';
+            if (formEl) { formEl.hidden = true; formEl.innerHTML = ''; }
+            return;
+        }
+
+        if (permissionEl) { permissionEl.textContent = config.readOnlyReason || ''; permissionEl.className = 'admin-muted'; }
+
+        const showActionColumn = config.actionType === 'view' || config.canWrite();
+        if (theadEl) theadEl.innerHTML = `<tr>${config.fields.map(field => `<th>${escapeHtml(field.label)}</th>`).join('')}${showActionColumn ? '<th></th>' : ''}</tr>`;
+
+        if (formEl) {
+            // The form element itself persists across reloads (only its children are
+            // rebuilt below), so any in-progress edit state must be cleared here too --
+            // otherwise a stale editingId can survive a tab-away-and-back cycle and
+            // silently turn a new "Add" submission into an update of the old record.
+            delete formEl.dataset.editingId;
+            if (config.actionType === 'crud' && config.canWrite()) {
+                formEl.hidden = false;
+                formEl.innerHTML = `${config.fields.map(field => `<label>${escapeHtml(field.label)}<input data-field="${field.key}" ${field.required ? 'required' : ''}></label>`).join('')}<button type="submit" class="btn btn-primary">Add ${escapeHtml(config.singular || config.label.toLowerCase())}</button><button type="button" class="admin-action" data-cancel-edit hidden>Cancel edit</button>`;
+                // Assigning .onsubmit (not addEventListener) so reloading this tab never
+                // accumulates a second handler on the same persistent form element --
+                // each assignment replaces the previous one instead of stacking.
+                formEl.onsubmit = event => submitSubcollectionForm(kind, event);
+                formEl.querySelector('[data-cancel-edit]')?.addEventListener('click', () => resetSubcollectionForm(kind));
+            } else {
+                formEl.hidden = true;
+                formEl.innerHTML = '';
+            }
+        }
+
+        if (bodyEl) bodyEl.innerHTML = `<tr><td colspan="${config.fields.length + 1}">Loading...</td></tr>`;
+
+        try {
+            const collectionRef = firebase.firestore().collection('students').doc(state.selectedStudent.id).collection(config.collection);
+            const snapshot = await collectionRef.orderBy('createdAt', 'desc').limit(200).get().catch(() => collectionRef.limit(200).get());
+            state.studentSubData[kind] = snapshot.docs.map(document => ({ id: document.id, ...document.data() }));
+            renderSubcollectionRows(kind);
+        } catch (error) {
+            if (bodyEl) bodyEl.innerHTML = `<tr><td colspan="${config.fields.length + 1}">${escapeHtml(config.label)} could not be loaded.</td></tr>`;
+        }
+    }
+
+    function renderSubcollectionRows(kind) {
+        const config = STUDENT_SUBCOLLECTIONS[kind];
+        const panel = subcollectionPanel(kind);
+        const bodyEl = panel?.querySelector('[data-panel-body]');
+        if (!bodyEl) return;
+        const records = state.studentSubData[kind] || [];
+        const showActionColumn = config.actionType === 'view' || config.canWrite();
+        if (!records.length) {
+            bodyEl.innerHTML = `<tr><td colspan="${config.fields.length + (showActionColumn ? 1 : 0)}">No ${config.label.toLowerCase()} recorded yet.</td></tr>`;
+            return;
+        }
+        bodyEl.innerHTML = records.map(record => {
+            const cells = config.fields.map(field => `<td>${escapeHtml(record[field.key] ?? 'Not available')}</td>`).join('');
+            let actionCell = '';
+            if (config.actionType === 'view') {
+                actionCell = `<td><button type="button" class="admin-action" data-sub-view="${escapeHtml(record.id)}">${escapeHtml(config.viewLabel || 'View')}</button></td>`;
+            } else if (config.canWrite()) {
+                actionCell = `<td><button type="button" class="admin-action" data-sub-edit="${escapeHtml(record.id)}">Edit</button> <button type="button" class="admin-action" data-sub-delete="${escapeHtml(record.id)}">Delete</button></td>`;
+            }
+            return `<tr>${cells}${actionCell}</tr>`;
+        }).join('');
+
+        bodyEl.querySelectorAll('[data-sub-edit]').forEach(button => button.addEventListener('click', () => editSubcollectionRecord(kind, button.dataset.subEdit)));
+        bodyEl.querySelectorAll('[data-sub-delete]').forEach(button => button.addEventListener('click', () => deleteSubcollectionRecord(kind, button.dataset.subDelete)));
+        bodyEl.querySelectorAll('[data-sub-view]').forEach(button => button.addEventListener('click', () => viewSubcollectionFile(kind, button.dataset.subView)));
+    }
+
+    async function submitSubcollectionForm(kind, event) {
+        event.preventDefault();
+        const config = STUDENT_SUBCOLLECTIONS[kind];
+        if (!state.selectedStudent || !config.canWrite()) return;
+        const formEl = event.target;
+        const editingId = formEl.dataset.editingId;
+        const values = {};
+        config.fields.forEach(field => { const input = formEl.querySelector(`[data-field="${field.key}"]`); if (input) values[field.key] = input.value.trim(); });
+        const button = formEl.querySelector('button[type="submit"]');
+        if (button) button.disabled = true;
+        try {
+            const ref = firebase.firestore().collection('students').doc(state.selectedStudent.id).collection(config.collection);
+            if (editingId) {
+                await ref.doc(editingId).update({ ...values, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+            } else {
+                await ref.add({ ...values, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+            }
+            resetSubcollectionForm(kind);
+            await loadStudentSubcollection(kind);
+            message(`${config.label} saved.`, 'success');
+        } catch (error) {
+            message(error?.message || `The ${config.singular || config.label.toLowerCase()} could not be saved.`, 'error');
+        } finally {
+            if (button) button.disabled = false;
+        }
+    }
+
+    function editSubcollectionRecord(kind, id) {
+        const config = STUDENT_SUBCOLLECTIONS[kind];
+        const record = (state.studentSubData[kind] || []).find(item => item.id === id);
+        const panel = subcollectionPanel(kind);
+        const formEl = panel?.querySelector('[data-panel-form]');
+        if (!record || !formEl) return;
+        formEl.dataset.editingId = id;
+        config.fields.forEach(field => { const input = formEl.querySelector(`[data-field="${field.key}"]`); if (input) input.value = record[field.key] ?? ''; });
+        const submitButton = formEl.querySelector('button[type="submit"]');
+        if (submitButton) submitButton.textContent = `Save ${config.singular || config.label.toLowerCase()}`;
+        const cancelButton = formEl.querySelector('[data-cancel-edit]');
+        if (cancelButton) cancelButton.hidden = false;
+    }
+
+    function resetSubcollectionForm(kind) {
+        const config = STUDENT_SUBCOLLECTIONS[kind];
+        const panel = subcollectionPanel(kind);
+        const formEl = panel?.querySelector('[data-panel-form]');
+        if (!formEl) return;
+        formEl.reset();
+        delete formEl.dataset.editingId;
+        const submitButton = formEl.querySelector('button[type="submit"]');
+        if (submitButton) submitButton.textContent = `Add ${config.singular || config.label.toLowerCase()}`;
+        const cancelButton = formEl.querySelector('[data-cancel-edit]');
+        if (cancelButton) cancelButton.hidden = true;
+    }
+
+    async function deleteSubcollectionRecord(kind, id) {
+        const config = STUDENT_SUBCOLLECTIONS[kind];
+        if (!state.selectedStudent || !config.canWrite()) return;
+        if (!window.confirm(`Delete this ${config.singular || config.label.toLowerCase()}?`)) return;
+        try {
+            await firebase.firestore().collection('students').doc(state.selectedStudent.id).collection(config.collection).doc(id).delete();
+            await loadStudentSubcollection(kind);
+            message(`${config.label} record deleted.`, 'success');
+        } catch (error) {
+            message(error?.message || 'The record could not be deleted.', 'error');
+        }
+    }
+
+    async function viewSubcollectionFile(kind, id) {
+        const record = (state.studentSubData[kind] || []).find(item => item.id === id);
+        if (!record) return;
+        if (kind === 'submissions' && !canDownloadSubmissionFile()) {
+            message('Your role can see this submission but cannot download the file -- storage.rules restricts file downloads to admin/superadmin.', 'error');
+            return;
+        }
+        if (!record.filePath) { message('No file is attached to this record.', 'error'); return; }
+        try {
+            const url = await firebase.storage().ref(record.filePath).getDownloadURL();
+            window.open(url, '_blank', 'noopener');
+        } catch (error) {
+            message('The file could not be opened.', 'error');
         }
     }
 
@@ -356,6 +758,12 @@
         $('#detail-close')?.addEventListener('click', () => { const el = $('#application-detail'); if (el) el.hidden = true; });
         $('#role-form')?.addEventListener('submit', event => { event.preventDefault(); submitRoleChange(true); });
         $('#role-revoke-button')?.addEventListener('click', () => submitRoleChange(false));
+        $('#student-search')?.addEventListener('input', renderStudents);
+        $('#student-programme-filter')?.addEventListener('change', renderStudents);
+        $('#student-status-filter')?.addEventListener('change', renderStudents);
+        $('#student-detail-close')?.addEventListener('click', closeStudent);
+        $('#student-overview-form')?.addEventListener('submit', saveStudentOverview);
+        document.querySelectorAll('[data-student-tab]').forEach(button => button.addEventListener('click', () => switchStudentTab(button.dataset.studentTab)));
 
         document.querySelectorAll('[data-admin-nav]').forEach(button => button.addEventListener('click', async () => {
             const view = button.dataset.adminNav;
