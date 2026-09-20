@@ -177,6 +177,12 @@ h4 {
     white-space: nowrap;
 }
 
+/* Author styles beat the browser's default [hidden]{display:none} at equal cascade
+   priority, so setting display:inline-flex above silently overrode it for every
+   .btn element also toggled via the hidden attribute (e.g. apply.html's
+   #submit-button and #view-application). */
+.btn[hidden] { display: none; }
+
 .btn i {
     font-size: 0.85em;
     transition: transform 0.2s ease;
@@ -1944,6 +1950,26 @@ h4 {
     box-shadow: 0 20px 55px rgba(36, 0, 47, 0.2);
 }
 
+.applicant-auth-gate[hidden] {
+    display: none;
+}
+
+/* Single, clear entry point: no sign-in panel sits beside the primary actions --
+   "Continue Existing Application" opens it as an overlay only when needed. */
+.application-entry {
+    grid-template-columns: 1fr;
+    max-width: 780px;
+    text-align: center;
+}
+
+.application-entry .entry-actions {
+    justify-content: center;
+}
+
+.application-entry .entry-trust {
+    justify-content: center;
+}
+
 .auth-gate-copy h2 {
     max-width: 540px;
     margin: 12px 0 16px;
@@ -2132,6 +2158,24 @@ h4 {
     font-weight: 700;
 }
 
+.entry-check-status-link {
+    display: block;
+    margin: 16px 0 0;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: rgba(255, 255, 255, 0.8);
+    text-decoration: underline;
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.82rem;
+    font-weight: 600;
+}
+
+.entry-check-status-link:hover {
+    color: var(--gold-primary);
+}
+
 .entry-trust {
     justify-content: flex-start;
 }
@@ -2206,6 +2250,12 @@ h4 {
     backdrop-filter: blur(3px);
 }
 
+/* Author styles beat the browser's default [hidden]{display:none} at equal cascade
+   priority, so setting display:grid above silently overrode it -- this overlay (and
+   the check-status panel, which reuses the same class) was rendering on top of the
+   page at all times regardless of the hidden attribute, until this override. */
+.secure-application-overlay[hidden] { display: none; }
+
 .secure-application-panel {
     width: min(100%, 440px);
     max-height: 90vh;
@@ -2242,6 +2292,16 @@ h4 {
 
 .secure-application-actions .btn {
     flex: 1;
+}
+
+.check-status-result {
+    margin-top: 18px;
+    padding-top: 18px;
+    border-top: 1px solid var(--border-light);
+}
+
+.check-status-result .dashboard-details {
+    margin-top: 0;
 }
 
 .application-dashboard {

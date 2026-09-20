@@ -17,24 +17,19 @@
 <section id="application-entry" class="applicant-auth-gate application-entry" aria-labelledby="application-entry-title">
     <div class="auth-gate-copy entry-copy">
         <span class="section-tag"><i class="fas fa-graduation-cap" aria-hidden="true"></i> Admissions 2026</span>
-        <h2 id="application-entry-title">Start Your FEWA Journey</h2>
-        <p>Your application is completed in six simple, guided steps — personal details, education, your program choice, documents, additional information and a final review. Save your progress at any time and pick up exactly where you left off.</p>
+        <h2 id="application-entry-title">Build Your FEWA Future</h2>
+        <p>Complete your application in six simple steps. Your progress is saved automatically as you go.</p>
         <div class="entry-actions">
-            <button type="button" id="start-application-button" class="btn btn-hero-primary">Start Application <i class="fas fa-arrow-right" aria-hidden="true"></i></button>
-            <button type="button" id="continue-application-entry" class="btn btn-hero-secondary"><i class="fas fa-rotate-right" aria-hidden="true"></i> Continue Application</button>
+            <button type="button" id="start-application-button" class="btn btn-hero-primary">Start New Application <i class="fas fa-arrow-right" aria-hidden="true"></i></button>
+            <button type="button" id="continue-application-entry" class="btn btn-hero-secondary"><i class="fas fa-rotate-right" aria-hidden="true"></i> Continue Existing Application</button>
         </div>
         <p id="continue-application-hint" class="entry-hint" hidden></p>
+        <button type="button" id="check-status-link" class="entry-check-status-link">Already submitted? Check Application Status</button>
         <div class="auth-gate-points entry-trust">
             <span><i class="fas fa-shield-halved" aria-hidden="true"></i> Secure &amp; encrypted</span>
             <span><i class="fas fa-floppy-disk" aria-hidden="true"></i> Saves your progress automatically</span>
             <span><i class="fas fa-clock" aria-hidden="true"></i> Takes about 15 minutes</span>
         </div>
-    </div>
-    <div class="auth-panel entry-signin-panel">
-        <span class="entry-signin-label"><i class="fas fa-user-check" aria-hidden="true"></i> Returning applicant?</span>
-        <p class="entry-signin-copy">Sign in to securely continue an application you've already started on another device.</p>
-        <form id="applicant-signin-form" class="auth-form"><label>Email address<input id="applicant-signin-email" type="email" autocomplete="email" required></label><label>Password<input id="applicant-signin-password" type="password" autocomplete="current-password" required></label><button type="submit" class="btn btn-primary btn-block" id="applicant-signin-button">Sign In <i class="fas fa-arrow-right" aria-hidden="true"></i></button><button type="button" class="auth-reset-link" id="applicant-reset-button">Forgot password?</button></form>
-        <p id="applicant-auth-message" class="form-message" role="alert" aria-live="polite"></p>
     </div>
 </section>
 <section id="application-dashboard" class="application-dashboard" hidden aria-labelledby="application-dashboard-title">
@@ -57,6 +52,20 @@
     </form>
 </section>
 <section id="confirmation" class="confirmation-panel" hidden><span class="confirmation-icon"><i class="fas fa-check"></i></span><span class="section-tag">Application received</span><h2>Application submitted successfully</h2><p>Your application has been received by FEWA Beauty &amp; Fashion College.</p><p>Application number: <strong id="application-number"></strong></p><p>Status: <strong>Submitted</strong></p><p>Our admissions team will be in touch with your next steps.</p><button type="button" id="print-summary" class="btn btn-primary" onclick="window.print()">Print Application Summary</button><a href="index.html" class="btn btn-ghost">Go to Home</a></section>
+<div id="continue-application-overlay" class="secure-application-overlay" hidden>
+    <div class="secure-application-panel" role="dialog" aria-modal="true" aria-labelledby="continue-application-title">
+        <span class="section-tag"><i class="fas fa-user-check" aria-hidden="true"></i> Returning applicant</span>
+        <h3 id="continue-application-title">Sign in to continue</h3>
+        <p>Sign in to securely continue an application you've already started on another device.</p>
+        <form id="applicant-signin-form" class="auth-form">
+            <label>Email address<input id="applicant-signin-email" type="email" autocomplete="email" required></label>
+            <label>Password<input id="applicant-signin-password" type="password" autocomplete="current-password" required></label>
+            <div class="secure-application-actions"><button type="button" id="continue-application-cancel" class="btn btn-ghost">Cancel</button><button type="submit" class="btn btn-primary" id="applicant-signin-button">Sign In <i class="fas fa-arrow-right" aria-hidden="true"></i></button></div>
+            <button type="button" class="auth-reset-link" id="applicant-reset-button">Forgot password?</button>
+        </form>
+        <p id="applicant-auth-message" class="form-message" role="alert" aria-live="polite"></p>
+    </div>
+</div>
 <div id="secure-application-overlay" class="secure-application-overlay" hidden>
     <div class="secure-application-panel" role="dialog" aria-modal="true" aria-labelledby="secure-application-title">
         <span class="section-tag"><i class="fas fa-lock" aria-hidden="true"></i> Secure your application</span>
@@ -68,6 +77,28 @@
             <div class="secure-application-actions"><button type="button" id="secure-application-cancel" class="btn btn-ghost">Maybe later</button><button type="submit" id="secure-application-button" class="btn btn-primary">Secure My Application <i class="fas fa-arrow-right" aria-hidden="true"></i></button></div>
         </form>
         <p id="secure-application-message" class="form-message" role="alert" aria-live="polite"></p>
+    </div>
+</div>
+<div id="check-status-overlay" class="secure-application-overlay" hidden>
+    <div class="secure-application-panel" role="dialog" aria-modal="true" aria-labelledby="check-status-title">
+        <span class="section-tag"><i class="fas fa-magnifying-glass" aria-hidden="true"></i> Check application status</span>
+        <h3 id="check-status-title">Find your application</h3>
+        <p>Enter your application reference and the email address or phone number you applied with.</p>
+        <form id="check-status-form" class="auth-form">
+            <label>Application reference<input id="check-status-reference" type="text" placeholder="e.g. FEWA-2026-123456" required></label>
+            <label>Email or phone number<input id="check-status-contact" type="text" placeholder="you@example.com or 07XXXXXXXX" required></label>
+            <div class="secure-application-actions"><button type="button" id="check-status-cancel" class="btn btn-ghost">Close</button><button type="submit" id="check-status-button" class="btn btn-primary">Check Status <i class="fas fa-arrow-right" aria-hidden="true"></i></button></div>
+        </form>
+        <p id="check-status-message" class="form-message" role="alert" aria-live="polite"></p>
+        <div id="check-status-result" class="check-status-result" hidden>
+            <dl class="dashboard-details">
+                <div><dt>Application reference</dt><dd id="check-status-result-number">—</dd></div>
+                <div><dt>Status</dt><dd><span id="check-status-result-badge" class="application-status-badge">—</span></dd></div>
+                <div><dt>Programme</dt><dd id="check-status-result-programme">—</dd></div>
+                <div><dt>Preferred intake</dt><dd id="check-status-result-intake">—</dd></div>
+                <div><dt>Last updated</dt><dd id="check-status-result-updated">—</dd></div>
+            </dl>
+        </div>
     </div>
 </div>
 </main>

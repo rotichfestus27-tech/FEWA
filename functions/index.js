@@ -2,6 +2,7 @@ const admin = require('firebase-admin');
 const functions = require('firebase-functions');
 const { promoteAcceptedApplication, finalizeApplicationSubmission } = require('./admission-service');
 const { isSuperadmin, setUserRole, listStaffAccounts } = require('./roles-service');
+const { checkApplicationStatus } = require('./status-check-service');
 
 admin.initializeApp();
 
@@ -77,5 +78,21 @@ exports.listStaffAccounts = functions.https.onCall(async (request) => {
         return await listStaffAccounts({ auth: admin.auth() });
     } catch (error) {
         throw new functions.https.HttpsError('internal', error.message);
+    }
+});
+
+// Intentionally does NOT require request.auth -- an applicant checking status has
+// no account. Protected instead by requiring the application reference AND a
+// matching email or phone before revealing anything (see status-check-service.js).
+exports.checkApplicationStatus = functions.https.onCall(async (request) => {
+    try {
+        return await checkApplicationStatus({
+            db: admin.firestore(),
+            applicationNumber: request.data?.applicationNumber,
+            email: request.data?.email,
+            phone: request.data?.phone
+        });
+    } catch (error) {
+        throw new functions.https.HttpsError('not-found', error.message);
     }
 });

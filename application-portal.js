@@ -14,7 +14,8 @@
     const startButton = document.getElementById('start-application-button');
     const continueEntryButton = document.getElementById('continue-application-entry');
     const continueHint = document.getElementById('continue-application-hint');
-    const entrySigninPanel = document.querySelector('.entry-signin-panel');
+    const continueOverlay = document.getElementById('continue-application-overlay');
+    const continueCancelButton = document.getElementById('continue-application-cancel');
     const secureOverlay = document.getElementById('secure-application-overlay');
     const secureForm = document.getElementById('secure-application-form');
     const secureMessage = document.getElementById('secure-application-message');
@@ -22,6 +23,12 @@
     const secureCancelButton = document.getElementById('secure-application-cancel');
     const shellSecurityText = document.getElementById('shell-security-text');
     const shellSecureLink = document.getElementById('shell-secure-link');
+    const checkStatusLink = document.getElementById('check-status-link');
+    const checkStatusOverlay = document.getElementById('check-status-overlay');
+    const checkStatusForm = document.getElementById('check-status-form');
+    const checkStatusMessage = document.getElementById('check-status-message');
+    const checkStatusResult = document.getElementById('check-status-result');
+    const checkStatusCancelButton = document.getElementById('check-status-cancel');
     const config = window.FEWA_CONFIG?.firebase;
     const validConfig = config && config.apiKey && config.projectId && config.appId
         && !String(config.apiKey).match(/^(YOUR_|REPLACE_)/)
@@ -73,8 +80,18 @@
         shell.hidden = true;
         intro.hidden = true;
         if (confirmationPanel) confirmationPanel.hidden = true;
-        if (entrySigninPanel) entrySigninPanel.hidden = false;
+        closeContinuePanel();
         document.title = 'Apply Online | FEWA Beauty & Fashion College';
+    }
+
+    function openContinuePanel() {
+        showMessage(authMessage, '');
+        if (continueOverlay) continueOverlay.hidden = false;
+        document.getElementById('applicant-signin-email')?.focus();
+    }
+
+    function closeContinuePanel() {
+        if (continueOverlay) continueOverlay.hidden = true;
     }
 
     function updateEntryContinueState() {
@@ -109,6 +126,7 @@
         dashboard.hidden = false;
         shell.hidden = true;
         intro.hidden = true;
+        closeContinuePanel();
         document.title = 'Application Dashboard | FEWA Beauty & Fashion College';
         document.getElementById('applicant-dashboard-name').textContent = application?.personalInformation?.firstName || user.displayName?.split(' ')[0] || (user.email ? user.email.split('@')[0] : 'Applicant');
         renderDashboard(application);
@@ -120,6 +138,7 @@
         dashboard.hidden = true;
         shell.hidden = false;
         intro.hidden = false;
+        closeContinuePanel();
         const data = currentApplication || {};
         const flattened = { ...(data.personalInformation || {}), ...(data.academicInformation || {}), ...(data.programInformation || {}), ...(data.additionalInformation || {}) };
         Object.entries(flattened).forEach(([key, value]) => { const field = form.elements[key]; if (field && field.type !== 'file') field.value = value || ''; });
@@ -206,7 +225,19 @@
     }
 
     async function loadApplication(user) {
-        const direct = await db.collection('applications').doc(user.uid).get();
+        let direct;
+        try {
+            direct = await db.collection('applications').doc(user.uid).get();
+        } catch (error) {
+            // firestore.rules evaluates resource.data on a non-existent document, which
+            // throws (not "not found") for a brand-new applicant with no draft yet. This
+            // read always targets the caller's OWN uid, so a permission-denied here can
+            // only mean "no application exists yet" -- treat it as such rather than
+            // surfacing a confusing error. (Not a security workaround: no other outcome
+            // is possible for this exact query.)
+            if (error?.code === 'permission-denied') return null;
+            throw error;
+        }
         const application = direct.exists ? { id: direct.id, ...direct.data() } : null;
         if (application) {
             const notificationSnapshot = await db.collection('applications').doc(application.id).collection('notifications').orderBy('createdAt', 'desc').limit(5).get().catch(() => ({ docs: [] }));
@@ -340,6 +371,23 @@
         showMessage(secureMessage, '');
     }
 
+    function openCheckStatusPanel() {
+        if (checkStatusForm) checkStatusForm.reset();
+        if (checkStatusResult) checkStatusResult.hidden = true;
+        showMessage(checkStatusMessage, '');
+        if (checkStatusOverlay) checkStatusOverlay.hidden = false;
+        document.getElementById('check-status-reference')?.focus();
+    }
+
+    function closeCheckStatusPanel() {
+        if (checkStatusOverlay) checkStatusOverlay.hidden = true;
+    }
+
+    const forceWizardOnLoad = new URLSearchParams(window.location.search).get('start') === '1';
+    if (forceWizardOnLoad) {
+        window.history.replaceState(null, '', window.location.pathname + window.location.hash);
+    }
+
     async function authenticate() {
         if (!validConfig || !window.firebase) { showMessage(authMessage, 'Firebase Authentication is not configured. Add valid Firebase web settings to config.js.', 'error'); return; }
         if (!firebase.apps.length) firebase.initializeApp(config);
@@ -354,7 +402,9 @@
             currentUser = user;
             currentApplication = await loadApplication(user);
             updateSecurityBadge();
-            if (currentApplication) {
+            if (forceWizardOnLoad) {
+                showApplicationForm();
+            } else if (currentApplication) {
                 showAuthenticatedExperience(user, currentApplication);
             } else if (user.isAnonymous) {
                 showApplicationForm(1);
@@ -370,19 +420,16 @@
         startButton.disabled = true;
         try {
             if (!auth.currentUser) {
-                const result = await auth.signInAnonymously();
-                currentUser = result.user;
-            } else {
-                currentUser = auth.currentUser;
+                await auth.signInAnonymously();
             }
-            currentApplication = await loadApplication(currentUser);
-            updateSecurityBadge();
-            showApplicationForm();
+            // Genuine page navigation (not an in-page toggle) -- the anonymous session
+            // persists across the reload, and ?start=1 tells the reloaded page to open
+            // straight into the wizard instead of the entry screen or dashboard.
+            window.location.href = window.location.pathname + '?start=1';
         } catch (error) {
             showMessage(authMessage, (error?.code === 'auth/operation-not-allowed' || error?.code === 'auth/admin-restricted-operation')
                 ? 'Guest applications are not enabled yet. Please contact FEWA admissions.'
                 : (error.message || 'We could not start your application. Please try again in a moment.'), 'error');
-        } finally {
             startButton.disabled = false;
         }
     });
@@ -400,10 +447,10 @@
                 continueEntryButton.disabled = false;
             }
         } else {
-            entrySigninPanel?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            document.getElementById('applicant-signin-email')?.focus();
+            openContinuePanel();
         }
     });
+    continueCancelButton?.addEventListener('click', closeContinuePanel);
 
     document.getElementById('applicant-signin-form').addEventListener('submit', async (event) => { event.preventDefault(); const button = document.getElementById('applicant-signin-button'); button.disabled = true; showMessage(authMessage, 'Signing you in...', 'loading'); try { await auth.signInWithEmailAndPassword(document.getElementById('applicant-signin-email').value.trim(), document.getElementById('applicant-signin-password').value); } catch (error) { showMessage(authMessage, error.message || 'Sign in failed.', 'error'); button.disabled = false; } });
     document.getElementById('applicant-reset-button').addEventListener('click', async () => { const email = document.getElementById('applicant-signin-email').value.trim(); if (!email) return showMessage(authMessage, 'Enter your email address first.', 'error'); try { await auth.sendPasswordResetEmail(email); } catch (error) { } showMessage(authMessage, 'If an account exists for that email, a password reset link has been sent.', 'success'); });
@@ -454,6 +501,44 @@
     });
     secureCancelButton?.addEventListener('click', closeSecurePanel);
     shellSecureLink?.addEventListener('click', () => openSecurePanel());
+
+    checkStatusLink?.addEventListener('click', openCheckStatusPanel);
+    checkStatusCancelButton?.addEventListener('click', closeCheckStatusPanel);
+    checkStatusForm?.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        if (!validConfig || !window.firebase || typeof firebase.functions !== 'function') {
+            showMessage(checkStatusMessage, 'Status lookup is unavailable right now. Please try again later.', 'error');
+            return;
+        }
+        const reference = document.getElementById('check-status-reference').value.trim();
+        const contact = document.getElementById('check-status-contact').value.trim();
+        const button = document.getElementById('check-status-button');
+        if (button) button.disabled = true;
+        if (checkStatusResult) checkStatusResult.hidden = true;
+        showMessage(checkStatusMessage, 'Checking your application status...', 'loading');
+        try {
+            const isEmail = contact.includes('@');
+            const check = firebase.functions().httpsCallable('checkApplicationStatus');
+            const result = await check({
+                applicationNumber: reference,
+                email: isEmail ? contact : '',
+                phone: isEmail ? '' : contact
+            });
+            const data = result.data;
+            document.getElementById('check-status-result-number').textContent = data.applicationNumber || reference;
+            const badge = document.getElementById('check-status-result-badge');
+            if (badge) badge.textContent = data.status || 'Draft';
+            document.getElementById('check-status-result-programme').textContent = data.programme || 'Not selected';
+            document.getElementById('check-status-result-intake').textContent = data.intake || 'Not selected';
+            document.getElementById('check-status-result-updated').textContent = data.updatedAt ? new Date(data.updatedAt).toLocaleDateString() : 'Not available';
+            if (checkStatusResult) checkStatusResult.hidden = false;
+            showMessage(checkStatusMessage, '');
+        } catch (error) {
+            showMessage(checkStatusMessage, error.message || 'We could not find an application matching those details. Please check your reference and contact details and try again.', 'error');
+        } finally {
+            if (button) button.disabled = false;
+        }
+    });
 
     authenticate();
 })();

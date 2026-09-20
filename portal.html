@@ -337,6 +337,13 @@
             gap: 16px;
         }
 
+        /* Author styles beat the browser's default [hidden]{display:none} at equal
+           cascade priority, so display:grid above silently overrode it whenever this
+           panel was marked hidden (e.g. before "Continue Learning" is clicked). */
+        .portal-elearning-detail[hidden] {
+            display: none;
+        }
+
         .portal-list {
             display: grid;
             gap: 12px;
@@ -1175,26 +1182,39 @@
             document.getElementById('google-signin-button').addEventListener('click', async () => {
                 if (!validConfig) { message(googleMessage, 'Firebase Authentication is not configured. Add valid values to config.js.', 'error'); return; }
                 const button = document.getElementById('google-signin-button');
-                button.disabled = true; message(googleMessage, 'Opening Google sign-in...', '');
+                button.disabled = true; message(googleMessage, 'Redirecting to Google sign-in...', '');
                 try {
                     const provider = new firebase.auth.GoogleAuthProvider();
-                    await auth.signInWithPopup(provider);
-                    // Success falls through to the existing auth.onAuthStateChanged listener below,
-                    // which loads the student record and shows the app screen exactly as it does for email/password sign-in.
+                    // signInWithRedirect (not signInWithPopup) -- popups are routinely blocked by
+                    // browser popup blockers and third-party-cookie restrictions, which was silently
+                    // preventing sign-in for some students. Redirect navigates the whole page to
+                    // Google and back, so it can't be blocked that way. Completion is handled by
+                    // getRedirectResult() below, on the next load.
+                    await auth.signInWithRedirect(provider);
                 } catch (error) {
-                    if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
-                        message(googleMessage, '', '');
-                    } else if (error.code === 'auth/account-exists-with-different-credential') {
-                        await startAccountLinking(error);
-                    } else {
-                        message(googleMessage, 'Google sign-in failed. Please try again.', 'error');
-                    }
-                } finally {
+                    message(googleMessage, 'Google sign-in failed. Please try again.', 'error');
                     button.disabled = false;
                 }
             });
             showLoading();
-            if (validConfig && window.firebase) { try { if (!firebase.apps.length) firebase.initializeApp(firebaseConfig); auth = firebase.auth(); db = firebase.firestore(); storage = firebase.storage(); auth.onAuthStateChanged(user => user ? loadStudent(user).then(showApp).catch(() => showLogin('Your account is signed in, but student records could not be loaded.')) : showLogin()); } catch (error) { showLogin('Firebase could not be initialized. Check config.js.'); } } else { showLogin('Firebase Authentication is not configured.'); }
+            if (validConfig && window.firebase) {
+                try {
+                    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+                    auth = firebase.auth(); db = firebase.firestore(); storage = firebase.storage();
+                    auth.getRedirectResult().catch(error => {
+                        if (error.code === 'auth/account-exists-with-different-credential') {
+                            startAccountLinking(error);
+                        } else {
+                            message(googleMessage, 'Google sign-in failed. Please try again.', 'error');
+                        }
+                    });
+                    auth.onAuthStateChanged(user => user ? loadStudent(user).then(showApp).catch(() => showLogin('Your account is signed in, but student records could not be loaded.')) : showLogin());
+                } catch (error) {
+                    showLogin('Firebase could not be initialized. Check config.js.');
+                }
+            } else {
+                showLogin('Firebase Authentication is not configured.');
+            }
         })();
     </script>
 </body>
