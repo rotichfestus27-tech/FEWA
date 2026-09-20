@@ -4,7 +4,11 @@
         && !/^(YOUR_|REPLACE_)/.test(String(config.apiKey))
         && !/^(YOUR_|REPLACE_)/.test(String(config.appId));
 
-    const state = { user: null, roles: [], applications: [], students: [], programmes: [], trainers: [], staff: [], selected: null, selectedStudent: null, studentSubData: {} };
+    const state = {
+        user: null, roles: [], applications: [], students: [], programmes: [], trainers: [], staff: [], selected: null, selectedStudent: null, studentSubData: {},
+        assignments: [], assignmentEditingId: null,
+        materials: [], materialEditingId: null, materialSelectedUids: new Set(), materialStudentOptions: null, materialStudentPickerError: null
+    };
     const $ = (selector) => document.querySelector(selector);
 
     const escapeHtml = (value) => String(value ?? '').replace(/[&<>'"]/g, character => ({
@@ -41,6 +45,18 @@
     // students/{uid} update rule grants unrestricted field writes to superadmin/admissions
     // only -- plain 'admin' is NOT included, so it must stay read-only here.
     const canUpdateStudentProfile = () => hasRole('superadmin') || hasRole('admissions');
+
+    // ------------------------------------------------------------------
+    // PHASE 2 -- role predicates (assignments / learning materials)
+    // ------------------------------------------------------------------
+    // firestore.rules `assignments` collection: the staff branch is exactly
+    // isAdmin() || hasRole('lecturer') for both read and write -- 'admissions'
+    // is NOT included, so it must not see this section as if it could.
+    const canReadAssignments = () => isAdminRole() || hasRole('lecturer');
+    const canWriteAssignments = () => isAdminRole() || hasRole('lecturer');
+    // firestore.rules `learning_materials` write rule is hasRole('lecturer') ||
+    // hasRole('superadmin') ONLY -- unlike assignments, plain 'admin' is excluded here.
+    const canManageMaterials = () => hasRole('superadmin') || hasRole('lecturer');
 
     const OVERVIEW_FIELDS = [
         { key: 'fullName', label: 'Full name' },
@@ -627,6 +643,385 @@
         }
     }
 
+    // ------------------------------------------------------------------
+    // PHASE 2 -- ASSIGNMENTS (top-level `assignments` collection)
+    // ------------------------------------------------------------------
+
+    async function ensureProgrammesLoaded() {
+        if (state.programmes.length) return;
+        try {
+            const snapshot = await firebase.firestore().collection('programmes').limit(200).get();
+            state.programmes = snapshot.docs.map(document => ({ id: document.id, ...document.data() }));
+        } catch (error) {
+            // programmes are publicly readable; a failure here just leaves the dropdown empty
+        }
+    }
+
+    function populateAssignmentProgrammeOptions() {
+        const titles = [...new Set(state.programmes.map(programme => programme.title || programme.name).filter(Boolean))].sort();
+        const filterEl = $('#assignment-programme-filter');
+        if (filterEl) {
+            const current = filterEl.value;
+            filterEl.innerHTML = '<option value="">All programmes</option>' + titles.map(title => `<option value="${escapeHtml(title)}">${escapeHtml(title)}</option>`).join('');
+            filterEl.value = current;
+        }
+        const formEl = $('#assignment-programme');
+        if (formEl) {
+            const current = formEl.value;
+            formEl.innerHTML = '<option value="">Select programme</option>' + titles.map(title => `<option value="${escapeHtml(title)}">${escapeHtml(title)}</option>`).join('');
+            formEl.value = current;
+        }
+    }
+
+    async function loadAssignments() {
+        const permissionEl = $('#assignment-permission-message');
+        const formCardEl = $('#assignment-form-card');
+        // Mirrors firestore.rules exactly: the staff read branch for `assignments` is
+        // isAdmin() || hasRole('lecturer') -- 'admissions' is not included, so it must
+        // see a clear denial instead of an attempted (and rejected) query.
+        if (!canReadAssignments()) {
+            if (permissionEl) { permissionEl.textContent = 'Your role does not have access to assignments (see firestore.rules).'; permissionEl.className = 'admin-message error'; }
+            if (formCardEl) formCardEl.hidden = true;
+            state.assignments = [];
+            renderAssignments();
+            show('assignments');
+            return;
+        }
+        if (permissionEl) { permissionEl.textContent = ''; permissionEl.className = 'admin-message'; }
+        if (formCardEl) formCardEl.hidden = !canWriteAssignments();
+
+        const bodyEl = $('#assignments-body');
+        if (bodyEl) bodyEl.innerHTML = '<tr><td colspan="6">Loading assignments...</td></tr>';
+        try {
+            await ensureProgrammesLoaded();
+            populateAssignmentProgrammeOptions();
+            const collectionRef = firebase.firestore().collection('assignments');
+            const snapshot = await collectionRef.orderBy('createdAt', 'desc').limit(200).get().catch(() => collectionRef.limit(200).get());
+            state.assignments = snapshot.docs.map(document => ({ id: document.id, ...document.data() }));
+            renderAssignments();
+            show('assignments');
+        } catch (error) {
+            if (bodyEl) bodyEl.innerHTML = '<tr><td colspan="6">Assignments could not be loaded.</td></tr>';
+            message('Assignments could not be loaded.', 'error');
+        }
+    }
+
+    function filteredAssignments() {
+        const queryEl = $('#assignment-search');
+        const programmeEl = $('#assignment-programme-filter');
+        const statusEl = $('#assignment-status-filter');
+        const query = queryEl ? queryEl.value.trim().toLowerCase() : '';
+        const programme = programmeEl ? programmeEl.value : '';
+        const status = statusEl ? statusEl.value : '';
+        return state.assignments.filter(assignment => {
+            const haystack = `${assignment.title || ''} ${assignment.unit || assignment.module || ''} ${assignment.trainer || ''}`.toLowerCase();
+            return (!query || haystack.includes(query))
+                && (!programme || assignment.programmeId === programme)
+                && (!status || assignment.status === status);
+        });
+    }
+
+    function renderAssignments() {
+        const bodyEl = $('#assignments-body');
+        if (!bodyEl) return;
+        if (!canReadAssignments()) { bodyEl.innerHTML = ''; return; }
+        if (!state.assignments.length) {
+            bodyEl.innerHTML = '<tr><td colspan="6">No assignments have been created yet.</td></tr>';
+            return;
+        }
+        const assignments = filteredAssignments();
+        const canWrite = canWriteAssignments();
+        bodyEl.innerHTML = assignments.length ? assignments.map(assignment => `
+            <tr>
+                <td>${escapeHtml(assignment.title || 'Untitled')}</td>
+                <td>${escapeHtml(assignment.programmeId || '')}</td>
+                <td>${escapeHtml(assignment.semester || '')}</td>
+                <td><span class="status-badge">${escapeHtml(assignment.status || 'Draft')}</span></td>
+                <td>${escapeHtml(assignment.dueDate || 'Not set')}</td>
+                <td>${canWrite ? `<button type="button" class="admin-action" data-assignment-edit="${escapeHtml(assignment.id)}">Edit</button> <button type="button" class="admin-action" data-assignment-delete="${escapeHtml(assignment.id)}">Delete</button>` : ''}</td>
+            </tr>`).join('') : '<tr><td colspan="6">No assignments match the current filters.</td></tr>';
+        bodyEl.querySelectorAll('[data-assignment-edit]').forEach(button => button.addEventListener('click', () => editAssignment(button.dataset.assignmentEdit)));
+        bodyEl.querySelectorAll('[data-assignment-delete]').forEach(button => button.addEventListener('click', () => deleteAssignment(button.dataset.assignmentDelete)));
+    }
+
+    function assignmentFormValues() {
+        return {
+            title: $('#assignment-title')?.value.trim() || '',
+            programmeId: $('#assignment-programme')?.value || '',
+            semester: $('#assignment-semester')?.value.trim() || '',
+            unit: $('#assignment-unit')?.value.trim() || '',
+            dueDate: $('#assignment-due-date')?.value || '',
+            assignedDate: $('#assignment-assigned-date')?.value || '',
+            trainer: $('#assignment-trainer')?.value.trim() || '',
+            status: $('#assignment-status')?.value || 'Draft',
+            description: $('#assignment-description')?.value.trim() || ''
+        };
+    }
+
+    async function submitAssignmentForm(event) {
+        event.preventDefault();
+        if (!canWriteAssignments()) return;
+        const button = $('#assignment-submit-button');
+        if (button) button.disabled = true;
+        try {
+            const values = assignmentFormValues();
+            if (state.assignmentEditingId) {
+                await firebase.firestore().collection('assignments').doc(state.assignmentEditingId).update({ ...values, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+            } else {
+                await firebase.firestore().collection('assignments').add({ ...values, createdAt: firebase.firestore.FieldValue.serverTimestamp(), updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+            }
+            resetAssignmentForm();
+            await loadAssignments();
+            message('Assignment saved.', 'success');
+        } catch (error) {
+            message(error?.message || 'The assignment could not be saved.', 'error');
+        } finally {
+            if (button) button.disabled = false;
+        }
+    }
+
+    function editAssignment(id) {
+        const assignment = state.assignments.find(item => item.id === id);
+        if (!assignment) return;
+        state.assignmentEditingId = id;
+        const setValue = (selector, value) => { const el = $(selector); if (el) el.value = value || ''; };
+        setValue('#assignment-title', assignment.title);
+        setValue('#assignment-programme', assignment.programmeId);
+        setValue('#assignment-semester', assignment.semester);
+        setValue('#assignment-unit', assignment.unit || assignment.module);
+        setValue('#assignment-due-date', assignment.dueDate);
+        setValue('#assignment-assigned-date', assignment.assignedDate);
+        setValue('#assignment-trainer', assignment.trainer);
+        setValue('#assignment-status', assignment.status || 'Draft');
+        setValue('#assignment-description', assignment.description);
+        const heading = $('#assignment-form-heading'); if (heading) heading.textContent = 'Edit assignment';
+        const submitButton = $('#assignment-submit-button'); if (submitButton) submitButton.textContent = 'Save assignment';
+        const cancelButton = $('#assignment-cancel-edit'); if (cancelButton) cancelButton.hidden = false;
+        $('#assignment-form-card')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function resetAssignmentForm() {
+        state.assignmentEditingId = null;
+        const formEl = $('#assignment-form');
+        if (formEl) formEl.reset();
+        const heading = $('#assignment-form-heading'); if (heading) heading.textContent = 'Create assignment';
+        const submitButton = $('#assignment-submit-button'); if (submitButton) submitButton.textContent = 'Create assignment';
+        const cancelButton = $('#assignment-cancel-edit'); if (cancelButton) cancelButton.hidden = true;
+    }
+
+    async function deleteAssignment(id) {
+        if (!canWriteAssignments()) return;
+        if (!window.confirm('Delete this assignment? Students will no longer see it.')) return;
+        try {
+            await firebase.firestore().collection('assignments').doc(id).delete();
+            if (state.assignmentEditingId === id) resetAssignmentForm();
+            await loadAssignments();
+            message('Assignment deleted.', 'success');
+        } catch (error) {
+            message(error?.message || 'The assignment could not be deleted.', 'error');
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // PHASE 2 -- LEARNING MATERIALS (top-level `learning_materials` collection)
+    // ------------------------------------------------------------------
+    // Deliberately URL/link-based only (no Storage writes) and public/allowedUids
+    // targeting only -- programIds targeting is a known dead path (see audit) and is
+    // NOT implemented here.
+
+    async function loadMaterials() {
+        const permissionEl = $('#material-permission-message');
+        const formCardEl = $('#material-form-card');
+        const canManage = canManageMaterials();
+        if (formCardEl) formCardEl.hidden = !canManage;
+        if (canManage) {
+            // Preload the student picker as soon as the section opens -- otherwise the
+            // "Add new" form's picker stays empty until something else happens to trigger
+            // ensureMaterialStudentOptionsLoaded() (e.g. toggling the Public checkbox).
+            updateMaterialPickerVisibility();
+            ensureMaterialStudentOptionsLoaded();
+        }
+        if (permissionEl) {
+            permissionEl.textContent = canManage ? '' : 'Your role can view publicly visible materials only. Managing learning materials requires Superadmin or Lecturer (see firestore.rules).';
+            permissionEl.className = canManage ? 'admin-message' : 'admin-muted';
+        }
+        const bodyEl = $('#materials-body');
+        if (bodyEl) bodyEl.innerHTML = '<tr><td colspan="5">Loading learning materials...</td></tr>';
+        try {
+            const collectionRef = firebase.firestore().collection('learning_materials');
+            // Non-managing staff (e.g. plain admin) are not in the learning_materials read
+            // rule's unconditional branch, so only the public==true subset is fetched --
+            // exactly what a signed-in student's own query already relies on.
+            const snapshot = canManage
+                ? await collectionRef.limit(200).get()
+                : await collectionRef.where('public', '==', true).limit(200).get();
+            state.materials = snapshot.docs.map(document => ({ id: document.id, ...document.data() }));
+            renderMaterials();
+            show('materials');
+        } catch (error) {
+            if (bodyEl) bodyEl.innerHTML = '<tr><td colspan="5">Learning materials could not be loaded.</td></tr>';
+            message('Learning materials could not be loaded.', 'error');
+        }
+    }
+
+    function filteredMaterials() {
+        const queryEl = $('#material-search');
+        const query = queryEl ? queryEl.value.trim().toLowerCase() : '';
+        return state.materials.filter(material => {
+            const haystack = `${material.title || material.name || ''} ${material.type || material.category || ''} ${material.trainer || ''}`.toLowerCase();
+            return !query || haystack.includes(query);
+        });
+    }
+
+    function materialVisibilityLabel(material) {
+        if (material.public) return 'Public';
+        const count = Array.isArray(material.allowedUids) ? material.allowedUids.length : 0;
+        return count ? `${count} student${count === 1 ? '' : 's'}` : 'Not visible to students';
+    }
+
+    function renderMaterials() {
+        const bodyEl = $('#materials-body');
+        if (!bodyEl) return;
+        if (!state.materials.length) {
+            bodyEl.innerHTML = '<tr><td colspan="5">No learning materials have been added yet.</td></tr>';
+            return;
+        }
+        const materials = filteredMaterials();
+        const canManage = canManageMaterials();
+        bodyEl.innerHTML = materials.length ? materials.map(material => `
+            <tr>
+                <td>${escapeHtml(material.title || material.name || 'Untitled')}</td>
+                <td>${escapeHtml(material.type || material.category || '')}</td>
+                <td>${escapeHtml(materialVisibilityLabel(material))}</td>
+                <td>${escapeHtml(material.trainer || '')}</td>
+                <td>${canManage ? `<button type="button" class="admin-action" data-material-edit="${escapeHtml(material.id)}">Edit</button> <button type="button" class="admin-action" data-material-delete="${escapeHtml(material.id)}">Delete</button>` : ''}</td>
+            </tr>`).join('') : '<tr><td colspan="5">No learning materials match the current search.</td></tr>';
+        bodyEl.querySelectorAll('[data-material-edit]').forEach(button => button.addEventListener('click', () => editMaterial(button.dataset.materialEdit)));
+        bodyEl.querySelectorAll('[data-material-delete]').forEach(button => button.addEventListener('click', () => deleteMaterial(button.dataset.materialDelete)));
+    }
+
+    function updateMaterialPickerVisibility() {
+        const pickerEl = $('#material-student-picker');
+        const publicEl = $('#material-public');
+        if (pickerEl) pickerEl.hidden = !!publicEl?.checked;
+    }
+
+    async function ensureMaterialStudentOptionsLoaded() {
+        if (state.materialStudentOptions !== null || state.materialStudentPickerError) { renderMaterialStudentPicker(); return; }
+        const messageEl = $('#material-student-picker-message');
+        if (messageEl) { messageEl.textContent = 'Loading students...'; messageEl.className = 'admin-muted'; }
+        try {
+            // students `list` requires isAdmin()||admissions -- a lecturer managing
+            // materials does NOT have this, so this can legitimately fail for them.
+            const snapshot = await firebase.firestore().collection('students').limit(200).get();
+            state.materialStudentOptions = snapshot.docs.map(document => ({ id: document.id, ...document.data() }));
+        } catch (error) {
+            state.materialStudentOptions = [];
+            state.materialStudentPickerError = 'Student search is unavailable for your role (listing students requires Superadmin or Admissions access). Public visibility is still available, and any student targeting already saved on this material is preserved.';
+        }
+        renderMaterialStudentPicker();
+    }
+
+    function renderMaterialStudentPicker() {
+        const listEl = $('#material-student-list');
+        const messageEl = $('#material-student-picker-message');
+        if (!listEl) return;
+        if (state.materialStudentPickerError) {
+            listEl.innerHTML = '';
+            if (messageEl) { messageEl.textContent = state.materialStudentPickerError; messageEl.className = 'admin-muted'; }
+            return;
+        }
+        const students = state.materialStudentOptions || [];
+        const queryEl = $('#material-student-search');
+        const query = queryEl ? queryEl.value.trim().toLowerCase() : '';
+        const filtered = students.filter(student => {
+            const haystack = `${student.fullName || ''} ${student.studentId || ''} ${student.email || ''}`.toLowerCase();
+            return !query || haystack.includes(query);
+        });
+        if (messageEl) { messageEl.textContent = students.length ? '' : 'No student records are available to select.'; messageEl.className = 'admin-muted'; }
+        listEl.innerHTML = filtered.length ? filtered.map(student => `
+            <label class="admin-form-inline"><input type="checkbox" data-student-uid="${escapeHtml(student.id)}" ${state.materialSelectedUids.has(student.id) ? 'checked' : ''}> ${escapeHtml(student.fullName || student.studentId || student.id)}${student.studentId ? ` (${escapeHtml(student.studentId)})` : ''}</label>
+        `).join('') : (students.length ? '<p class="admin-muted">No students match this search.</p>' : '');
+        listEl.querySelectorAll('[data-student-uid]').forEach(checkbox => checkbox.addEventListener('change', () => {
+            const uid = checkbox.dataset.studentUid;
+            if (checkbox.checked) state.materialSelectedUids.add(uid); else state.materialSelectedUids.delete(uid);
+        }));
+    }
+
+    async function submitMaterialForm(event) {
+        event.preventDefault();
+        if (!canManageMaterials()) return;
+        const button = $('#material-submit-button');
+        if (button) button.disabled = true;
+        try {
+            const isPublic = !!$('#material-public')?.checked;
+            const values = {
+                title: $('#material-title')?.value.trim() || '',
+                type: $('#material-type')?.value.trim() || '',
+                trainer: $('#material-trainer')?.value.trim() || '',
+                url: $('#material-url')?.value.trim() || '',
+                public: isPublic,
+                allowedUids: isPublic ? [] : [...state.materialSelectedUids]
+            };
+            if (state.materialEditingId) {
+                await firebase.firestore().collection('learning_materials').doc(state.materialEditingId).update({ ...values, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+            } else {
+                await firebase.firestore().collection('learning_materials').add({ ...values, createdAt: firebase.firestore.FieldValue.serverTimestamp(), updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+            }
+            resetMaterialForm();
+            await loadMaterials();
+            message('Learning material saved.', 'success');
+        } catch (error) {
+            message(error?.message || 'The learning material could not be saved.', 'error');
+        } finally {
+            if (button) button.disabled = false;
+        }
+    }
+
+    function editMaterial(id) {
+        const material = state.materials.find(item => item.id === id);
+        if (!material || !canManageMaterials()) return;
+        state.materialEditingId = id;
+        state.materialSelectedUids = new Set(Array.isArray(material.allowedUids) ? material.allowedUids : []);
+        const setValue = (selector, value) => { const el = $(selector); if (el) el.value = value || ''; };
+        setValue('#material-title', material.title || material.name);
+        setValue('#material-type', material.type || material.category);
+        setValue('#material-trainer', material.trainer);
+        setValue('#material-url', material.url || material.link);
+        const publicEl = $('#material-public'); if (publicEl) publicEl.checked = !!material.public;
+        updateMaterialPickerVisibility();
+        ensureMaterialStudentOptionsLoaded();
+        const heading = $('#material-form-heading'); if (heading) heading.textContent = 'Edit learning material';
+        const submitButton = $('#material-submit-button'); if (submitButton) submitButton.textContent = 'Save material';
+        const cancelButton = $('#material-cancel-edit'); if (cancelButton) cancelButton.hidden = false;
+        $('#material-form-card')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function resetMaterialForm() {
+        state.materialEditingId = null;
+        state.materialSelectedUids = new Set();
+        const formEl = $('#material-form');
+        if (formEl) formEl.reset();
+        updateMaterialPickerVisibility();
+        renderMaterialStudentPicker();
+        const heading = $('#material-form-heading'); if (heading) heading.textContent = 'Add learning material';
+        const submitButton = $('#material-submit-button'); if (submitButton) submitButton.textContent = 'Add material';
+        const cancelButton = $('#material-cancel-edit'); if (cancelButton) cancelButton.hidden = true;
+    }
+
+    async function deleteMaterial(id) {
+        if (!canManageMaterials()) return;
+        if (!window.confirm('Delete this learning material?')) return;
+        try {
+            await firebase.firestore().collection('learning_materials').doc(id).delete();
+            if (state.materialEditingId === id) resetMaterialForm();
+            await loadMaterials();
+            message('Learning material deleted.', 'success');
+        } catch (error) {
+            message(error?.message || 'The learning material could not be deleted.', 'error');
+        }
+    }
+
     async function loadStaff() {
         if (!superadmin()) { message('Only a superadmin can manage staff roles.', 'error'); return; }
         try {
@@ -765,12 +1160,29 @@
         $('#student-overview-form')?.addEventListener('submit', saveStudentOverview);
         document.querySelectorAll('[data-student-tab]').forEach(button => button.addEventListener('click', () => switchStudentTab(button.dataset.studentTab)));
 
+        $('#assignment-form')?.addEventListener('submit', submitAssignmentForm);
+        $('#assignment-cancel-edit')?.addEventListener('click', resetAssignmentForm);
+        $('#assignment-search')?.addEventListener('input', renderAssignments);
+        $('#assignment-programme-filter')?.addEventListener('change', renderAssignments);
+        $('#assignment-status-filter')?.addEventListener('change', renderAssignments);
+
+        $('#material-form')?.addEventListener('submit', submitMaterialForm);
+        $('#material-cancel-edit')?.addEventListener('click', resetMaterialForm);
+        $('#material-search')?.addEventListener('input', renderMaterials);
+        $('#material-public')?.addEventListener('change', () => {
+            updateMaterialPickerVisibility();
+            if (!$('#material-public')?.checked) ensureMaterialStudentOptionsLoaded();
+        });
+        $('#material-student-search')?.addEventListener('input', renderMaterialStudentPicker);
+
         document.querySelectorAll('[data-admin-nav]').forEach(button => button.addEventListener('click', async () => {
             const view = button.dataset.adminNav;
             if (view === 'applications') { await loadData(); show(view); }
             else if (view === 'students') await loadStudents();
             else if (view === 'programmes') await loadProgrammes();
             else if (view === 'trainers') await loadTrainers();
+            else if (view === 'assignments') await loadAssignments();
+            else if (view === 'materials') await loadMaterials();
             else if (view === 'superadmin') { await loadStaff(); show(view); }
             else show(view);
         }));

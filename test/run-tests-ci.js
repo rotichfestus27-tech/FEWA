@@ -1053,6 +1053,137 @@ function buildTests(env) {
                     )
                 );
             }
+        },
+
+        // =====================================================
+        // PHASE 2 -- ADMIN ACADEMIC MANAGEMENT (assignments / learning_materials)
+        // =====================================================
+
+        {
+            name: '39 - Authorized staff (admin) can create an assignment',
+            expect: 'ALLOW',
+            run: async () => {
+                await assertSucceeds(setDoc(doc(auth(env, 'phase2-admin', { roles: { admin: true } }), 'assignments', 'phase2-assignment-1'), {
+                    title: 'Portfolio Project',
+                    programmeId: 'Cosmetology & Advanced Beauty Therapy',
+                    semester: 'Sem 1',
+                    status: 'Draft'
+                }));
+            }
+        },
+
+        {
+            name: '40 - Authorized staff (admin) can update an assignment',
+            expect: 'ALLOW',
+            run: async () => {
+                await assertSucceeds(updateDoc(doc(auth(env, 'phase2-admin', { roles: { admin: true } }), 'assignments', 'phase2-assignment-1'), {
+                    status: 'Published'
+                }));
+            }
+        },
+
+        {
+            name: '41 - Authorized staff (admin) can delete an assignment',
+            expect: 'ALLOW',
+            run: async () => {
+                await assertSucceeds(deleteDoc(doc(auth(env, 'phase2-admin', { roles: { admin: true } }), 'assignments', 'phase2-assignment-1')));
+            }
+        },
+
+        {
+            name: '42 - Unauthorized student cannot create an assignment',
+            expect: 'DENY',
+            run: async () => {
+                await assertFails(setDoc(doc(auth(env, 'phase2-student-denied'), 'assignments', 'phase2-assignment-denied'), {
+                    title: 'Unauthorized',
+                    programmeId: 'Cosmetology & Advanced Beauty Therapy',
+                    semester: 'Sem 1',
+                    status: 'Published'
+                }));
+            }
+        },
+
+        {
+            name: '43 - Student can read a Published assignment matching their own programme/semester',
+            expect: 'ALLOW',
+            run: async () => {
+                const uid = 'phase2-student-matching';
+                const admin = adminDb(env);
+                await setDoc(doc(admin, 'students', uid), { fullName: 'Matching Student', program: 'Cosmetology & Advanced Beauty Therapy', semester: 'Sem 1' });
+                await setDoc(doc(admin, 'assignments', 'phase2-assignment-matching'), {
+                    title: 'Matching Assignment',
+                    programmeId: 'Cosmetology & Advanced Beauty Therapy',
+                    semester: 'Sem 1',
+                    status: 'Published'
+                });
+                await assertSucceeds(getDoc(doc(auth(env, uid), 'assignments', 'phase2-assignment-matching')));
+            }
+        },
+
+        {
+            name: '44 - Student cannot read an assignment intended for another programme/semester',
+            expect: 'DENY',
+            run: async () => {
+                const uid = 'phase2-student-mismatch';
+                const admin = adminDb(env);
+                await setDoc(doc(admin, 'students', uid), { fullName: 'Mismatch Student', program: 'Fashion Design & Creative Styling', semester: 'Sem 2' });
+                await setDoc(doc(admin, 'assignments', 'phase2-assignment-mismatch'), {
+                    title: 'Other Cohort Assignment',
+                    programmeId: 'Cosmetology & Advanced Beauty Therapy',
+                    semester: 'Sem 1',
+                    status: 'Published'
+                });
+                await assertFails(getDoc(doc(auth(env, uid), 'assignments', 'phase2-assignment-mismatch')));
+            }
+        },
+
+        {
+            name: '45 - Superadmin can manage learning materials',
+            expect: 'ALLOW',
+            run: async () => {
+                await assertSucceeds(setDoc(doc(adminDb(env), 'learning_materials', 'phase2-material-superadmin'), {
+                    title: 'Superadmin Material', url: 'https://example.com/a', public: true
+                }));
+            }
+        },
+
+        {
+            name: '46 - Lecturer can manage learning materials',
+            expect: 'ALLOW',
+            run: async () => {
+                await assertSucceeds(setDoc(doc(auth(env, 'phase2-lecturer', { roles: { lecturer: true } }), 'learning_materials', 'phase2-material-lecturer'), {
+                    title: 'Lecturer Material', url: 'https://example.com/b', public: true
+                }));
+            }
+        },
+
+        {
+            name: '47 - Plain admin cannot write learning materials',
+            expect: 'DENY',
+            run: async () => {
+                await assertFails(setDoc(doc(auth(env, 'phase2-admin-only', { roles: { admin: true } }), 'learning_materials', 'phase2-material-admin-denied'), {
+                    title: 'Should Be Denied', url: 'https://example.com/c', public: true
+                }));
+            }
+        },
+
+        {
+            name: '48 - Existing allowed read behavior remains intact: any signed-in user can read a public learning material',
+            expect: 'ALLOW',
+            run: async () => {
+                await assertSucceeds(getDoc(doc(auth(env, 'phase2-random-reader'), 'learning_materials', 'phase2-material-superadmin')));
+            }
+        },
+
+        {
+            name: '49 - Existing allowed read behavior remains intact: a non-targeted signed-in user cannot read a private (non-public) learning material',
+            expect: 'DENY',
+            run: async () => {
+                await setDoc(doc(adminDb(env), 'learning_materials', 'phase2-material-private'), {
+                    title: 'Private Material', url: 'https://example.com/d', public: false, allowedUids: ['some-other-uid']
+                });
+                await assertFails(getDoc(doc(auth(env, 'phase2-uninvited-reader'), 'learning_materials', 'phase2-material-private')));
+            }
         }
     ];
 }

@@ -457,6 +457,48 @@
             object-fit: cover;
         }
 
+        /* ---------- Phase 2: assignments / learning materials forms ---------- */
+        .admin-form-wide { flex-basis: 100%; }
+
+        .admin-form textarea {
+            padding: 11px 13px;
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-sm);
+            font: inherit;
+            width: 100%;
+            min-height: 70px;
+            resize: vertical;
+        }
+
+        /* Used both inside .admin-form (the Public checkbox) and inside the plain
+           #material-student-picker list (student checkboxes) -- !important keeps it
+           consistent in both contexts rather than losing to .admin-form label's grid. */
+        .admin-form-inline {
+            display: flex !important;
+            flex-basis: 100%;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .admin-form input[type="checkbox"], .admin-picker-list input[type="checkbox"] {
+            width: auto;
+            min-width: 0;
+            padding: 0;
+        }
+
+        .admin-picker-list {
+            max-height: 220px;
+            overflow-y: auto;
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-sm);
+            padding: 10px;
+            margin: 10px 0;
+            display: grid;
+            gap: 6px;
+        }
+
+        #material-student-picker[hidden] { display: none; }
+
         /* ---------- messages ---------- */
         .admin-message {
             min-height: 20px;
@@ -534,6 +576,8 @@
             <button type="button" data-admin-nav="students"><i class="fa-solid fa-graduation-cap" aria-hidden="true"></i> Students</button>
             <button type="button" data-admin-nav="programmes"><i class="fa-solid fa-book-open" aria-hidden="true"></i> Programmes</button>
             <button type="button" data-admin-nav="trainers"><i class="fa-solid fa-chalkboard-user" aria-hidden="true"></i> Trainers</button>
+            <button type="button" data-admin-nav="assignments"><i class="fa-solid fa-list-check" aria-hidden="true"></i> Assignments</button>
+            <button type="button" data-admin-nav="materials"><i class="fa-solid fa-book" aria-hidden="true"></i> Learning Materials</button>
             <button type="button" data-admin-nav="superadmin" id="superadmin-panel" hidden><i class="fa-solid fa-user-shield" aria-hidden="true"></i> Superadmin</button>
         </nav>
         <button id="logout-button" type="button" class="admin-logout"><i class="fa-solid fa-arrow-right-from-bracket" aria-hidden="true"></i> Sign out</button>
@@ -705,6 +749,72 @@
                 </div>
             </section>
 
+            <section data-admin-view="assignments" hidden>
+                <div class="admin-section-heading"><h2>Assignments</h2><p class="admin-muted">Create and publish assignments for a programme and semester cohort.</p></div>
+                <p id="assignment-permission-message" class="admin-message"></p>
+                <div class="admin-toolbar">
+                    <input id="assignment-search" type="search" placeholder="Search title, unit or trainer">
+                    <select id="assignment-programme-filter"><option value="">All programmes</option></select>
+                    <select id="assignment-status-filter"><option value="">All statuses</option><option value="Draft">Draft</option><option value="Published">Published</option></select>
+                </div>
+                <div class="admin-card" id="assignment-form-card">
+                    <h3 id="assignment-form-heading">Create assignment</h3>
+                    <form id="assignment-form" class="admin-form">
+                        <label>Title<input id="assignment-title" required></label>
+                        <label>Programme<select id="assignment-programme" required><option value="">Select programme</option></select></label>
+                        <label>Semester<input id="assignment-semester" required></label>
+                        <label>Unit/Module<input id="assignment-unit"></label>
+                        <label>Due date<input id="assignment-due-date" type="date"></label>
+                        <label>Assigned date<input id="assignment-assigned-date" type="date"></label>
+                        <label>Trainer<input id="assignment-trainer"></label>
+                        <label>Status<select id="assignment-status"><option value="Draft">Draft</option><option value="Published">Published</option></select></label>
+                        <label class="admin-form-wide">Description<textarea id="assignment-description" rows="3"></textarea></label>
+                        <button type="submit" id="assignment-submit-button" class="btn btn-primary">Create assignment</button>
+                        <button type="button" id="assignment-cancel-edit" class="admin-action" hidden>Cancel edit</button>
+                    </form>
+                    <p id="assignment-form-message" class="admin-message" role="status"></p>
+                </div>
+                <div class="admin-card admin-table-wrap">
+                    <table class="admin-table">
+                        <thead><tr><th>Title</th><th>Programme</th><th>Semester</th><th>Status</th><th>Due</th><th></th></tr></thead>
+                        <tbody id="assignments-body"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section data-admin-view="materials" hidden>
+                <div class="admin-section-heading"><h2>Learning Materials</h2><p class="admin-muted">Publish learning materials by link. Target them publicly or to specific students.</p></div>
+                <p id="material-permission-message" class="admin-message"></p>
+                <div class="admin-toolbar">
+                    <input id="material-search" type="search" placeholder="Search title, type or trainer">
+                </div>
+                <div class="admin-card" id="material-form-card" hidden>
+                    <h3 id="material-form-heading">Add learning material</h3>
+                    <form id="material-form" class="admin-form">
+                        <label>Title<input id="material-title" required></label>
+                        <label>Type/Category<input id="material-type"></label>
+                        <label>Trainer<input id="material-trainer"></label>
+                        <label class="admin-form-wide">Link (URL)<input id="material-url" type="url" placeholder="https://..." required></label>
+                        <label class="admin-form-inline"><input id="material-public" type="checkbox"> Visible to all students (Public)</label>
+                        <button type="submit" id="material-submit-button" class="btn btn-primary">Add material</button>
+                        <button type="button" id="material-cancel-edit" class="admin-action" hidden>Cancel edit</button>
+                    </form>
+                    <div id="material-student-picker">
+                        <p class="admin-muted">Or target specific students (used only when Public is unchecked):</p>
+                        <input id="material-student-search" type="search" placeholder="Search students by name, ID or email">
+                        <div id="material-student-list" class="admin-picker-list"></div>
+                        <p id="material-student-picker-message" class="admin-message"></p>
+                    </div>
+                    <p id="material-form-message" class="admin-message" role="status"></p>
+                </div>
+                <div class="admin-card admin-table-wrap">
+                    <table class="admin-table">
+                        <thead><tr><th>Title</th><th>Type</th><th>Visibility</th><th>Trainer</th><th></th></tr></thead>
+                        <tbody id="materials-body"></tbody>
+                    </table>
+                </div>
+            </section>
+
             <section data-admin-view="superadmin" hidden>
                 <div class="admin-section-heading"><h2>Superadmin</h2><p class="admin-muted">Grant or revoke administration roles for FEWA staff accounts.</p></div>
                 <div class="admin-card">
@@ -732,6 +842,6 @@
         </div>
     </main>
 </div>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script><script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-functions-compat.js"></script><script src="config.js"></script><script src="admin-portal.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script><script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-storage-compat.js"></script><script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-functions-compat.js"></script><script src="config.js"></script><script src="admin-portal.js"></script>
 </body>
 </html>
