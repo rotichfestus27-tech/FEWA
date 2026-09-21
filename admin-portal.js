@@ -994,6 +994,32 @@
         }
     }
 
+    // Mirrors createProgramme's minimal create-only pattern -- firestore.rules already
+    // restricts trainers writes to isAdmin(), enforced server-side exactly as Programmes
+    // relies on its own write rule rather than an extra client-side role gate.
+    async function createTrainer(event) {
+        event.preventDefault();
+        const button = event.target.querySelector('button');
+        if (button) button.disabled = true;
+        try {
+            await firebase.firestore().collection('trainers').add({
+                name: $('#trainer-name')?.value.trim() || '',
+                email: $('#trainer-email')?.value.trim() || '',
+                speciality: $('#trainer-speciality')?.value.trim() || '',
+                active: !!$('#trainer-active')?.checked,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            event.target.reset();
+            const activeInput = $('#trainer-active'); if (activeInput) activeInput.checked = true;
+            await loadTrainers();
+            message('Trainer added.', 'success');
+        } catch (error) {
+            message('Trainer could not be added.', 'error');
+        } finally {
+            if (button) button.disabled = false;
+        }
+    }
+
     // ------------------------------------------------------------------
     // PHASE 2 -- ASSIGNMENTS (top-level `assignments` collection)
     // ------------------------------------------------------------------
@@ -1575,6 +1601,7 @@
         $('#accept-create-student')?.addEventListener('click', promoteSelectedApplication);
         $('#delete-application')?.addEventListener('click', deleteSelectedApplication);
         $('#programme-form')?.addEventListener('submit', createProgramme);
+        $('#trainer-form')?.addEventListener('submit', createTrainer);
         $('#detail-close')?.addEventListener('click', () => { const el = $('#application-detail'); if (el) el.hidden = true; });
         $('#role-form')?.addEventListener('submit', event => { event.preventDefault(); submitRoleChange(true); });
         $('#role-revoke-button')?.addEventListener('click', () => submitRoleChange(false));

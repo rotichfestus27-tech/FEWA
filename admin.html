@@ -782,10 +782,10 @@
             <section data-admin-view="dashboard">
                 <div class="admin-section-heading"><h2>Overview</h2><p class="admin-muted">A snapshot of admissions activity across FEWA.</p></div>
                 <div class="admin-grid">
-                    <article class="admin-card admin-stat"><span class="admin-stat-icon"><i class="fa-solid fa-file-lines"></i></span><span class="admin-stat-label">Total applications</span><strong id="stat-total">0</strong></article>
-                    <article class="admin-card admin-stat"><span class="admin-stat-icon"><i class="fa-solid fa-paper-plane"></i></span><span class="admin-stat-label">Submitted</span><strong id="stat-submitted">0</strong></article>
-                    <article class="admin-card admin-stat"><span class="admin-stat-icon"><i class="fa-solid fa-magnifying-glass"></i></span><span class="admin-stat-label">Needs review</span><strong id="stat-review">0</strong></article>
-                    <article class="admin-card admin-stat"><span class="admin-stat-icon"><i class="fa-solid fa-circle-check"></i></span><span class="admin-stat-label">Accepted</span><strong id="stat-accepted">0</strong></article>
+                    <article class="admin-card admin-stat"><span class="admin-stat-icon"><i class="fa-solid fa-file-lines"></i></span><span class="admin-stat-label">Total applications</span><strong id="stat-total">&mdash;</strong></article>
+                    <article class="admin-card admin-stat"><span class="admin-stat-icon"><i class="fa-solid fa-paper-plane"></i></span><span class="admin-stat-label">Submitted</span><strong id="stat-submitted">&mdash;</strong></article>
+                    <article class="admin-card admin-stat"><span class="admin-stat-icon"><i class="fa-solid fa-magnifying-glass"></i></span><span class="admin-stat-label">Needs review</span><strong id="stat-review">&mdash;</strong></article>
+                    <article class="admin-card admin-stat"><span class="admin-stat-icon"><i class="fa-solid fa-circle-check"></i></span><span class="admin-stat-label">Accepted</span><strong id="stat-accepted">&mdash;</strong></article>
                 </div>
             </section>
 
@@ -983,6 +983,15 @@
 
             <section data-admin-view="trainers" hidden>
                 <div class="admin-section-heading"><h2>Trainers</h2><p class="admin-muted">FEWA's teaching staff and their areas of speciality.</p></div>
+                <div class="admin-card">
+                    <form id="trainer-form" class="admin-form">
+                        <label>Name<input id="trainer-name" required></label>
+                        <label>Email<input id="trainer-email" type="email"></label>
+                        <label>Speciality<input id="trainer-speciality"></label>
+                        <label class="admin-form-inline"><input id="trainer-active" type="checkbox" checked> Active</label>
+                        <button type="submit" class="btn btn-primary">Add trainer</button>
+                    </form>
+                </div>
                 <div class="admin-card admin-table-wrap">
                     <table class="admin-table">
                         <thead><tr><th>Name</th><th>Email</th><th>Speciality</th><th>Status</th></tr></thead>
