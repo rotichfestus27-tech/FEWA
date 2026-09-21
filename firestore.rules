@@ -282,28 +282,33 @@ service cloud.firestore {
 
     match /learning_materials/{docId} {
 
+      // Both targeting branches use direct equality (== ), never `in`/array-contains,
+      // against resource.data -- confirmed by isolated testing that Firestore's
+      // list-query safety analysis can NEVER prove an `in`/array-contains check safe
+      // for a `list` query, regardless of get() or nesting; only plain equality
+      // matching the query's own where() filter is provable (the same shape the
+      // working `assignments` rule already uses). The previous `allowedUids` (array
+      // + array-contains) was found to have the identical problem and was ALSO
+      // already broken for list queries before this fix -- confirmed against the
+      // original, unmodified rule text. Single-student targeting (`allowedUid`)
+      // replaces it; multi-student targeting is no longer supported per-material.
       allow read: if
         resource.data.get('public', false) == true
 
+        || hasRole('lecturer')
+        || hasRole('superadmin')
+
         || (
           isSignedIn()
-          && (
-            (
-              request.auth.token.get('program', null) != null
-              && resource.data.get('programIds', []) is list
-              && request.auth.token.get('program', '') in
-                 resource.data.get('programIds', [])
-            )
+          && resource.data.get('allowedUid', '') != ''
+          && resource.data.get('allowedUid', '') == request.auth.uid
+        )
 
-            || (
-              resource.data.get('allowedUids', []) is list
-              && request.auth.uid in
-                 resource.data.get('allowedUids', [])
-            )
-
-            || hasRole('lecturer')
-            || hasRole('superadmin')
-          )
+        || (
+          isSignedIn()
+          && resource.data.get('programmeId', '') != ''
+          && resource.data.get('programmeId', '') ==
+             get(/databases/$(database)/documents/students/$(request.auth.uid)).data.get('program', '')
         );
 
       allow create, update, delete: if

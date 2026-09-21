@@ -30,11 +30,17 @@ service firebase.storage {
     }
 
     match /students/{studentUid}/submissions/{submissionId}/{fileName} {
+      // 'lecturer' added here to match the read access lecturers already have to this
+      // same submission in firestore.rules and to the grading UI (canManageAcademic()
+      // in admin-portal.js) -- without it, a lecturer could grade a submission but got
+      // Storage permission-denied clicking "View file".
       allow read: if request.auth != null && (request.auth.uid == studentUid
         || (request.auth.token.get('roles', []) is list && 'admin' in request.auth.token.get('roles', []))
         || (request.auth.token.get('roles', []) is list && 'superadmin' in request.auth.token.get('roles', []))
+        || (request.auth.token.get('roles', []) is list && 'lecturer' in request.auth.token.get('roles', []))
         || request.auth.token.get('roles', {}).get('admin', false) == true
-        || request.auth.token.get('roles', {}).get('superadmin', false) == true);
+        || request.auth.token.get('roles', {}).get('superadmin', false) == true
+        || request.auth.token.get('roles', {}).get('lecturer', false) == true);
       allow write: if request.auth != null && request.auth.uid == studentUid
         && request.resource.size <= 10 * 1024 * 1024
         && request.resource.contentType.matches('application/pdf|image/jpeg|image/png|application/vnd.openxmlformats-officedocument.wordprocessingml.document');

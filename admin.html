@@ -328,6 +328,10 @@
             min-width: 220px;
             transition: border-color 0.2s ease, box-shadow 0.2s ease;
         }
+        /* The 220px default clips longer placeholders like "Search title, type or
+           trainer" -- search boxes specifically get more room; toolbar selects are
+           unaffected. */
+        .admin-toolbar input[type="search"] { min-width: 280px; }
         .admin-toolbar input:focus, .admin-toolbar select:focus, .admin-form input:focus, .admin-form select:focus {
             outline: none;
             border-color: var(--gold-primary);
@@ -387,6 +391,45 @@
         }
         .admin-table tbody tr:hover { background: var(--purple-soft); }
         .admin-table td[colspan] { text-align: center; color: var(--text-muted); padding: 30px 14px; }
+
+        /* Submissions/grading only: on narrow screens the normal wide table (with its
+           760px min-width) forces silent horizontal scrolling with no visible affordance,
+           hiding Status/Grade/actions off-screen. Below 640px, collapse it into stacked
+           cards instead -- one card per submission, each cell labelled via data-label.
+           Scoped to this one panel so every other admin table (results, timetable,
+           attendance, fees, documents) keeps its normal table layout unchanged. */
+        @media (max-width: 640px) {
+            [data-academic-subpanel="submissions"] .admin-table-wrap { overflow-x: visible; }
+            [data-academic-subpanel="submissions"] .admin-table { min-width: 0; }
+            [data-academic-subpanel="submissions"] .admin-table thead { display: none; }
+            [data-academic-subpanel="submissions"] .admin-table, [data-academic-subpanel="submissions"] .admin-table tbody,
+            [data-academic-subpanel="submissions"] .admin-table tr, [data-academic-subpanel="submissions"] .admin-table td {
+                display: block;
+                width: 100%;
+            }
+            [data-academic-subpanel="submissions"] .admin-table tr {
+                margin-bottom: 12px;
+                border: 1px solid var(--border-light);
+                border-radius: var(--radius-sm);
+                padding: 4px 10px;
+            }
+            [data-academic-subpanel="submissions"] .admin-table td {
+                display: flex;
+                gap: 10px;
+                padding: 8px 0;
+                border-bottom: 1px solid var(--border-light);
+            }
+            [data-academic-subpanel="submissions"] .admin-table td:last-child { border-bottom: none; flex-wrap: wrap; }
+            [data-academic-subpanel="submissions"] .admin-table td::before {
+                content: attr(data-label);
+                font-weight: 700;
+                font-size: 0.68rem;
+                letter-spacing: 0.06em;
+                text-transform: uppercase;
+                color: var(--text-muted);
+                flex: 0 0 90px;
+            }
+        }
 
         /* ---------- status badges ---------- */
         .status-badge {
@@ -538,6 +581,96 @@
 
         #material-student-picker[hidden] { display: none; }
 
+        /* ---------- Student Profile: header summary ---------- */
+        .student-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 16px 0 20px;
+            border-bottom: 1px solid var(--border-light);
+            margin-bottom: 16px;
+        }
+
+        .student-header-avatar {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            display: grid;
+            place-items: center;
+            background: var(--gold-primary);
+            color: var(--purple-deep);
+            font-weight: 800;
+            font-family: var(--font-serif);
+            font-size: 1.3rem;
+            flex-shrink: 0;
+            object-fit: cover;
+            overflow: hidden;
+        }
+
+        .student-header-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+        .student-header-info { flex: 1; min-width: 0; }
+        .student-header-info h4 { margin: 0 0 4px; font-family: var(--font-serif); font-size: 1.2rem; color: var(--purple-deep); }
+        .student-header-meta { color: var(--text-secondary); font-size: 0.85rem; display: flex; flex-wrap: wrap; gap: 4px 14px; }
+
+        /* ---------- Student Profile: sub-tabs (Academic tab) ---------- */
+        .student-subtabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin-bottom: 14px;
+        }
+
+        .student-subtab {
+            border: 1px solid var(--border-light);
+            background: var(--white);
+            color: var(--text-secondary);
+            padding: 6px 12px;
+            border-radius: var(--radius-full);
+            cursor: pointer;
+            font: inherit;
+            font-size: 0.78rem;
+            font-weight: 700;
+        }
+
+        .student-subtab.active { background: var(--purple-deep); color: var(--white); border-color: var(--purple-deep); }
+        .student-subpanel[hidden] { display: none; }
+
+        /* ---------- Student Profile: fees summary tiles ---------- */
+        .student-fees-summary {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .student-fees-summary .admin-stat strong { font-size: 1.4rem; }
+
+        /* ---------- Student Profile: read-only reference blocks ---------- */
+        .student-reference-block {
+            margin-top: 18px;
+            padding-top: 16px;
+            border-top: 1px dashed var(--border-light);
+        }
+
+        .student-reference-block h4 { margin: 0 0 10px; font-size: 0.95rem; color: var(--purple-deep); }
+
+        .student-comm-list { display: grid; gap: 10px; margin: 10px 0 20px; }
+
+        .student-comm-item {
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-sm);
+            padding: 12px 14px;
+        }
+
+        .student-comm-item strong { display: block; margin-bottom: 4px; color: var(--purple-deep); }
+        .student-comm-item .admin-muted { font-size: 0.75rem; margin-top: 6px; }
+
+        @media (max-width: 600px) {
+            .student-fees-summary { grid-template-columns: 1fr; }
+            .student-header { flex-wrap: wrap; }
+        }
+
         /* ---------- messages ---------- */
         .admin-message {
             min-height: 20px;
@@ -684,6 +817,7 @@
                             <label>Status <select id="application-status"><option>Draft</option><option>Submitted</option><option>Under Review</option><option>More Information Required</option><option disabled>Accepted</option><option>Rejected</option></select></label>
                             <button id="save-application-status" type="button" class="admin-action">Save status</button>
                             <button id="accept-create-student" type="button" class="btn btn-primary" hidden>Accept and create student</button>
+                            <button id="delete-application" type="button" class="admin-action">Delete application</button>
                         </div>
                     </div>
                 </section>
@@ -708,14 +842,23 @@
                         <div class="admin-detail-header"><h3 id="student-detail-title">Student</h3><button id="student-detail-close" type="button" class="admin-icon-button" aria-label="Close"><i class="fa-solid fa-xmark"></i></button></div>
                         <p id="student-detail-message" class="admin-message" role="status"></p>
 
+                        <div class="student-header" id="student-header">
+                            <div class="student-header-avatar" id="student-header-avatar"></div>
+                            <div class="student-header-info">
+                                <h4 id="student-header-name">Student</h4>
+                                <div class="student-header-meta" id="student-header-meta"></div>
+                            </div>
+                            <span class="status-badge" id="student-header-status"></span>
+                        </div>
+
                         <nav class="student-tabs" aria-label="Student record sections">
                             <button type="button" class="student-tab active" data-student-tab="overview">Overview</button>
-                            <button type="button" class="student-tab" data-student-tab="results">Results</button>
-                            <button type="button" class="student-tab" data-student-tab="timetable">Timetable</button>
+                            <button type="button" class="student-tab" data-student-tab="academic">Academic</button>
                             <button type="button" class="student-tab" data-student-tab="attendance">Attendance</button>
                             <button type="button" class="student-tab" data-student-tab="fees">Fees</button>
                             <button type="button" class="student-tab" data-student-tab="documents">Documents</button>
-                            <button type="button" class="student-tab" data-student-tab="submissions">Submissions</button>
+                            <button type="button" class="student-tab" data-student-tab="communication">Communication</button>
+                            <button type="button" class="student-tab" data-student-tab="account">Account</button>
                         </nav>
 
                         <div class="student-tab-panel" data-student-panel="overview">
@@ -727,22 +870,51 @@
                                 <label>Emergency contact<input id="student-edit-emergencyContact"></label>
                                 <label>Programme<input id="student-edit-program"></label>
                                 <label>Semester<input id="student-edit-semester"></label>
-                                <label>Admission status<input id="student-edit-admissionStatus"></label>
+                                <label>Admission status<select id="student-edit-admissionStatus">
+                                    <option>Accepted</option>
+                                    <option>Active</option>
+                                    <option>Suspended</option>
+                                    <option>Graduated</option>
+                                    <option>Withdrawn</option>
+                                </select></label>
                                 <button type="submit" class="btn btn-primary">Save profile</button>
                             </form>
                             <p id="student-overview-permission-note" class="admin-muted"></p>
+                            <div class="student-reference-block" id="student-application-background" hidden>
+                                <h4>Application background</h4>
+                                <p class="admin-muted">Read-only, from the original application. Not duplicated into the student record.</p>
+                                <dl class="detail-grid" id="student-application-background-grid"></dl>
+                            </div>
                         </div>
 
-                        <div class="student-tab-panel" data-student-panel="results" hidden>
-                            <p class="admin-message" data-panel-permission></p>
-                            <form class="admin-form" data-panel-form hidden></form>
-                            <div class="admin-table-wrap"><table class="admin-table"><thead data-panel-thead></thead><tbody data-panel-body></tbody></table></div>
-                        </div>
-
-                        <div class="student-tab-panel" data-student-panel="timetable" hidden>
-                            <p class="admin-message" data-panel-permission></p>
-                            <form class="admin-form" data-panel-form hidden></form>
-                            <div class="admin-table-wrap"><table class="admin-table"><thead data-panel-thead></thead><tbody data-panel-body></tbody></table></div>
+                        <div class="student-tab-panel" data-student-panel="academic" hidden>
+                            <nav class="student-subtabs" aria-label="Academic sections">
+                                <button type="button" class="student-subtab active" data-academic-subtab="results">Results</button>
+                                <button type="button" class="student-subtab" data-academic-subtab="timetable">Timetable</button>
+                                <button type="button" class="student-subtab" data-academic-subtab="submissions">Submissions</button>
+                            </nav>
+                            <div class="student-subpanel" data-academic-subpanel="results">
+                                <p class="admin-message" data-panel-permission></p>
+                                <form class="admin-form" data-panel-form hidden></form>
+                                <div class="admin-table-wrap"><table class="admin-table"><thead data-panel-thead></thead><tbody data-panel-body></tbody></table></div>
+                            </div>
+                            <div class="student-subpanel" data-academic-subpanel="timetable" hidden>
+                                <p class="admin-message" data-panel-permission></p>
+                                <form class="admin-form" data-panel-form hidden></form>
+                                <div class="admin-table-wrap"><table class="admin-table"><thead data-panel-thead></thead><tbody data-panel-body></tbody></table></div>
+                            </div>
+                            <div class="student-subpanel" data-academic-subpanel="submissions" hidden>
+                                <p class="admin-message" data-panel-permission></p>
+                                <div class="admin-table-wrap"><table class="admin-table"><thead data-panel-thead></thead><tbody data-panel-body></tbody></table></div>
+                                <form id="submission-grade-form" class="admin-form" hidden>
+                                    <h4 id="submission-grade-heading" class="admin-form-wide">Grade submission</h4>
+                                    <p id="submission-grade-id" class="admin-muted admin-form-wide"></p>
+                                    <label>Grade / score<input id="submission-grade-value" required></label>
+                                    <label class="admin-form-wide">Feedback<textarea id="submission-grade-feedback" rows="3"></textarea></label>
+                                    <button type="submit" class="btn btn-primary">Save grade</button>
+                                    <button type="button" class="admin-action" id="submission-grade-cancel">Cancel</button>
+                                </form>
+                            </div>
                         </div>
 
                         <div class="student-tab-panel" data-student-panel="attendance" hidden>
@@ -752,6 +924,11 @@
                         </div>
 
                         <div class="student-tab-panel" data-student-panel="fees" hidden>
+                            <div class="student-fees-summary" id="student-fees-summary" hidden>
+                                <article class="admin-card admin-stat"><span class="admin-stat-label">Total invoiced</span><strong id="student-fees-total">0</strong></article>
+                                <article class="admin-card admin-stat"><span class="admin-stat-label">Total paid</span><strong id="student-fees-paid">0</strong></article>
+                                <article class="admin-card admin-stat"><span class="admin-stat-label">Outstanding</span><strong id="student-fees-outstanding">0</strong></article>
+                            </div>
                             <p class="admin-message" data-panel-permission></p>
                             <form class="admin-form" data-panel-form hidden></form>
                             <div class="admin-table-wrap"><table class="admin-table"><thead data-panel-thead></thead><tbody data-panel-body></tbody></table></div>
@@ -760,11 +937,26 @@
                         <div class="student-tab-panel" data-student-panel="documents" hidden>
                             <p class="admin-message" data-panel-permission></p>
                             <div class="admin-table-wrap"><table class="admin-table"><thead data-panel-thead></thead><tbody data-panel-body></tbody></table></div>
+                            <div class="student-reference-block" id="student-application-documents-block" hidden>
+                                <h4>Application documents</h4>
+                                <p class="admin-muted">Read-only, filenames recorded on the original application.</p>
+                                <div id="student-application-documents-list"></div>
+                            </div>
                         </div>
 
-                        <div class="student-tab-panel" data-student-panel="submissions" hidden>
-                            <p class="admin-message" data-panel-permission></p>
-                            <div class="admin-table-wrap"><table class="admin-table"><thead data-panel-thead></thead><tbody data-panel-body></tbody></table></div>
+                        <div class="student-tab-panel" data-student-panel="communication" hidden>
+                            <p class="admin-message" id="student-communication-permission"></p>
+                            <h4>Notifications</h4>
+                            <div class="student-comm-list" id="student-notifications-list"></div>
+                            <h4>Messages</h4>
+                            <div class="student-comm-list" id="student-messages-list"></div>
+                        </div>
+
+                        <div class="student-tab-panel" data-student-panel="account" hidden>
+                            <dl class="detail-grid" id="student-account-grid"></dl>
+                            <p class="admin-muted">Last login and account-enabled status require Firebase Auth admin access, which this portal does not currently query — not shown rather than guessed.</p>
+                            <button type="button" id="student-reset-password" class="admin-action" hidden>Send password reset email</button>
+                            <p id="student-account-message" class="admin-message"></p>
                         </div>
                     </div>
                 </section>
@@ -846,16 +1038,17 @@
                         <label>Trainer<input id="material-trainer"></label>
                         <label class="admin-form-wide">Link (URL)<input id="material-url" type="url" placeholder="https://..." required></label>
                         <label class="admin-form-inline"><input id="material-public" type="checkbox"> Visible to all students (Public)</label>
+                        <label>Programme (optional)<select id="material-programme"><option value="">Not programme-targeted</option></select></label>
+                        <div id="material-student-picker" class="admin-form-wide">
+                            <p class="admin-muted">Or target one specific student (used only when Public is unchecked). This selection is saved together with the material below:</p>
+                            <input id="material-student-search" type="search" placeholder="Search students by name, ID or email">
+                            <div id="material-student-list" class="admin-picker-list"></div>
+                            <p id="material-student-picker-message" class="admin-message"></p>
+                        </div>
+                        <p id="material-form-message" class="admin-message admin-form-wide" role="status"></p>
                         <button type="submit" id="material-submit-button" class="btn btn-primary">Add material</button>
                         <button type="button" id="material-cancel-edit" class="admin-action" hidden>Cancel edit</button>
                     </form>
-                    <div id="material-student-picker">
-                        <p class="admin-muted">Or target specific students (used only when Public is unchecked):</p>
-                        <input id="material-student-search" type="search" placeholder="Search students by name, ID or email">
-                        <div id="material-student-list" class="admin-picker-list"></div>
-                        <p id="material-student-picker-message" class="admin-message"></p>
-                    </div>
-                    <p id="material-form-message" class="admin-message" role="status"></p>
                 </div>
                 <div class="admin-card admin-table-wrap">
                     <table class="admin-table">

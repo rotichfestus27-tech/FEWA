@@ -11,7 +11,11 @@ const {
     setDoc,
     updateDoc,
     getDoc,
-    deleteDoc
+    deleteDoc,
+    collection,
+    query,
+    where,
+    getDocs
 } = require('firebase/firestore');
 
 const PROJECT_ID = 'fewa-rules-test';
@@ -1180,9 +1184,128 @@ function buildTests(env) {
             expect: 'DENY',
             run: async () => {
                 await setDoc(doc(adminDb(env), 'learning_materials', 'phase2-material-private'), {
-                    title: 'Private Material', url: 'https://example.com/d', public: false, allowedUids: ['some-other-uid']
+                    title: 'Private Material', url: 'https://example.com/d', public: false, allowedUid: 'some-other-uid'
                 });
                 await assertFails(getDoc(doc(auth(env, 'phase2-uninvited-reader'), 'learning_materials', 'phase2-material-private')));
+            }
+        },
+
+        // =====================================================
+        // E-LEARNING IMPROVEMENTS -- programmeId targeting fix + grading
+        // =====================================================
+
+        {
+            name: '50 - A student in the targeted programme CAN read a programmeId-targeted material',
+            expect: 'ALLOW',
+            run: async () => {
+                const uid = 'elearning-student-matching';
+                const admin = adminDb(env);
+                await setDoc(doc(admin, 'students', uid), { fullName: 'Matching Student', program: 'Cosmetology & Advanced Beauty Therapy' });
+                await setDoc(doc(admin, 'learning_materials', 'elearning-material-targeted'), {
+                    title: 'Cosmetology Only Material', url: 'https://example.com/e', public: false, programmeId: 'Cosmetology & Advanced Beauty Therapy'
+                });
+                await assertSucceeds(getDoc(doc(auth(env, uid), 'learning_materials', 'elearning-material-targeted')));
+            }
+        },
+
+        {
+            name: '51 - A student in a DIFFERENT programme cannot read that programmeId-targeted material',
+            expect: 'DENY',
+            run: async () => {
+                const uid = 'elearning-student-mismatch';
+                await setDoc(doc(adminDb(env), 'students', uid), { fullName: 'Mismatch Student', program: 'Fashion Design & Creative Styling' });
+                await assertFails(getDoc(doc(auth(env, uid), 'learning_materials', 'elearning-material-targeted')));
+            }
+        },
+
+        {
+            name: '51b - A student in the targeted programme CAN run a LIST query for programmeId-targeted materials',
+            expect: 'ALLOW',
+            run: async () => {
+                // This must be a list query (getDocs + where), not getDoc -- Firestore proves
+                // list-query safety differently than single-document reads, and this is exactly
+                // the shape that was broken (and fixed) for this rule.
+                const uid = 'elearning-student-matching';
+                const q = query(collection(auth(env, uid), 'learning_materials'), where('programmeId', '==', 'Cosmetology & Advanced Beauty Therapy'));
+                const snap = await assertSucceeds(getDocs(q));
+                if (snap.empty) throw new Error('Expected the programmeId list query to return at least one material');
+            }
+        },
+
+        {
+            name: '51c - The specifically-targeted student CAN read an allowedUid-targeted material',
+            expect: 'ALLOW',
+            run: async () => {
+                const uid = 'elearning-student-allowed';
+                await setDoc(doc(adminDb(env), 'learning_materials', 'elearning-material-allowed-uid'), {
+                    title: 'Just For One Student', url: 'https://example.com/f', public: false, allowedUid: uid
+                });
+                await assertSucceeds(getDoc(doc(auth(env, uid), 'learning_materials', 'elearning-material-allowed-uid')));
+            }
+        },
+
+        {
+            name: '51d - A DIFFERENT student cannot read that allowedUid-targeted material',
+            expect: 'DENY',
+            run: async () => {
+                await assertFails(getDoc(doc(auth(env, 'elearning-student-not-allowed'), 'learning_materials', 'elearning-material-allowed-uid')));
+            }
+        },
+
+        {
+            name: '51e - The specifically-targeted student CAN run a LIST query for their allowedUid-targeted material',
+            expect: 'ALLOW',
+            run: async () => {
+                // This is the exact query shape (array-contains, pre-fix) that was proven
+                // to always fail for list queries, regardless of rule nesting -- replaced
+                // with a single-student equality field precisely so this query type works.
+                const uid = 'elearning-student-allowed';
+                const q = query(collection(auth(env, uid), 'learning_materials'), where('allowedUid', '==', uid));
+                const snap = await assertSucceeds(getDocs(q));
+                if (snap.empty) throw new Error('Expected the allowedUid list query to return at least one material');
+            }
+        },
+
+        {
+            name: '52 - Student cannot write grade/feedback/gradedAt/gradedBy on their own submission',
+            expect: 'DENY',
+            run: async () => {
+                const uid = 'elearning-grading-student';
+                await setDoc(doc(adminDb(env), 'students', uid, 'submissions', 'assignment-1'), {
+                    assignmentId: 'assignment-1', studentUid: uid, fileName: 'work.pdf', filePath: 'x', submittedAt: new Date().toISOString(), status: 'Submitted'
+                });
+                await assertFails(updateDoc(doc(auth(env, uid), 'students', uid, 'submissions', 'assignment-1'), {
+                    status: 'Submitted', grade: 'A', feedback: 'Great work', gradedAt: new Date().toISOString(), gradedBy: uid
+                }));
+            }
+        },
+
+        {
+            name: '53 - Authorized staff (admin) CAN write grade/feedback to a submission',
+            expect: 'ALLOW',
+            run: async () => {
+                const uid = 'elearning-grading-student';
+                await assertSucceeds(updateDoc(doc(auth(env, 'elearning-admin', { roles: { admin: true } }), 'students', uid, 'submissions', 'assignment-1'), {
+                    grade: 'A', feedback: 'Great work', gradedAt: new Date().toISOString(), gradedBy: 'elearning-admin', status: 'Graded'
+                }));
+            }
+        },
+
+        {
+            name: '54 - The student CAN read their own graded submission (grade + feedback included)',
+            expect: 'ALLOW',
+            run: async () => {
+                const uid = 'elearning-grading-student';
+                await assertSucceeds(getDoc(doc(auth(env, uid), 'students', uid, 'submissions', 'assignment-1')));
+            }
+        },
+
+        {
+            name: '55 - A different student cannot read this student\'s graded submission',
+            expect: 'DENY',
+            run: async () => {
+                const uid = 'elearning-grading-student';
+                await assertFails(getDoc(doc(auth(env, 'elearning-other-student'), 'students', uid, 'submissions', 'assignment-1')));
             }
         }
     ];

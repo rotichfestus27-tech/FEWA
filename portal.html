@@ -371,6 +371,17 @@
             font-size: 14px;
         }
 
+        .portal-notice {
+            color: #6b4a12;
+            background: #fdf3e0;
+            border: 1px solid var(--portal-gold);
+            border-left-width: 4px;
+            padding: 12px 14px;
+            border-radius: 5px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
         .portal-table-wrap {
             overflow-x: auto;
         }
@@ -403,6 +414,7 @@
             font-size: 11px;
             background: #eee8df;
             color: #62594f;
+            text-transform: capitalize;
         }
 
         .portal-form {
@@ -1091,12 +1103,44 @@
             async function loadSharedAssignments() { const student = currentStudent || {}; if (!student.program || !student.semester) return; const snapshot = await db.collection('assignments').where('status', '==', 'Published').where('programmeId', '==', student.program).where('semester', '==', student.semester).get(); assignments = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })); renderAssignments(); }
             function assignmentStatus(record) { const submission = record.submission || {}; if (submission.status) return submission.status.toLowerCase(); if (record.status) return String(record.status).toLowerCase(); return record.dueDate && new Date(record.dueDate) < new Date() ? 'overdue' : 'pending'; }
             function renderAssignments() { const target = document.getElementById('assignments-content'); const filter = document.getElementById('assignment-filter').value; const filtered = assignments.filter(record => filter === 'all' || assignmentStatus(record) === filter); if (!filtered.length) { target.className = 'portal-empty'; target.textContent = 'No assignments match this filter.'; return; } target.className = 'portal-list'; target.innerHTML = filtered.map(record => `<div class="portal-list-item"><span><strong>${escapeHtml(record.title || 'Untitled assignment')}</strong><br><span class="portal-muted">${escapeHtml(record.unit || record.module || 'Unit not specified')} | Due ${escapeHtml(record.dueDate || 'Not specified')}</span></span><span><span class="portal-badge">${escapeHtml(assignmentStatus(record))}</span> <button class="portal-action" data-assignment="${escapeHtml(record.id)}" type="button">Open</button></span></div>`).join(''); target.querySelectorAll('[data-assignment]').forEach(button => button.addEventListener('click', () => openAssignment(button.dataset.assignment))); }
-            function openAssignment(id) { const record = assignments.find(item => item.id === id); const target = document.getElementById('assignment-detail'); if (!record) return; target.hidden = false; target.innerHTML = `<h4>${escapeHtml(record.title || 'Assignment')}</h4><p>${escapeHtml(record.description || 'No description provided.')}</p><p class="portal-muted">Trainer: ${escapeHtml(record.trainer || 'Not specified')} | Assigned: ${escapeHtml(record.assignedDate || 'Not specified')} | Due: ${escapeHtml(record.dueDate || 'Not specified')}</p><form id="submission-form"><label for="submission-file">Submit your work</label><input id="submission-file" type="file" accept=".pdf,.jpg,.jpeg,.png,.docx" required><button class="portal-button" type="submit">Upload submission</button><p id="submission-message" class="portal-message" role="status"></p></form>`; document.getElementById('submission-form').addEventListener('submit', event => submitAssignment(event, record)); }
+            function openAssignment(id) {
+                const record = assignments.find(item => item.id === id);
+                const target = document.getElementById('assignment-detail');
+                if (!record) return;
+                target.hidden = false;
+                const submission = record.submission;
+                const isGraded = submission && (submission.grade !== undefined && submission.grade !== null && submission.grade !== '');
+                // storage.rules already grants students read access to their own
+                // students/{uid}/submissions/** files (request.auth.uid == studentUid) --
+                // no rule change needed to surface this link.
+                const viewFileButton = submission && submission.filePath
+                    ? ` <button type="button" class="portal-action" id="view-submission-file">View my submitted file</button>`
+                    : '';
+                const submissionBlock = submission
+                    ? `<p class="portal-muted">Your submission: ${escapeHtml(submission.fileName || 'file')} &middot; ${escapeHtml(submission.status || 'Submitted')} on ${escapeHtml(safeDate(submission.submittedAt))}${viewFileButton}</p>`
+                    : '';
+                // Grade/feedback are only ever present because staff wrote them (students
+                // cannot write these fields -- firestore.rules restricts student updates to
+                // fileName/filePath/submittedAt/status only). Read-only display here.
+                const gradeBlock = isGraded
+                    ? `<div class="portal-card"><h5>Your grade</h5><p><strong>${escapeHtml(submission.grade)}</strong></p>${submission.feedback ? `<p>${escapeHtml(submission.feedback)}</p>` : ''}<p class="portal-muted">Graded ${escapeHtml(safeDate(submission.gradedAt))}</p></div>`
+                    : '';
+                const resubmitNote = isGraded
+                    ? '<p class="portal-notice">&#9888; This assignment has already been graded. Uploading new work below does NOT change or remove your existing grade and feedback above &mdash; staff must re-grade it manually if you resubmit.</p>'
+                    : '';
+                target.innerHTML = `<h4>${escapeHtml(record.title || 'Assignment')}</h4><p>${escapeHtml(record.description || 'No description provided.')}</p><p class="portal-muted">Trainer: ${escapeHtml(record.trainer || 'Not specified')} | Assigned: ${escapeHtml(record.assignedDate || 'Not specified')} | Due: ${escapeHtml(record.dueDate || 'Not specified')}</p>${submissionBlock}${gradeBlock}${resubmitNote}<form id="submission-form"><label for="submission-file">Submit your work</label><input id="submission-file" type="file" accept=".pdf,.jpg,.jpeg,.png,.docx" required><button class="portal-button" type="submit">Upload submission</button><p id="submission-message" class="portal-message" role="status"></p></form>`;
+                document.getElementById('submission-form').addEventListener('submit', event => submitAssignment(event, record));
+                document.getElementById('view-submission-file')?.addEventListener('click', () => viewSubmissionFile(submission.filePath));
+            }
+            async function viewSubmissionFile(path) {
+                if (!path || !storage) return;
+                try { const url = await storage.ref(path).getDownloadURL(); window.open(url, '_blank', 'noopener'); } catch (error) { }
+            }
             async function submitAssignment(event, assignment) { event.preventDefault(); const file = document.getElementById('submission-file').files[0]; const output = document.getElementById('submission-message'); if (!storage) { message(output, 'File submissions require Firebase Storage configuration.', 'error'); return; } if (!file || file.size > 10 * 1024 * 1024 || !/^(application\/pdf|image\/(jpeg|png)|application\/vnd\.openxmlformats-officedocument\.wordprocessingml\.document)$/.test(file.type)) { message(output, 'Choose a PDF, JPG, PNG, or DOCX file up to 10 MB.', 'error'); return; } const button = event.target.querySelector('button'); button.disabled = true; try { const path = `students/${currentUser.uid}/submissions/${assignment.id}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`; await storage.ref(path).put(file); await db.collection('students').doc(currentUser.uid).collection('submissions').doc(assignment.id).set({ assignmentId: assignment.id, studentUid: currentUser.uid, fileName: file.name, filePath: path, submittedAt: firebase.firestore.FieldValue.serverTimestamp(), status: 'Submitted' }, { merge: true }); message(output, 'Submission uploaded successfully.', 'success'); } catch (error) { message(output, 'Submission could not be uploaded. Please try again.', 'error'); } finally { button.disabled = false; } }
             function renderElearningCourses() { const wrap = document.getElementById('elearning-courses'); const student = currentStudent || {}; if (!student.program) { wrap.innerHTML = '<div class="portal-empty portal-card-full">No enrolled programme has been published for your account yet.</div>'; return; } wrap.innerHTML = `<div class="portal-card portal-course-card"><span class="portal-kicker">Programme</span><h3>${escapeHtml(student.program)}</h3><p class="portal-muted">${escapeHtml(student.semester ? 'Semester: ' + student.semester : 'Your enrolled course')}</p><button class="portal-button" id="continue-learning" type="button">Continue Learning</button></div>`; const button = document.getElementById('continue-learning'); if (button) button.addEventListener('click', () => openCourse(student.program)); }
             function openCourse(program) { document.getElementById('elearning-courses-wrap').hidden = true; document.getElementById('elearning-course-detail').hidden = false; text('elearning-course-title', program); renderAssignments(); loadMaterials(); }
             function closeCourse() { document.getElementById('elearning-course-detail').hidden = true; document.getElementById('elearning-courses-wrap').hidden = false; }
-            async function loadMaterials() { const target = document.getElementById('materials-content'); try { const uid = currentUser.uid; const snapshots = await Promise.all([db.collection('learning_materials').where('public', '==', true).get(), db.collection('learning_materials').where('allowedUids', 'array-contains', uid).get()]); const unique = new Map(); snapshots.forEach(snapshot => snapshot.docs.forEach(doc => unique.set(doc.id, { id: doc.id, ...doc.data() }))); materials = [...unique.values()]; renderMaterials(); } catch (error) { materials = []; target.className = 'portal-empty'; target.textContent = 'Learning materials are not available right now.'; } }
+            async function loadMaterials() { const target = document.getElementById('materials-content'); try { const uid = currentUser.uid; const program = (currentStudent || {}).program; const queries = [db.collection('learning_materials').where('public', '==', true).get(), db.collection('learning_materials').where('allowedUid', '==', uid).get()]; if (program) queries.push(db.collection('learning_materials').where('programmeId', '==', program).get()); const snapshots = await Promise.all(queries); const unique = new Map(); snapshots.forEach(snapshot => snapshot.docs.forEach(doc => unique.set(doc.id, { id: doc.id, ...doc.data() }))); materials = [...unique.values()]; renderMaterials(); } catch (error) { materials = []; target.className = 'portal-empty'; target.textContent = 'Learning materials are not available right now.'; } }
             function renderMaterials() { const target = document.getElementById('materials-content'); if (!materials.length) { target.className = 'portal-empty'; target.textContent = 'No learning materials have been published for this course yet.'; return; } target.className = 'portal-list'; target.innerHTML = materials.map(record => { const title = record.title || record.name || 'Learning material'; const type = record.type || record.category || 'Resource'; return `<div class="portal-list-item"><span><strong>${escapeHtml(title)}</strong><br><span class="portal-muted">${escapeHtml(type)}${record.trainer ? ' | ' + escapeHtml(record.trainer) : ''}</span></span><button class="portal-action" data-material="${escapeHtml(record.id)}" type="button">Open</button></div>`; }).join(''); target.querySelectorAll('[data-material]').forEach(button => button.addEventListener('click', () => openMaterial(button.dataset.material))); }
             async function openMaterial(id) { const record = materials.find(item => item.id === id); if (!record) return; const link = record.url || record.link; if (link) { window.open(link, '_blank', 'noopener'); return; } if (record.filePath && storage) { try { const url = await storage.ref(record.filePath).getDownloadURL(); window.open(url, '_blank', 'noopener'); } catch (error) { } } }
             function renderAttendance() { const target = document.getElementById('attendance-content'); const semester = document.getElementById('attendance-semester').value; const unit = document.getElementById('attendance-unit').value; const records = attendance.filter(record => (semester === 'all' || record.semester === semester) && (unit === 'all' || (record.unit || record.module) === unit)); const present = records.filter(record => String(record.status).toLowerCase() === 'present').length; const late = records.filter(record => String(record.status).toLowerCase() === 'late').length; const missed = records.filter(record => String(record.status).toLowerCase() === 'absent').length; const percentage = records.length ? `${Math.round(((present + late) / records.length) * 100)}%` : 'Not available'; text('stat-attendance', percentage); document.getElementById('attendance-summary').innerHTML = [['Overall', percentage], ['Attended', present], ['Missed', missed], ['Late', late]].map(item => `<div class="portal-card portal-stat"><span>${item[0]}</span><strong>${escapeHtml(item[1])}</strong></div>`).join(''); if (!records.length) { target.className = 'portal-empty'; target.textContent = 'No attendance records match these filters.'; return; } target.className = 'portal-table-wrap'; renderTable(target, records, [{ key: 'date', label: 'Date' }, { key: 'unit', label: 'Unit' }, { key: 'status', label: 'Status' }, { key: 'trainer', label: 'Trainer' }]); }

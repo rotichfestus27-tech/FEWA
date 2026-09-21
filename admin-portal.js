@@ -5,9 +5,9 @@
         && !/^(YOUR_|REPLACE_)/.test(String(config.appId));
 
     const state = {
-        user: null, roles: [], applications: [], students: [], programmes: [], trainers: [], staff: [], selected: null, selectedStudent: null, studentSubData: {},
+        user: null, roles: [], applications: [], students: [], programmes: [], trainers: [], staff: [], selected: null, selectedStudent: null, studentSubData: {}, applicationBackground: undefined,
         assignments: [], assignmentEditingId: null,
-        materials: [], materialEditingId: null, materialSelectedUids: new Set(), materialStudentOptions: null, materialStudentPickerError: null
+        materials: [], materialEditingId: null, materialSelectedUid: '', materialStudentOptions: null, materialStudentPickerError: null
     };
     const $ = (selector) => document.querySelector(selector);
 
@@ -57,6 +57,16 @@
     // firestore.rules `learning_materials` write rule is hasRole('lecturer') ||
     // hasRole('superadmin') ONLY -- unlike assignments, plain 'admin' is excluded here.
     const canManageMaterials = () => hasRole('superadmin') || hasRole('lecturer');
+
+    // ------------------------------------------------------------------
+    // STUDENT PROFILE -- role predicates (Academic background / Communication)
+    // ------------------------------------------------------------------
+    // firestore.rules `applications/{appId}` read rule (isApplicationStaff()) is
+    // isAdmin() || hasRole('admissions') -- notably NOT 'finance' or 'lecturer', so
+    // the application cross-reference must stay narrower than canReadDocuments().
+    const canReadApplicationReference = () => isAdminRole() || hasRole('admissions');
+    // notifications/messages read rule is isAdmin() || lecturer || admissions.
+    const canReadCommunication = () => isAdminRole() || hasRole('lecturer') || hasRole('admissions');
 
     const OVERVIEW_FIELDS = [
         { key: 'fullName', label: 'Full name' },
@@ -119,14 +129,18 @@
             readOnlyReason: 'Uploading documents is not part of this phase -- storage.rules currently blocks staff writes to student documents (allow write: if false), so this view is read-only.'
         },
         submissions: {
-            label: 'Submissions', collection: 'submissions', actionType: 'view', viewLabel: 'View file',
+            label: 'Submissions', collection: 'submissions', actionType: 'view', viewLabel: 'View file', gradable: true,
             fields: [
                 { key: 'assignmentId', label: 'Assignment' },
                 { key: 'fileName', label: 'File' },
-                { key: 'status', label: 'Status' }
+                { key: 'status', label: 'Status' },
+                { key: 'grade', label: 'Grade' }
             ],
-            canRead: () => canManageAcademic(), canWrite: () => false,
-            readOnlyReason: 'Grading is not part of this phase -- this view is for visibility only.'
+            // Grading (grade/feedback/gradedAt/gradedBy) is handled by a dedicated form
+            // (see submitGradeForm/openGradeForm below), not the generic CRUD engine --
+            // submissions are created by students, not admin, so "add a record" doesn't
+            // apply here the way it does for results/timetable/attendance/fees.
+            canRead: () => canManageAcademic(), canWrite: () => false
         }
     };
 
@@ -220,6 +234,10 @@
             promoteButton.hidden = !canPromote;
             promoteButton.textContent = application.status === 'Accepted' ? 'Ensure student record' : 'Accept and create student';
         }
+
+        // firestore.rules: allow delete: if isApplicationStaff() -- exactly matches staff() here.
+        const deleteButton = $('#delete-application');
+        if (deleteButton) deleteButton.hidden = !staff();
     }
 
     async function updateApplicationStatus() {
@@ -254,6 +272,25 @@
             message(`Student ${result.data.studentId} is ready.`, 'success');
         } catch (error) {
             message(error?.message || 'The applicant could not be admitted.', 'error');
+        } finally {
+            if (button) button.disabled = false;
+        }
+    }
+
+    async function deleteSelectedApplication() {
+        if (!state.selected || !staff()) return;
+        const name = applicationName(state.selected);
+        if (!window.confirm(`Delete the application for ${name}? This cannot be undone.`)) return;
+        const button = $('#delete-application');
+        if (button) button.disabled = true;
+        try {
+            await firebase.firestore().collection('applications').doc(state.selected.id).delete();
+            const detailEl = $('#application-detail'); if (detailEl) detailEl.hidden = true;
+            state.selected = null;
+            await loadData();
+            message('Application deleted.', 'success');
+        } catch (error) {
+            message(error?.message || 'The application could not be deleted.', 'error');
         } finally {
             if (button) button.disabled = false;
         }
@@ -354,9 +391,12 @@
         if (!student) return;
         state.selectedStudent = student;
         state.studentSubData = {};
+        state.applicationBackground = undefined; // undefined = not fetched yet this open; null = fetched, none found
+        closeGradeForm();
         const titleEl = $('#student-detail-title'); if (titleEl) titleEl.textContent = student.fullName || student.studentId || 'Student';
         const messageEl = $('#student-detail-message'); if (messageEl) { messageEl.textContent = ''; messageEl.className = 'admin-message'; }
         const detailEl = $('#student-detail'); if (detailEl) detailEl.hidden = false;
+        renderStudentHeader();
         switchStudentTab('overview');
     }
 
@@ -364,13 +404,50 @@
         const detailEl = $('#student-detail'); if (detailEl) detailEl.hidden = true;
         state.selectedStudent = null;
         state.studentSubData = {};
+        state.applicationBackground = undefined;
+    }
+
+    function renderStudentHeader() {
+        const student = state.selectedStudent;
+        if (!student) return;
+        const avatarEl = $('#student-header-avatar');
+        if (avatarEl) {
+            avatarEl.innerHTML = student.profilePicture
+                ? `<img src="${escapeHtml(student.profilePicture)}" alt="">`
+                : escapeHtml((student.fullName || student.studentId || '?').charAt(0).toUpperCase());
+        }
+        const nameEl = $('#student-header-name'); if (nameEl) nameEl.textContent = student.fullName || 'Unnamed student';
+        const metaEl = $('#student-header-meta');
+        if (metaEl) {
+            const parts = [
+                student.studentId || 'No student ID',
+                student.program || 'No programme',
+                student.intake ? `Intake: ${student.intake}` : null,
+                student.createdAt ? `Enrolled: ${timestamp(student.createdAt)}` : null
+            ].filter(Boolean);
+            metaEl.innerHTML = parts.map(part => `<span>${escapeHtml(part)}</span>`).join('');
+        }
+        const statusEl = $('#student-header-status');
+        if (statusEl) statusEl.textContent = student.admissionStatus || 'Status unknown';
     }
 
     function switchStudentTab(tab) {
         document.querySelectorAll('[data-student-tab]').forEach(button => button.classList.toggle('active', button.dataset.studentTab === tab));
         document.querySelectorAll('[data-student-panel]').forEach(panel => { panel.hidden = panel.dataset.studentPanel !== tab; });
         if (tab === 'overview') renderStudentOverview();
+        else if (tab === 'academic') {
+            const activeSub = document.querySelector('[data-academic-subtab].active')?.dataset.academicSubtab || 'results';
+            switchAcademicSubtab(activeSub);
+        } else if (tab === 'communication') loadCommunication();
+        else if (tab === 'account') loadAccountTab();
         else if (STUDENT_SUBCOLLECTIONS[tab]) loadStudentSubcollection(tab);
+    }
+
+    function switchAcademicSubtab(subtab) {
+        document.querySelectorAll('[data-academic-subtab]').forEach(button => button.classList.toggle('active', button.dataset.academicSubtab === subtab));
+        document.querySelectorAll('[data-academic-subpanel]').forEach(panel => { panel.hidden = panel.dataset.academicSubpanel !== subtab; });
+        closeGradeForm();
+        loadStudentSubcollection(subtab);
     }
 
     function renderStudentOverview() {
@@ -395,13 +472,25 @@
         if (formEl) {
             if (student && canUpdateStudentProfile()) {
                 formEl.hidden = false;
-                OVERVIEW_FIELDS.forEach(field => { const input = document.getElementById(`student-edit-${field.key}`); if (input) input.value = student[field.key] || ''; });
+                OVERVIEW_FIELDS.forEach(field => {
+                    const input = document.getElementById(`student-edit-${field.key}`);
+                    if (!input) return;
+                    const value = student[field.key] || '';
+                    // admissionStatus is a <select> with a fixed option set -- if the stored value
+                    // doesn't match any of them (e.g. an older free-text value), add it as an extra
+                    // option rather than silently discarding it on next save.
+                    if (input.tagName === 'SELECT' && value && ![...input.options].some(option => option.value === value)) {
+                        input.add(new Option(value, value));
+                    }
+                    input.value = value;
+                });
                 if (noteEl) noteEl.textContent = '';
             } else {
                 formEl.hidden = true;
                 if (noteEl) noteEl.textContent = 'Your role can view this profile but cannot edit it. Editing student profiles is limited to Superadmin and Admissions staff (see firestore.rules).';
             }
         }
+        loadApplicationBackground();
     }
 
     async function saveStudentOverview(event) {
@@ -417,6 +506,7 @@
             const index = state.students.findIndex(student => student.id === state.selectedStudent.id);
             if (index !== -1) Object.assign(state.students[index], updates);
             renderStudentOverview();
+            renderStudentHeader();
             renderStudents();
             message('Student profile updated.', 'success');
         } catch (error) {
@@ -431,7 +521,10 @@
     // ------------------------------------------------------------------
 
     function subcollectionPanel(kind) {
-        return document.querySelector(`[data-student-panel="${kind}"]`);
+        // results/timetable/submissions now live nested inside the Academic tab
+        // (data-academic-subpanel) instead of being their own top-level tab panel
+        // (data-student-panel) -- attendance/fees/documents are unaffected.
+        return document.querySelector(`[data-student-panel="${kind}"], [data-academic-subpanel="${kind}"]`);
     }
 
     async function loadStudentSubcollection(kind) {
@@ -480,12 +573,39 @@
 
         try {
             const collectionRef = firebase.firestore().collection('students').doc(state.selectedStudent.id).collection(config.collection);
-            const snapshot = await collectionRef.orderBy('createdAt', 'desc').limit(200).get().catch(() => collectionRef.limit(200).get());
+            // orderBy('createdAt') silently EXCLUDES any document missing that field
+            // (Firestore does not error, it just omits it) -- it never throws, so the
+            // old catch()-only fallback never ran. Submissions are written by students
+            // via a schema that doesn't include createdAt at all, so this always
+            // returned zero rows for submissions specifically. Fall back whenever the
+            // ordered query comes back empty, not only when it throws.
+            let snapshot = await collectionRef.orderBy('createdAt', 'desc').limit(200).get().catch(() => null);
+            if (!snapshot || snapshot.empty) snapshot = await collectionRef.limit(200).get();
             state.studentSubData[kind] = snapshot.docs.map(document => ({ id: document.id, ...document.data() }));
             renderSubcollectionRows(kind);
+            if (kind === 'fees') renderFeesSummary();
+            if (kind === 'documents') loadApplicationDocuments();
         } catch (error) {
             if (bodyEl) bodyEl.innerHTML = `<tr><td colspan="${config.fields.length + 1}">${escapeHtml(config.label)} could not be loaded.</td></tr>`;
         }
+    }
+
+    // Pure arithmetic over the fee records already loaded above -- no new data, no
+    // invented calculation, just totals of what's already displayed in the table.
+    function renderFeesSummary() {
+        const summaryEl = $('#student-fees-summary');
+        const records = state.studentSubData.fees || [];
+        if (!summaryEl) return;
+        if (!records.length || !canManageFees()) { summaryEl.hidden = true; return; }
+        const toNumber = value => { const n = Number(String(value ?? '').replace(/[^0-9.-]/g, '')); return Number.isFinite(n) ? n : 0; };
+        const totalInvoiced = records.reduce((sum, record) => sum + toNumber(record.amount), 0);
+        const totalOutstanding = records.reduce((sum, record) => sum + toNumber(record.balance), 0);
+        const totalPaid = totalInvoiced - totalOutstanding;
+        const fmt = n => n.toLocaleString();
+        summaryEl.hidden = false;
+        const totalEl = $('#student-fees-total'); if (totalEl) totalEl.textContent = fmt(totalInvoiced);
+        const paidEl = $('#student-fees-paid'); if (paidEl) paidEl.textContent = fmt(totalPaid);
+        const outstandingEl = $('#student-fees-outstanding'); if (outstandingEl) outstandingEl.textContent = fmt(totalOutstanding);
     }
 
     function renderSubcollectionRows(kind) {
@@ -500,12 +620,20 @@
             return;
         }
         bodyEl.innerHTML = records.map(record => {
-            const cells = config.fields.map(field => `<td>${escapeHtml(record[field.key] ?? 'Not available')}</td>`).join('');
+            // data-label mirrors each column's header text -- used by the narrow-viewport
+            // card layout (see [data-academic-subpanel="submissions"] .admin-table CSS) to
+            // label each value when the table collapses to stacked cards. Harmless no-op
+            // for every other subcollection table, which stays a normal table at all widths.
+            const cells = config.fields.map(field => `<td data-label="${escapeHtml(field.label)}">${escapeHtml(record[field.key] ?? 'Not available')}</td>`).join('');
             let actionCell = '';
             if (config.actionType === 'view') {
-                actionCell = `<td><button type="button" class="admin-action" data-sub-view="${escapeHtml(record.id)}">${escapeHtml(config.viewLabel || 'View')}</button></td>`;
+                const viewButton = `<button type="button" class="admin-action" data-sub-view="${escapeHtml(record.id)}">${escapeHtml(config.viewLabel || 'View')}</button>`;
+                const gradeButton = config.gradable && canManageAcademic()
+                    ? ` <button type="button" class="admin-action" data-sub-grade="${escapeHtml(record.id)}">${record.grade ? 'Edit grade' : 'Grade'}</button>`
+                    : '';
+                actionCell = `<td data-label="Actions">${viewButton}${gradeButton}</td>`;
             } else if (config.canWrite()) {
-                actionCell = `<td><button type="button" class="admin-action" data-sub-edit="${escapeHtml(record.id)}">Edit</button> <button type="button" class="admin-action" data-sub-delete="${escapeHtml(record.id)}">Delete</button></td>`;
+                actionCell = `<td data-label="Actions"><button type="button" class="admin-action" data-sub-edit="${escapeHtml(record.id)}">Edit</button> <button type="button" class="admin-action" data-sub-delete="${escapeHtml(record.id)}">Delete</button></td>`;
             }
             return `<tr>${cells}${actionCell}</tr>`;
         }).join('');
@@ -513,6 +641,7 @@
         bodyEl.querySelectorAll('[data-sub-edit]').forEach(button => button.addEventListener('click', () => editSubcollectionRecord(kind, button.dataset.subEdit)));
         bodyEl.querySelectorAll('[data-sub-delete]').forEach(button => button.addEventListener('click', () => deleteSubcollectionRecord(kind, button.dataset.subDelete)));
         bodyEl.querySelectorAll('[data-sub-view]').forEach(button => button.addEventListener('click', () => viewSubcollectionFile(kind, button.dataset.subView)));
+        bodyEl.querySelectorAll('[data-sub-grade]').forEach(button => button.addEventListener('click', () => openGradeForm(button.dataset.subGrade)));
     }
 
     async function submitSubcollectionForm(kind, event) {
@@ -598,6 +727,228 @@
         }
     }
 
+    // ------------------------------------------------------------------
+    // STUDENT DETAIL -- Submission grading
+    // Writes grade/feedback/gradedAt/gradedBy onto the EXISTING
+    // students/{uid}/submissions/{assignmentId} document -- no new collection.
+    // firestore.rules already permits this: the isAdmin()/lecturer branch of the
+    // submissions update rule has no field restriction, while the student's own
+    // branch is hard-restricted to fileName/filePath/submittedAt/status, so
+    // students can never write these fields regardless of client code.
+    // ------------------------------------------------------------------
+
+    // Assignment titles aren't on the submission record itself (only assignmentId is) --
+    // resolved on demand and cached, checking the already-loaded assignments list first
+    // (populated whenever the top-level Assignments tab has been visited this session)
+    // before falling back to a single-document fetch.
+    async function resolveAssignmentTitle(assignmentId) {
+        if (!state.assignmentTitleCache) state.assignmentTitleCache = {};
+        if (state.assignmentTitleCache[assignmentId]) return state.assignmentTitleCache[assignmentId];
+        const loaded = (state.assignments || []).find(item => item.id === assignmentId);
+        if (loaded?.title) { state.assignmentTitleCache[assignmentId] = loaded.title; return loaded.title; }
+        try {
+            const doc = await firebase.firestore().collection('assignments').doc(assignmentId).get();
+            const title = doc.exists ? (doc.data().title || '') : '';
+            if (title) state.assignmentTitleCache[assignmentId] = title;
+            return title;
+        } catch (error) {
+            return '';
+        }
+    }
+
+    async function openGradeForm(id) {
+        if (!canManageAcademic()) return;
+        const record = (state.studentSubData.submissions || []).find(item => item.id === id);
+        const formEl = $('#submission-grade-form');
+        if (!record || !formEl) return;
+        formEl.dataset.gradingId = id;
+        const headingEl = $('#submission-grade-heading'); if (headingEl) headingEl.textContent = `Grade: ${record.assignmentId || 'Submission'}`;
+        const idEl = $('#submission-grade-id'); if (idEl) idEl.textContent = '';
+        const gradeInput = $('#submission-grade-value'); if (gradeInput) gradeInput.value = record.grade ?? '';
+        const feedbackInput = $('#submission-grade-feedback'); if (feedbackInput) feedbackInput.value = record.feedback ?? '';
+        formEl.hidden = false;
+        gradeInput?.focus();
+        if (record.assignmentId) {
+            const title = await resolveAssignmentTitle(record.assignmentId);
+            // The grade form may have been closed, or reopened for a different
+            // submission, while this lookup was in flight -- don't overwrite in that case.
+            if (formEl.dataset.gradingId !== id) return;
+            if (title && headingEl) headingEl.textContent = `Grade: ${title}`;
+            if (idEl) idEl.textContent = `Assignment ID: ${record.assignmentId}`;
+        }
+    }
+
+    function closeGradeForm() {
+        const formEl = $('#submission-grade-form');
+        if (!formEl) return;
+        formEl.hidden = true;
+        delete formEl.dataset.gradingId;
+        formEl.reset();
+    }
+
+    async function submitGradeForm(event) {
+        event.preventDefault();
+        if (!state.selectedStudent || !canManageAcademic()) return;
+        const formEl = event.target;
+        const id = formEl.dataset.gradingId;
+        if (!id) return;
+        const button = formEl.querySelector('button[type="submit"]');
+        if (button) button.disabled = true;
+        try {
+            const grade = $('#submission-grade-value')?.value.trim() || '';
+            const feedback = $('#submission-grade-feedback')?.value.trim() || '';
+            await firebase.firestore().collection('students').doc(state.selectedStudent.id).collection('submissions').doc(id).update({
+                grade, feedback,
+                gradedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                gradedBy: state.user?.email || state.user?.uid || 'staff',
+                status: 'Graded'
+            });
+            closeGradeForm();
+            await loadStudentSubcollection('submissions');
+            message('Grade saved.', 'success');
+        } catch (error) {
+            message(error?.message || 'The grade could not be saved.', 'error');
+        } finally {
+            if (button) button.disabled = false;
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // STUDENT DETAIL -- Academic background & application documents
+    // (read-only cross-reference to the original applications/{sourceApplicationId}
+    // document -- nothing here is copied into the student record; it's the same
+    // application data the Applications tab already shows, just surfaced here too.)
+    // ------------------------------------------------------------------
+
+    async function loadApplicationBackground() {
+        const blockEl = $('#student-application-background');
+        const gridEl = $('#student-application-background-grid');
+        const student = state.selectedStudent;
+        if (!blockEl || !gridEl || !student) return;
+        if (!canReadApplicationReference() || !student.sourceApplicationId) { blockEl.hidden = true; return; }
+        try {
+            if (state.applicationBackground === undefined) {
+                const snapshot = await firebase.firestore().collection('applications').doc(student.sourceApplicationId).get();
+                state.applicationBackground = snapshot.exists ? snapshot.data() : null;
+            }
+            const application = state.applicationBackground;
+            if (!application) { blockEl.hidden = true; return; }
+            const person = application.personalInformation || {};
+            const academic = application.academicInformation || {};
+            const programme = application.programInformation || {};
+            const rows = [
+                ['Date of birth', person.dateOfBirth],
+                ['Gender', person.gender],
+                ['Nationality', person.nationality],
+                ['County / Town', [person.county, person.town].filter(Boolean).join(' / ')],
+                ['Alternative phone', person.alternativePhone],
+                ['Education level', academic.educationLevel],
+                ['Institution', academic.institution],
+                ['Year completed', academic.yearCompleted],
+                ['Grade', academic.grade],
+                ['Study mode', programme.studyMode],
+                ['Campus', programme.campus]
+            ].filter(([, value]) => value);
+            if (!rows.length) { blockEl.hidden = true; return; }
+            gridEl.innerHTML = rows.map(([label, value]) => `<dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd>`).join('');
+            blockEl.hidden = false;
+        } catch (error) {
+            blockEl.hidden = true;
+        }
+    }
+
+    async function loadApplicationDocuments() {
+        const blockEl = $('#student-application-documents-block');
+        const listEl = $('#student-application-documents-list');
+        const student = state.selectedStudent;
+        if (!blockEl || !listEl || !student) return;
+        if (!canReadApplicationReference() || !student.sourceApplicationId) { blockEl.hidden = true; return; }
+        try {
+            if (state.applicationBackground === undefined) {
+                const snapshot = await firebase.firestore().collection('applications').doc(student.sourceApplicationId).get();
+                state.applicationBackground = snapshot.exists ? snapshot.data() : null;
+            }
+            const documents = state.applicationBackground?.documents || [];
+            if (!documents.length) { blockEl.hidden = true; return; }
+            listEl.innerHTML = `<ul>${documents.map(document => `<li>${escapeHtml(document.fileName || document.name || 'Document')}</li>`).join('')}</ul>`;
+            blockEl.hidden = false;
+        } catch (error) {
+            blockEl.hidden = true;
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // STUDENT DETAIL -- Communication (read-only: notifications + messages)
+    // Display only -- deliberately no compose/send UI in this phase.
+    // ------------------------------------------------------------------
+
+    async function loadCommunication() {
+        const permissionEl = $('#student-communication-permission');
+        const notificationsEl = $('#student-notifications-list');
+        const messagesEl = $('#student-messages-list');
+        if (!state.selectedStudent) return;
+        if (!canReadCommunication()) {
+            if (permissionEl) { permissionEl.textContent = 'Your role does not have access to notifications/messages (see firestore.rules).'; permissionEl.className = 'admin-message error'; }
+            if (notificationsEl) notificationsEl.innerHTML = '';
+            if (messagesEl) messagesEl.innerHTML = '';
+            return;
+        }
+        if (permissionEl) { permissionEl.textContent = ''; permissionEl.className = 'admin-message'; }
+        const renderList = (el, records, fields) => {
+            if (!el) return;
+            el.innerHTML = records.length
+                ? records.map(record => `<div class="student-comm-item"><strong>${escapeHtml(record[fields.title] || 'Untitled')}</strong>${escapeHtml(record[fields.body] || '')}<div class="admin-muted">${escapeHtml(timestamp(record.createdAt))}${record.read ? '' : ' &middot; Unread'}</div></div>`).join('')
+                : '<p class="admin-muted">None recorded.</p>';
+        };
+        try {
+            const studentRef = firebase.firestore().collection('students').doc(state.selectedStudent.id);
+            const [notificationsSnap, messagesSnap] = await Promise.all([
+                studentRef.collection('notifications').orderBy('createdAt', 'desc').limit(50).get().catch(() => ({ docs: [] })),
+                studentRef.collection('messages').orderBy('createdAt', 'desc').limit(50).get().catch(() => ({ docs: [] }))
+            ]);
+            renderList(notificationsEl, notificationsSnap.docs.map(document => document.data()), { title: 'title', body: 'message' });
+            renderList(messagesEl, messagesSnap.docs.map(document => document.data()), { title: 'subject', body: 'body' });
+        } catch (error) {
+            if (notificationsEl) notificationsEl.innerHTML = '<p class="admin-muted">Could not be loaded.</p>';
+            if (messagesEl) messagesEl.innerHTML = '<p class="admin-muted">Could not be loaded.</p>';
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // STUDENT DETAIL -- Account
+    // Only what's genuinely available client-side: email (from Firestore) and a
+    // working password-reset action. Last-login / account-enabled status require
+    // Firebase Auth admin access this portal doesn't have, so they are not shown
+    // rather than guessed -- see the note already in the markup.
+    // ------------------------------------------------------------------
+
+    function loadAccountTab() {
+        const student = state.selectedStudent;
+        const gridEl = $('#student-account-grid');
+        const resetButton = $('#student-reset-password');
+        const messageEl = $('#student-account-message');
+        if (messageEl) { messageEl.textContent = ''; messageEl.className = 'admin-message'; }
+        if (gridEl && student) {
+            gridEl.innerHTML = `
+                <dt>Email</dt><dd>${escapeHtml(student.email || 'Not available')}</dd>
+                <dt>Account type</dt><dd>Student</dd>
+                <dt>Student record created</dt><dd>${escapeHtml(timestamp(student.createdAt))}</dd>
+            `;
+        }
+        if (resetButton) resetButton.hidden = !canUpdateStudentProfile();
+    }
+
+    async function sendStudentPasswordReset() {
+        const student = state.selectedStudent;
+        if (!student || !student.email || !canUpdateStudentProfile()) return;
+        const button = $('#student-reset-password');
+        const messageEl = $('#student-account-message');
+        if (button) button.disabled = true;
+        try { await firebase.auth().sendPasswordResetEmail(student.email); } catch (error) { /* do not reveal whether the account exists */ }
+        if (messageEl) { messageEl.textContent = `If an account exists for ${student.email}, a password reset link has been sent.`; messageEl.className = 'admin-message success'; }
+        if (button) button.disabled = false;
+    }
+
     async function loadProgrammes() {
         try {
             const snapshot = await firebase.firestore().collection('programmes').limit(200).get();
@@ -670,6 +1021,12 @@
             const current = formEl.value;
             formEl.innerHTML = '<option value="">Select programme</option>' + titles.map(title => `<option value="${escapeHtml(title)}">${escapeHtml(title)}</option>`).join('');
             formEl.value = current;
+        }
+        const materialEl = $('#material-programme');
+        if (materialEl) {
+            const current = materialEl.value;
+            materialEl.innerHTML = '<option value="">Not programme-targeted</option>' + titles.map(title => `<option value="${escapeHtml(title)}">${escapeHtml(title)}</option>`).join('');
+            materialEl.value = current;
         }
     }
 
@@ -825,9 +1182,8 @@
     // ------------------------------------------------------------------
     // PHASE 2 -- LEARNING MATERIALS (top-level `learning_materials` collection)
     // ------------------------------------------------------------------
-    // Deliberately URL/link-based only (no Storage writes) and public/allowedUids
-    // targeting only -- programIds targeting is a known dead path (see audit) and is
-    // NOT implemented here.
+    // Deliberately URL/link-based only (no Storage writes). Supports public,
+    // single-student (allowedUid), and programme (programmeId) targeting.
 
     async function loadMaterials() {
         const permissionEl = $('#material-permission-message');
@@ -840,6 +1196,8 @@
             // ensureMaterialStudentOptionsLoaded() (e.g. toggling the Public checkbox).
             updateMaterialPickerVisibility();
             ensureMaterialStudentOptionsLoaded();
+            await ensureProgrammesLoaded();
+            populateAssignmentProgrammeOptions();
         }
         if (permissionEl) {
             permissionEl.textContent = canManage ? '' : 'Your role can view publicly visible materials only. Managing learning materials requires Superadmin or Lecturer (see firestore.rules).';
@@ -875,8 +1233,10 @@
 
     function materialVisibilityLabel(material) {
         if (material.public) return 'Public';
-        const count = Array.isArray(material.allowedUids) ? material.allowedUids.length : 0;
-        return count ? `${count} student${count === 1 ? '' : 's'}` : 'Not visible to students';
+        const parts = [];
+        if (material.programmeId) parts.push(`Programme: ${material.programmeId}`);
+        if (material.allowedUid) parts.push('1 student');
+        return parts.length ? parts.join(' + ') : 'Not visible to students';
     }
 
     function renderMaterials() {
@@ -939,12 +1299,12 @@
             return !query || haystack.includes(query);
         });
         if (messageEl) { messageEl.textContent = students.length ? '' : 'No student records are available to select.'; messageEl.className = 'admin-muted'; }
-        listEl.innerHTML = filtered.length ? filtered.map(student => `
-            <label class="admin-form-inline"><input type="checkbox" data-student-uid="${escapeHtml(student.id)}" ${state.materialSelectedUids.has(student.id) ? 'checked' : ''}> ${escapeHtml(student.fullName || student.studentId || student.id)}${student.studentId ? ` (${escapeHtml(student.studentId)})` : ''}</label>
-        `).join('') : (students.length ? '<p class="admin-muted">No students match this search.</p>' : '');
-        listEl.querySelectorAll('[data-student-uid]').forEach(checkbox => checkbox.addEventListener('change', () => {
-            const uid = checkbox.dataset.studentUid;
-            if (checkbox.checked) state.materialSelectedUids.add(uid); else state.materialSelectedUids.delete(uid);
+        const noneOption = `<label class="admin-form-inline"><input type="radio" name="material-target-student" data-student-uid="" ${!state.materialSelectedUid ? 'checked' : ''}> No student targeting</label>`;
+        listEl.innerHTML = noneOption + (filtered.length ? filtered.map(student => `
+            <label class="admin-form-inline"><input type="radio" name="material-target-student" data-student-uid="${escapeHtml(student.id)}" ${state.materialSelectedUid === student.id ? 'checked' : ''}> ${escapeHtml(student.fullName || student.studentId || student.id)}${student.studentId ? ` (${escapeHtml(student.studentId)})` : ''}</label>
+        `).join('') : (students.length ? '<p class="admin-muted">No students match this search.</p>' : ''));
+        listEl.querySelectorAll('[data-student-uid]').forEach(radio => radio.addEventListener('change', () => {
+            state.materialSelectedUid = radio.checked ? radio.dataset.studentUid : state.materialSelectedUid;
         }));
     }
 
@@ -961,7 +1321,8 @@
                 trainer: $('#material-trainer')?.value.trim() || '',
                 url: $('#material-url')?.value.trim() || '',
                 public: isPublic,
-                allowedUids: isPublic ? [] : [...state.materialSelectedUids]
+                allowedUid: isPublic ? '' : (state.materialSelectedUid || ''),
+                programmeId: $('#material-programme')?.value || ''
             };
             if (state.materialEditingId) {
                 await firebase.firestore().collection('learning_materials').doc(state.materialEditingId).update({ ...values, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
@@ -982,12 +1343,13 @@
         const material = state.materials.find(item => item.id === id);
         if (!material || !canManageMaterials()) return;
         state.materialEditingId = id;
-        state.materialSelectedUids = new Set(Array.isArray(material.allowedUids) ? material.allowedUids : []);
+        state.materialSelectedUid = material.allowedUid || '';
         const setValue = (selector, value) => { const el = $(selector); if (el) el.value = value || ''; };
         setValue('#material-title', material.title || material.name);
         setValue('#material-type', material.type || material.category);
         setValue('#material-trainer', material.trainer);
         setValue('#material-url', material.url || material.link);
+        setValue('#material-programme', material.programmeId);
         const publicEl = $('#material-public'); if (publicEl) publicEl.checked = !!material.public;
         updateMaterialPickerVisibility();
         ensureMaterialStudentOptionsLoaded();
@@ -999,7 +1361,7 @@
 
     function resetMaterialForm() {
         state.materialEditingId = null;
-        state.materialSelectedUids = new Set();
+        state.materialSelectedUid = '';
         const formEl = $('#material-form');
         if (formEl) formEl.reset();
         updateMaterialPickerVisibility();
@@ -1211,6 +1573,7 @@
         $('#application-filter')?.addEventListener('change', renderApplications);
         $('#save-application-status')?.addEventListener('click', updateApplicationStatus);
         $('#accept-create-student')?.addEventListener('click', promoteSelectedApplication);
+        $('#delete-application')?.addEventListener('click', deleteSelectedApplication);
         $('#programme-form')?.addEventListener('submit', createProgramme);
         $('#detail-close')?.addEventListener('click', () => { const el = $('#application-detail'); if (el) el.hidden = true; });
         $('#role-form')?.addEventListener('submit', event => { event.preventDefault(); submitRoleChange(true); });
@@ -1221,6 +1584,10 @@
         $('#student-detail-close')?.addEventListener('click', closeStudent);
         $('#student-overview-form')?.addEventListener('submit', saveStudentOverview);
         document.querySelectorAll('[data-student-tab]').forEach(button => button.addEventListener('click', () => switchStudentTab(button.dataset.studentTab)));
+        document.querySelectorAll('[data-academic-subtab]').forEach(button => button.addEventListener('click', () => switchAcademicSubtab(button.dataset.academicSubtab)));
+        $('#student-reset-password')?.addEventListener('click', sendStudentPasswordReset);
+        $('#submission-grade-form')?.addEventListener('submit', submitGradeForm);
+        $('#submission-grade-cancel')?.addEventListener('click', closeGradeForm);
 
         $('#assignment-form')?.addEventListener('submit', submitAssignmentForm);
         $('#assignment-cancel-edit')?.addEventListener('click', resetAssignmentForm);
