@@ -3666,3 +3666,26 @@ h4 {
         gap: 34px;
     }
 }
+
+/* FEWA campus location map (Contact page) */
+.contact-map-wrap {
+    margin-top: 24px;
+    max-width: 100%;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    border: 1px solid rgba(212, 175, 55, 0.25);
+}
+
+.contact-map-embed {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    height: 320px;
+    border: 0;
+}
+
+@media (max-width: 600px) {
+    .contact-map-embed {
+        height: 240px;
+    }
+}
