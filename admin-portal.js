@@ -1082,6 +1082,8 @@
         const loginEl = $('#admin-login');
         const appEl = $('#admin-app');
         const loginMessageEl = $('#login-message');
+        const googleMessage = $('#google-signin-message');
+        let pendingGoogleCredential = null;
 
         if (!validConfig || !window.firebase) {
             if (loadingEl) loadingEl.hidden = true;
@@ -1091,6 +1093,53 @@
         }
         if (!firebase.apps.length) firebase.initializeApp(config);
         const auth = firebase.auth();
+
+        // Standard Firebase "link accounts with the same email" flow (same pattern already
+        // used in portal.html) -- when Google sign-in reports
+        // auth/account-exists-with-different-credential, hold the Google credential and ask
+        // the admin to prove ownership with their existing password; linkWithCredential()
+        // then attaches Google to the SAME uid so existing roles/claims are preserved.
+        async function startAccountLinking(error) {
+            const email = error.email;
+            pendingGoogleCredential = error.credential;
+            let methods = [];
+            try { methods = await auth.fetchSignInMethodsForEmail(email); } catch (lookupError) { methods = []; }
+
+            if (methods.length && !methods.includes('password')) {
+                pendingGoogleCredential = null;
+                if (googleMessage) { googleMessage.textContent = 'This email is already registered with a different sign-in method. Please use your original sign-in method.'; googleMessage.className = 'admin-message error'; }
+                return;
+            }
+
+            const emailEl = $('#login-email'); if (emailEl) emailEl.value = email;
+            const passwordEl = $('#login-password'); if (passwordEl) passwordEl.value = '';
+            if (googleMessage) { googleMessage.textContent = `An account already exists for ${email}. Enter your password below to securely link Google sign-in to it.`; googleMessage.className = 'admin-message'; }
+            passwordEl?.focus();
+        }
+
+        auth.getRedirectResult().catch(error => {
+            if (error.code === 'auth/account-exists-with-different-credential') {
+                startAccountLinking(error);
+            } else if (error.code) {
+                if (googleMessage) { googleMessage.textContent = 'Google sign-in failed. Please try again.'; googleMessage.className = 'admin-message error'; }
+            }
+        });
+
+        $('#google-signin-button')?.addEventListener('click', async () => {
+            const button = $('#google-signin-button');
+            if (button) button.disabled = true;
+            if (googleMessage) { googleMessage.textContent = 'Redirecting to Google sign-in...'; googleMessage.className = 'admin-message'; }
+            try {
+                const provider = new firebase.auth.GoogleAuthProvider();
+                // signInWithRedirect (not signInWithPopup) -- matches the fix already applied
+                // to portal.html: popups are routinely blocked by browser popup blockers and
+                // third-party-cookie restrictions. Completion is handled by getRedirectResult() above.
+                await auth.signInWithRedirect(provider);
+            } catch (error) {
+                if (googleMessage) { googleMessage.textContent = 'Google sign-in failed. Please try again.'; googleMessage.className = 'admin-message error'; }
+                if (button) button.disabled = false;
+            }
+        });
 
         auth.onAuthStateChanged(async user => {
             if (loadingEl) loadingEl.hidden = true;
@@ -1126,10 +1175,23 @@
         $('#login-form')?.addEventListener('submit', async event => {
             event.preventDefault();
             const button = $('#login-button');
+            const linking = Boolean(pendingGoogleCredential);
             if (button) button.disabled = true;
-            if (loginMessageEl) loginMessageEl.textContent = 'Signing in...';
+            if (loginMessageEl) loginMessageEl.textContent = linking ? 'Verifying your password to link Google sign-in...' : 'Signing in...';
             try {
-                await auth.signInWithEmailAndPassword($('#login-email').value.trim(), $('#login-password').value);
+                const result = await auth.signInWithEmailAndPassword($('#login-email').value.trim(), $('#login-password').value);
+                if (linking) {
+                    const credentialToLink = pendingGoogleCredential;
+                    pendingGoogleCredential = null;
+                    try {
+                        await result.user.linkWithCredential(credentialToLink);
+                        if (googleMessage) { googleMessage.textContent = 'Google sign-in is now linked to your account. You can use either method next time.'; googleMessage.className = 'admin-message success'; }
+                    } catch (linkError) {
+                        // Sign-in itself already succeeded, so the admin can still continue.
+                        if (googleMessage) { googleMessage.textContent = 'Signed in, but we could not link Google this time. You can keep using your email and password.'; googleMessage.className = 'admin-message error'; }
+                    }
+                }
+                // Falls through to the existing auth.onAuthStateChanged listener above either way.
             } catch (error) {
                 if (loginMessageEl) loginMessageEl.textContent = 'Sign-in failed. Check your email and password.';
                 if (button) button.disabled = false;
