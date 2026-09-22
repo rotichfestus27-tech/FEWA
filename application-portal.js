@@ -418,6 +418,10 @@
     startButton?.addEventListener('click', async () => {
         if (!validConfig || !window.firebase) { showMessage(authMessage, 'Firebase Authentication is not configured. Add valid Firebase web settings to config.js.', 'error'); return; }
         startButton.disabled = true;
+        // Real sign-in + Firestore round trip can take a few seconds -- without this,
+        // the button just goes quietly disabled and a user on a slower connection has
+        // no way to tell the click registered at all.
+        showMessage(authMessage, 'Starting your application...', 'loading');
         try {
             if (!auth.currentUser) {
                 await auth.signInAnonymously();
@@ -430,6 +434,7 @@
             currentUser = auth.currentUser;
             currentApplication = await loadApplication(currentUser);
             updateSecurityBadge();
+            showMessage(authMessage, '');
             showApplicationForm(1);
         } catch (error) {
             showMessage(authMessage, (error?.code === 'auth/operation-not-allowed' || error?.code === 'auth/admin-restricted-operation')
