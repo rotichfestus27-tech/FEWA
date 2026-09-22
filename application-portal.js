@@ -291,6 +291,14 @@
         }
     }
 
+    // Same character set the server (Firestore rules / finalizeApplicationSubmission)
+    // already validates phone numbers against. Checked here in plain JS rather than an
+    // HTML `pattern` attribute -- three fields sharing an identical pattern attribute
+    // was found to trip a real Chromium bug during native full-form submit validation
+    // (throws an uncaught SyntaxError from inside the browser's own constraint
+    // validation, independent of whether the pattern text itself is valid regex).
+    const PHONE_PATTERN = /^[-0-9+ ()]{7,32}$/;
+
     function validateStep(number) {
         for (const field of [...steps[number - 1].querySelectorAll('input, select, textarea')]) {
             if (field.type === 'file') {
@@ -302,6 +310,8 @@
                 }
             } else if (!field.checkValidity()) {
                 showMessage(formMessage, `${fieldLabel(field)} is required or invalid.`, 'error'); field.focus(); return false;
+            } else if (field.type === 'tel' && field.value && !PHONE_PATTERN.test(field.value)) {
+                showMessage(formMessage, `${fieldLabel(field)} must be a valid phone number.`, 'error'); field.focus(); return false;
             }
         }
         return true;

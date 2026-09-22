@@ -359,26 +359,6 @@ service cloud.firestore {
       }
 
 
-      // --------------------------------------------------------
-      // FORBIDDEN PRIVILEGED FIELDS
-      // --------------------------------------------------------
-
-      function forbiddenFields() {
-        return [
-          'roles',
-          'role',
-          'isAdmin',
-          'admissionStatus',
-          'studentId',
-          'uid',
-          'fees',
-          'results',
-          'staffPermissions',
-          'accountStatus'
-        ];
-      }
-
-
       function isApplicant() {
         return isSignedIn()
           && appId == request.auth.uid
@@ -399,10 +379,6 @@ service cloud.firestore {
           && request.resource.data.additionalInformation is map
           && request.resource.data.documents is list
           && request.resource.data.progress is map;
-      }
-
-      function validStatus(status) {
-        return status in ['Draft', 'Submitted', 'Under Review', 'More Information Required', 'Accepted', 'Rejected'];
       }
 
       function validStaffClientStatus(status) {
