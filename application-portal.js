@@ -422,10 +422,15 @@
             if (!auth.currentUser) {
                 await auth.signInAnonymously();
             }
-            // Genuine page navigation (not an in-page toggle) -- the anonymous session
-            // persists across the reload, and ?start=1 tells the reloaded page to open
-            // straight into the wizard instead of the entry screen or dashboard.
-            window.location.href = window.location.pathname + '?start=1';
+            // Show the wizard directly in this same page load rather than reloading with
+            // ?start=1 -- a full-page reload was found to sometimes lose the just-created
+            // anonymous session (auth state isn't guaranteed to finish persisting before
+            // the browser tears down the page for navigation), leaving the user back on
+            // the entry screen with the click appearing to do nothing.
+            currentUser = auth.currentUser;
+            currentApplication = await loadApplication(currentUser);
+            updateSecurityBadge();
+            showApplicationForm(1);
         } catch (error) {
             showMessage(authMessage, (error?.code === 'auth/operation-not-allowed' || error?.code === 'auth/admin-restricted-operation')
                 ? 'Guest applications are not enabled yet. Please contact FEWA admissions.'
