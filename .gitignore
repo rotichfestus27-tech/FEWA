@@ -3,7 +3,6 @@ server/node_modules/
 functions/node_modules/
 server/serviceAccountKey.json
 serviceAccountKey*.json
-config.js
 .env
 .env.local
 .env.*.local
