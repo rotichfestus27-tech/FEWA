@@ -711,26 +711,38 @@ h4 {
     transform: scale(1.03);
 }
 
+/* Container alignment */
 .why-choose {
     grid-column: 1 / -1;
     margin-top: 40px;
     padding-top: 40px;
     border-top: 1px solid var(--border-light);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
 }
 
+/* 3x2 Grid Layout */
 .feature-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     gap: 24px;
+    width: 100%;
     margin-top: 20px;
 }
 
+/* Card Content Alignment */
 .feature-card {
     background: var(--purple-soft);
     padding: 28px 22px;
     border-radius: var(--radius-md);
     border: 1px solid var(--border-light);
     transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
 }
 
 .feature-card:hover {
@@ -1079,15 +1091,20 @@ h4 {
 .life-section {
     padding: 80px 0;
     background: var(--white);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
 .life-grid {
     max-width: var(--max-width);
+    width: 100%;
     margin: 0 auto;
     padding: 0 24px;
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 32px;
+    justify-content: center;
 }
 
 .life-card {
@@ -1095,12 +1112,17 @@ h4 {
     padding: 36px 28px;
     border-radius: var(--radius-md);
     border: 1px solid var(--border-light);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
     transition: all 0.3s ease;
 }
 
 .life-card:hover {
     transform: translateY(-4px);
     box-shadow: var(--shadow-md);
+    border-color: var(--border-gold);
 }
 
 .life-card i {
@@ -1114,12 +1136,26 @@ h4 {
     font-size: 1.25rem;
     font-weight: 700;
     margin-bottom: 10px;
+    color: var(--text-dark, #2b2b2b);
 }
 
 .life-card p {
     color: var(--text-secondary);
     font-size: 0.9rem;
     line-height: 1.65;
+}
+
+.life-tagline {
+    text-align: center;
+    margin: 48px auto 0 auto;
+    padding: 0 24px;
+    max-width: 800px;
+    font-family: var(--font-heading, 'Playfair Display', serif);
+    font-size: 1.3rem;
+    font-weight: 500;
+    color: var(--text-dark, #2b2b2b);
+    letter-spacing: 0.5px;
+    line-height: 1.6;
 }
 
 .careers-section {
