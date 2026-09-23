@@ -20,6 +20,19 @@
         if (target) { target.textContent = text; target.className = `admin-message ${type}`; }
     };
 
+    // #application-detail and #student-detail are full-screen overlays (z-index: 100)
+    // that visually cover #admin-message, which sits in the normal page flow behind
+    // them. Actions taken from inside either overlay must report through its own
+    // in-panel element instead, or the result is invisible to the admin.
+    const detailMessage = (text, type = '') => {
+        const target = $('#application-detail-message');
+        if (target) { target.textContent = text; target.className = `admin-message ${type}`; }
+    };
+    const studentMessage = (text, type = '') => {
+        const target = $('#student-detail-message');
+        if (target) { target.textContent = text; target.className = `admin-message ${type}`; }
+    };
+
     const hasRole = (role) => state.roles.includes(role);
     const staff = () => hasRole('admin') || hasRole('superadmin') || hasRole('admissions');
     const superadmin = () => hasRole('superadmin');
@@ -203,6 +216,7 @@
         const programme = application.programInformation || {};
 
         const detailEl = $('#application-detail'); if (detailEl) detailEl.hidden = false;
+        detailMessage('');
         const contentEl = $('#application-detail-content');
 
         if (contentEl) {
@@ -251,9 +265,9 @@
                 updatedAt: firebase.firestore.FieldValue.serverTimestamp()
             });
             state.selected.status = statusValue;
-            renderApplications(); renderStats(); message('Application status updated.', 'success');
+            renderApplications(); renderStats(); detailMessage('Application status updated.', 'success');
         } catch (error) {
-            message('The application status could not be updated.', 'error');
+            detailMessage('The application status could not be updated.', 'error');
         } finally {
             if (button) button.disabled = false;
         }
@@ -263,15 +277,15 @@
         if (!state.selected || !staff()) return;
         const button = $('#accept-create-student');
         if (button) button.disabled = true;
-        message('Creating the student record securely...', '');
+        detailMessage('Creating the student record securely...', '');
         try {
             const promote = firebase.functions().httpsCallable('promoteAcceptedApplication');
             const result = await promote({ applicationId: state.selected.id });
             await loadData();
             openApplication(state.selected.id);
-            message(`Student ${result.data.studentId} is ready.`, 'success');
+            detailMessage(`Student ${result.data.studentId} is ready.`, 'success');
         } catch (error) {
-            message(error?.message || 'The applicant could not be admitted.', 'error');
+            detailMessage(error?.message || 'The applicant could not be admitted.', 'error');
         } finally {
             if (button) button.disabled = false;
         }
@@ -290,7 +304,7 @@
             await loadData();
             message('Application deleted.', 'success');
         } catch (error) {
-            message(error?.message || 'The application could not be deleted.', 'error');
+            detailMessage(error?.message || 'The application could not be deleted.', 'error');
         } finally {
             if (button) button.disabled = false;
         }
@@ -508,9 +522,9 @@
             renderStudentOverview();
             renderStudentHeader();
             renderStudents();
-            message('Student profile updated.', 'success');
+            studentMessage('Student profile updated.', 'success');
         } catch (error) {
-            message(error?.message || 'The student profile could not be updated.', 'error');
+            studentMessage(error?.message || 'The student profile could not be updated.', 'error');
         } finally {
             if (button) button.disabled = false;
         }
@@ -663,9 +677,9 @@
             }
             resetSubcollectionForm(kind);
             await loadStudentSubcollection(kind);
-            message(`${config.label} saved.`, 'success');
+            studentMessage(`${config.label} saved.`, 'success');
         } catch (error) {
-            message(error?.message || `The ${config.singular || config.label.toLowerCase()} could not be saved.`, 'error');
+            studentMessage(error?.message || `The ${config.singular || config.label.toLowerCase()} could not be saved.`, 'error');
         } finally {
             if (button) button.disabled = false;
         }
@@ -705,9 +719,9 @@
         try {
             await firebase.firestore().collection('students').doc(state.selectedStudent.id).collection(config.collection).doc(id).delete();
             await loadStudentSubcollection(kind);
-            message(`${config.label} record deleted.`, 'success');
+            studentMessage(`${config.label} record deleted.`, 'success');
         } catch (error) {
-            message(error?.message || 'The record could not be deleted.', 'error');
+            studentMessage(error?.message || 'The record could not be deleted.', 'error');
         }
     }
 
@@ -715,15 +729,15 @@
         const record = (state.studentSubData[kind] || []).find(item => item.id === id);
         if (!record) return;
         if (kind === 'submissions' && !canDownloadSubmissionFile()) {
-            message('Your role can see this submission but cannot download the file -- storage.rules restricts file downloads to admin/superadmin.', 'error');
+            studentMessage('Your role can see this submission but cannot download the file -- storage.rules restricts file downloads to admin/superadmin.', 'error');
             return;
         }
-        if (!record.filePath) { message('No file is attached to this record.', 'error'); return; }
+        if (!record.filePath) { studentMessage('No file is attached to this record.', 'error'); return; }
         try {
             const url = await firebase.storage().ref(record.filePath).getDownloadURL();
             window.open(url, '_blank', 'noopener');
         } catch (error) {
-            message('The file could not be opened.', 'error');
+            studentMessage('The file could not be opened.', 'error');
         }
     }
 
@@ -805,9 +819,9 @@
             });
             closeGradeForm();
             await loadStudentSubcollection('submissions');
-            message('Grade saved.', 'success');
+            studentMessage('Grade saved.', 'success');
         } catch (error) {
-            message(error?.message || 'The grade could not be saved.', 'error');
+            studentMessage(error?.message || 'The grade could not be saved.', 'error');
         } finally {
             if (button) button.disabled = false;
         }
