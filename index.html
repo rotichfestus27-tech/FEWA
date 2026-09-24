@@ -57,6 +57,7 @@
                 <a href="#about" class="nav-item">About Us</a>
                 <a href="#courses" class="nav-item">Courses</a>
                 <a href="#journey" class="nav-item">Admission</a>
+                <a href="fees.html" class="nav-item">Fees</a>
                 <a href="#portal" class="nav-item">Student Portal</a>
                 <a href="#contact" class="nav-item">Contact Us</a>
             </nav>
@@ -212,7 +213,7 @@
                     <div class="course-body">
                         <span class="course-tag">Flexible</span>
                         <h3>Short Courses &amp; Workshops</h3>
-                        <p>Makeup, Nail Technology, Braiding &amp; Plaiting and other practical short courses.</p>
+                        <p>Makeup, Nail Technology and other practical short courses.</p>
                         <a href="apply.html" class="course-link">Apply for program <i
                                 class="fas fa-arrow-right"></i></a>
                     </div>
@@ -440,7 +441,7 @@
                     </blockquote>
                     <footer>
                         <cite class="testimonial-name">Amina Okoth</cite>
-                        <span class="testimonial-program">Cosmetology &amp; Beauty Therapy Diploma</span>
+                        <span class="testimonial-program" data-course-slug="cosmetology-advanced-beauty-therapy"></span>
                     </footer>
                 </article>
                 <article class="testimonial-card">
@@ -451,7 +452,7 @@
                     </blockquote>
                     <footer>
                         <cite class="testimonial-name">Keith Mwangi</cite>
-                        <span class="testimonial-program">Fashion Design &amp; Styling Diploma</span>
+                        <span class="testimonial-program" data-course-slug="fashion-design-creative-styling"></span>
                     </footer>
                 </article>
                 <article class="testimonial-card">
@@ -462,7 +463,7 @@
                     </blockquote>
                     <footer>
                         <cite class="testimonial-name">Sharon Wanjiku</cite>
-                        <span class="testimonial-program">Hairdressing &amp; Trichology Certificate</span>
+                        <span class="testimonial-program" data-course-slug="professional-hairdressing-trichology"></span>
                     </footer>
                 </article>
             </div>
@@ -478,9 +479,7 @@
                 <details class="faq-item">
                     <summary>What programs does FEWA offer?</summary>
                     <div class="faq-answer">
-                        <p>FEWA offers Cosmetology &amp; Advanced Beauty Therapy (Diploma, 2 Years), Fashion Design
-                            &amp; Creative Garment Styling (Diploma, 2 Years), and Professional Hairdressing &amp;
-                            Trichology (Certificate, 1.5 Years).</p>
+                        <p>FEWA offers <span data-course-slug="cosmetology-advanced-beauty-therapy" data-course-format="full"></span>, <span data-course-slug="fashion-design-creative-styling" data-course-format="full"></span>, and <span data-course-slug="professional-hairdressing-trichology" data-course-format="full"></span>.</p>
                     </div>
                 </details>
                 <details class="faq-item">
@@ -493,8 +492,7 @@
                 <details class="faq-item">
                     <summary>How long do the programs take?</summary>
                     <div class="faq-answer">
-                        <p>Diploma programs run for 2 years with intensive practical studio sessions. Certificate
-                            programs span 1.5 years.</p>
+                        <p id="faq-durations-answer"></p>
                     </div>
                 </details>
                 <details class="faq-item">
@@ -638,8 +636,77 @@
     </div>
 
     <!-- SCRIPTS -->
+    <script src="scripts/course-catalog-data.js"></script>
     <script>
+        // Populates every [data-course-slug] element (testimonials, FAQ answers, ...)
+        // from the single course catalogue source of truth in
+        // scripts/course-catalog-data.js, so no course name/qualification/duration is
+        // ever hand-typed here and left to drift out of sync with the real catalogue.
+        function renderCatalogReferences() {
+            const catalogCourses = window.FEWA_COURSES || [];
+            document.querySelectorAll('[data-course-slug]').forEach((el) => {
+                const course = catalogCourses.find((item) => item.slug === el.dataset.courseSlug);
+                if (!course) return;
+                el.textContent = el.dataset.courseFormat === 'full'
+                    ? `${course.title} (${course.qualification}, ${course.duration})`
+                    : course.title;
+            });
+            renderFaqDurations(catalogCourses);
+        }
+
+        // "How long do the programs take?" used to hand-type "Certificate programs
+        // span 1.5 years" -- true only for one of the seven Certificate-level
+        // courses. This computes the real spread of durations per qualification
+        // directly from window.FEWA_COURSES, so it can never drift out of sync
+        // with the catalogue again.
+        function monthsFromDuration(duration) {
+            const yearMatch = duration.match(/([\d.]+)\s*Year/i);
+            if (yearMatch) return parseFloat(yearMatch[1]) * 12;
+            const monthMatch = duration.match(/([\d.]+)\s*Month/i);
+            if (monthMatch) return parseFloat(monthMatch[1]);
+            return null; // e.g. "Flexible"
+        }
+
+        function humanizeMonths(months) {
+            if (months < 12) return `${months} month${months === 1 ? '' : 's'}`;
+            const years = months / 12;
+            return `${years} year${years === 1 ? '' : 's'}`;
+        }
+
+        function durationRangeText(months) {
+            const distinct = [...new Set(months)].sort((a, b) => a - b);
+            return distinct.length === 1
+                ? humanizeMonths(distinct[0])
+                : `${humanizeMonths(distinct[0])} to ${humanizeMonths(distinct[distinct.length - 1])}`;
+        }
+
+        function renderFaqDurations(catalogCourses) {
+            const target = document.querySelector('#faq-durations-answer');
+            if (!target || !catalogCourses.length) return;
+
+            const monthsByQualification = {};
+            let hasFlexible = false;
+            catalogCourses.forEach((course) => {
+                const months = monthsFromDuration(course.duration);
+                if (months === null) { hasFlexible = true; return; }
+                (monthsByQualification[course.qualification] ||= []).push(months);
+            });
+
+            const sentences = [];
+            if (monthsByQualification.Diploma) {
+                sentences.push(`Diploma programmes run for ${durationRangeText(monthsByQualification.Diploma)}, with intensive practical studio sessions.`);
+            }
+            if (monthsByQualification.Certificate) {
+                sentences.push(`Certificate programmes range from ${durationRangeText(monthsByQualification.Certificate)} depending on the course.`);
+            }
+            if (hasFlexible) {
+                sentences.push('Short courses and workshops offer flexible durations to fit your schedule.');
+            }
+            target.textContent = sentences.join(' ');
+        }
+
         function initFEWAApp() {
+            renderCatalogReferences();
             // Responsive mobile navigation toggle
             const mobileMenu = document.getElementById('mobile-menu');
             const navLinks = document.querySelector('.nav-links');

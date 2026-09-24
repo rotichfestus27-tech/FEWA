@@ -41,18 +41,25 @@
     let currentStep = 1;
     let submitting = false;
 
-    const programDetails = {
-        'Cosmetology & Advanced Beauty Therapy': 'Diploma | 2 Years. Skin therapies, aesthetics, spa treatments and salon management.',
-        'Fashion Design & Creative Styling': 'Diploma | 2 Years. Pattern drafting, textiles, garment construction and styling.',
-        'Professional Hairdressing & Trichology': 'Certificate | 1.5 Years. Cutting, colour systems, chemical work and scalp health.',
-        'Professional Makeup Artistry': 'Certificate | 6 Months. Makeup techniques for beauty, bridal, editorial and special effects.',
-        'Nail Technology & Art': 'Certificate | 6 Months. Manicure, pedicure, nail extensions, nail art and business skills.',
-        "Barbering & Men's Grooming": "Certificate | 6 Months. Haircutting, shaving, beard design and men's grooming.",
-        'Spa Therapy & Wellness': 'Certificate | 6 Months. Massage, body treatments, aromatherapy and holistic wellness.',
-        'Skincare & Facial Therapy': 'Certificate | 6 Months. Facial treatments, skincare analysis and product knowledge.',
-        'Beauty Business Management': 'Certificate | 3 Months. Salon management, marketing, customer care and finance.',
-        'Short Courses & Workshops': 'Various | Flexible. Short practical courses to upgrade your skills and boost your career.'
+    // Course catalogue (title, qualification, duration, description, ...) lives in
+    // window.FEWA_COURSES (scripts/course-catalog-data.js), the single source of
+    // truth shared with courses.html/course-detail.html. Nothing here duplicates
+    // that data -- the program <select> options and its summary text are both
+    // derived from it at render time.
+    const catalogCourses = window.FEWA_COURSES || [];
+    const programSummaryText = (title) => {
+        const course = catalogCourses.find((item) => item.title === title);
+        return course ? `${course.qualification} | ${course.duration}. ${course.description}` : '';
     };
+
+    const programSelect = document.getElementById('program');
+    if (programSelect) {
+        for (const course of catalogCourses) {
+            const option = document.createElement('option');
+            option.textContent = course.title;
+            programSelect.appendChild(option);
+        }
+    }
 
     const showMessage = (element, text, type = '') => {
         if (!element) return;
@@ -141,9 +148,18 @@
         closeContinuePanel();
         const data = currentApplication || {};
         const flattened = { ...(data.personalInformation || {}), ...(data.academicInformation || {}), ...(data.programInformation || {}), ...(data.additionalInformation || {}) };
-        Object.entries(flattened).forEach(([key, value]) => { const field = form.elements[key]; if (field && field.type !== 'file') field.value = value || ''; });
+        Object.entries(flattened).forEach(([key, value]) => {
+            const field = form.elements[key];
+            if (!field) return;
+            if (field.type === 'file') return;
+            if (field.type === 'checkbox') {
+                field.checked = Boolean(value);
+                return;
+            }
+            field.value = value || '';
+        });
         const program = form.elements.program?.value;
-        if (program) document.getElementById('program-summary').innerHTML = `<strong>${escapeHtml(program)}</strong><br><span>${escapeHtml(programDetails[program] || '')}</span>`;
+        if (program) document.getElementById('program-summary').innerHTML = `<strong>${escapeHtml(program)}</strong><br><span>${escapeHtml(programSummaryText(program))}</span>`;
         updateSecurityBadge();
         renderStep();
     }
@@ -483,7 +499,7 @@
     document.getElementById('next-button').addEventListener('click', async () => { if (!validateStep(currentStep)) return; try { await saveDraft(false); currentStep++; await saveDraft(false); renderStep(); } catch (error) { showMessage(formMessage, error.message || 'Draft could not be saved.', 'error'); } });
     document.getElementById('previous-button').addEventListener('click', () => { if (currentStep > 1) { currentStep--; renderStep(); } });
     document.getElementById('save-button').addEventListener('click', () => saveDraft(true).catch((error) => showMessage(formMessage, error.message || 'Draft could not be saved.', 'error')));
-    form.addEventListener('input', (event) => { if (event.target.name === 'program') document.getElementById('program-summary').innerHTML = event.target.value ? `<strong>${escapeHtml(event.target.value)}</strong><br><span>${escapeHtml(programDetails[event.target.value] || '')}</span>` : '<strong>Select a program to see its summary.</strong>'; if (event.target.type === 'file' && event.target.files[0]) event.target.closest('.upload-card').querySelector('.upload-status').textContent = event.target.files[0].name; });
+    form.addEventListener('input', (event) => { if (event.target.name === 'program') document.getElementById('program-summary').innerHTML = event.target.value ? `<strong>${escapeHtml(event.target.value)}</strong><br><span>${escapeHtml(programSummaryText(event.target.value))}</span>` : '<strong>Select a program to see its summary.</strong>'; if (event.target.type === 'file' && event.target.files[0]) event.target.closest('.upload-card').querySelector('.upload-status').textContent = event.target.files[0].name; });
     form.addEventListener('submit', (event) => { event.preventDefault(); submitApplication(); });
     progress.forEach((button, index) => button.addEventListener('click', () => { if (index + 1 < currentStep) { currentStep = index + 1; renderStep(); } }));
 
