@@ -1,7 +1,13 @@
 const { Timestamp } = require('firebase-admin/firestore');
 const crypto = require('crypto');
 
-const YEAR_PATTERN = /^FEWA(\d{4})-(\d{3,})$/;
+// Current student ID format is "{year}/{sequence}" (e.g. "2026/001"). The old
+// "FEWA{year}-{sequence}" format (e.g. "FEWA2026-001") is still recognized
+// here ONLY so findHighestStudentSequence continues counting correctly for
+// years that already have students admitted under the old format -- existing
+// student records are never rewritten to the new format.
+const ID_PATTERN = /^(\d{4})\/(\d{3,})$/;
+const LEGACY_ID_PATTERN = /^FEWA(\d{4})-(\d{3,})$/;
 const EMAIL_PATTERN = /^[^@ ]+@[^@ ]+\.[^@ ]+$/;
 const PHONE_PATTERN = /^[0-9+ ()-]+$/;
 const ELIGIBLE_STATUSES = new Set(['Submitted', 'Under Review', 'Accepted']);
@@ -64,7 +70,8 @@ function validateApplication(application, applicationId) {
 function findHighestStudentSequence(snapshot, year) {
     let highest = 0;
     snapshot.forEach(document => {
-        const match = String(document.data().studentId || '').match(YEAR_PATTERN);
+        const studentId = String(document.data().studentId || '');
+        const match = studentId.match(ID_PATTERN) || studentId.match(LEGACY_ID_PATTERN);
         if (match && match[1] === String(year)) highest = Math.max(highest, Number(match[2]));
     });
     return highest;
@@ -77,7 +84,7 @@ async function allocateStudentId(transaction, db, year, counterRef) {
     const configuredNext = Number(counterSnapshot.exists ? counterSnapshot.data().next : 1);
     const sequence = Math.max(configuredNext, existingHighest + 1);
     transaction.set(counterRef, { next: sequence + 1, updatedAt: Timestamp.now() }, { merge: true });
-    return `FEWA${year}-${String(sequence).padStart(3, '0')}`;
+    return `${year}/${String(sequence).padStart(3, '0')}`;
 }
 
 async function promoteAcceptedApplication({ db, applicationId, authToken = {} }) {

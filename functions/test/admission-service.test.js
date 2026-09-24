@@ -38,6 +38,9 @@ async function main() {
     const studentRef = db.collection('students').doc(uid);
     const notificationRef = applicationRef.collection('notifications').doc('accepted');
 
+    // A pre-existing student admitted under the old "FEWA{year}-{seq}" format,
+    // proving it (a) is never rewritten and (b) still counts toward the next
+    // sequence number so a freshly-admitted student can never collide with it.
     await db.collection('students').doc('existing-seed').set({
         uid: 'existing-seed',
         studentId: 'FEWA2026-001',
@@ -51,7 +54,9 @@ async function main() {
     assert.strictEqual((await applicationRef.get()).data().status, 'Submitted');
 
     const first = await promoteAcceptedApplication({ db, applicationId: uid, authToken: { roles: { admissions: true } } });
-    assert.match(first.studentId, /^FEWA2026-\d{3,}$/);
+    // Legacy seed above already occupies sequence 001 for 2026, so the first
+    // student admitted under the new format must be 002, not 001.
+    assert.strictEqual(first.studentId, '2026/002');
     assert.strictEqual((await applicationRef.get()).data().status, 'Accepted');
     const student = (await studentRef.get()).data();
     assert.deepStrictEqual({
