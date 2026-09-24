@@ -276,7 +276,9 @@
     // Same redirect target used by the manual "Send password reset email" button
     // in the student detail panel -- both lead to account-setup.html's branded
     // "create your password" page instead of Firebase's generic default one.
-    const ACTIVATION_REDIRECT = { url: `${window.location.origin}/account-setup.html`, handleCodeInApp: false };
+    // handleCodeInApp MUST be true -- otherwise Firebase sends the student to its
+    // own generic, unbranded reset-password page instead of account-setup.html.
+    const ACTIVATION_REDIRECT = { url: `${window.location.origin}/account-setup.html`, handleCodeInApp: true };
 
     async function promoteSelectedApplication() {
         if (!state.selected || !staff()) return;

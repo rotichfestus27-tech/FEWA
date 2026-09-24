@@ -1093,7 +1093,9 @@
             // Same branded "create your password" page used by the admin-triggered
             // acceptance/activation email -- keeps every password-reset link on the
             // site landing in one consistent place instead of Firebase's default page.
-            const PASSWORD_RESET_REDIRECT = { url: `${window.location.origin}/account-setup.html`, handleCodeInApp: false };
+            // handleCodeInApp MUST be true -- otherwise Firebase sends the student to
+            // its own generic, unbranded reset-password page instead of account-setup.html.
+            const PASSWORD_RESET_REDIRECT = { url: `${window.location.origin}/account-setup.html`, handleCodeInApp: true };
 
             function message(element, text, type) { element.textContent = text; element.className = 'portal-message' + (type ? ' ' + type : ''); }
             // Login accepts either a Student ID (e.g. "2026/001") or an email address.
