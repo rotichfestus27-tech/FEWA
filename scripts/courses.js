@@ -30,11 +30,16 @@ function courseCard(course, index) {
         </article>`;
 }
 
+// filter is either 'All Courses', a single category string, or an array of
+// category strings (used when a homepage "school" spans more than one
+// catalogue category -- e.g. School of Cosmetology covers both "Beauty &
+// Wellness" and "Hair & Barbering").
 function renderCourses(filter = 'All Courses') {
     if (!courseGrid) return;
-    const visibleCourses = filter === 'All Courses'
+    const categories = Array.isArray(filter) ? filter : [filter];
+    const visibleCourses = categories.includes('All Courses')
         ? courses
-        : courses.filter((course) => course.category === filter);
+        : courses.filter((course) => categories.includes(course.category));
 
     courseGrid.innerHTML = visibleCourses.map(courseCard).join('');
     requestAnimationFrame(() => {
@@ -52,6 +57,59 @@ filterButtons.forEach((button) => {
     });
 });
 
+// Short, pre-written introductions for the homepage "school" links (Home ->
+// School -> Explore Programs). Purely display copy -- the underlying course
+// list for each is still derived entirely from window.FEWA_COURSES via the
+// category filter below, nothing here adds or changes course data.
+const SCHOOL_INTROS = {
+    'Beauty & Wellness,Hair & Barbering': {
+        eyebrow: 'School of Cosmetology',
+        heading: 'Beauty, wellness and hair-care programmes',
+        body: 'Explore FEWA’s Cosmetology, Beauty Therapy and Hairdressing pathways.'
+    },
+    'Fashion Design': {
+        eyebrow: 'School of Fashion & Design',
+        heading: 'Fashion design programmes',
+        body: 'Explore FEWA’s Fashion Design & Creative Styling pathway.'
+    },
+    'Short Courses': {
+        eyebrow: 'Short Courses & Workshops',
+        heading: 'Flexible, practical short courses',
+        body: 'Explore FEWA’s short courses designed to build specific professional skills.'
+    }
+};
+
+// Applies ?category=A,B from the URL (set by the homepage "school" links) on
+// load: pre-selects the matching filter chip(s) and shows a short, relevant
+// intro. An unrecognized or missing category param leaves the page in its
+// normal default state (All Courses) -- this never hides or breaks the
+// catalogue for a direct/plain visit to courses.html.
+function applyCategoryFilterFromUrl() {
+    const requested = new URLSearchParams(window.location.search).get('category');
+    if (!requested) return false;
+    const categories = requested.split(',').map((value) => value.trim()).filter(Boolean);
+    const matchingButtons = [...filterButtons].filter((button) => categories.includes(button.dataset.filter));
+    if (!matchingButtons.length) return false; // unknown category value(s) -- keep default "All Courses" view
+
+    filterButtons.forEach((item) => {
+        const isMatch = matchingButtons.includes(item);
+        item.classList.toggle('is-active', isMatch);
+        item.setAttribute('aria-selected', isMatch ? 'true' : 'false');
+    });
+    renderCourses(categories);
+
+    const intro = SCHOOL_INTROS[categories.join(',')];
+    if (intro) {
+        const eyebrowEl = document.querySelector('.courses-intro .courses-eyebrow');
+        const headingEl = document.querySelector('.courses-intro h1');
+        const bodyEl = document.querySelector('.courses-intro p');
+        if (eyebrowEl) eyebrowEl.textContent = intro.eyebrow;
+        if (headingEl) headingEl.textContent = intro.heading;
+        if (bodyEl) bodyEl.textContent = intro.body;
+    }
+    return true;
+}
+
 const mobileMenu = document.querySelector('#mobile-menu');
 const navLinks = document.querySelector('.nav-links');
 if (mobileMenu && navLinks) {
@@ -62,4 +120,4 @@ if (mobileMenu && navLinks) {
     });
 }
 
-renderCourses();
+if (!applyCategoryFilterFromUrl()) renderCourses();

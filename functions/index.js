@@ -3,6 +3,7 @@ const functions = require('firebase-functions');
 const { promoteAcceptedApplication, finalizeApplicationSubmission } = require('./admission-service');
 const { isSuperadmin, setUserRole, listStaffAccounts } = require('./roles-service');
 const { checkApplicationStatus } = require('./status-check-service');
+const { resolveStudentLoginEmail } = require('./student-login-service');
 
 admin.initializeApp();
 
@@ -91,6 +92,20 @@ exports.checkApplicationStatus = functions.https.onCall(async (request) => {
             applicationNumber: request.data?.applicationNumber,
             email: request.data?.email,
             phone: request.data?.phone
+        });
+    } catch (error) {
+        throw new functions.https.HttpsError('not-found', error.message);
+    }
+});
+
+// Intentionally does NOT require request.auth -- called from the Student
+// Portal login screen before the student has signed in. See
+// student-login-service.js for what this returns and its security notes.
+exports.resolveStudentLoginEmail = functions.https.onCall(async (request) => {
+    try {
+        return await resolveStudentLoginEmail({
+            db: admin.firestore(),
+            studentId: request.data?.studentId
         });
     } catch (error) {
         throw new functions.https.HttpsError('not-found', error.message);

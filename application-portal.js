@@ -59,6 +59,18 @@
             option.textContent = course.title;
             programSelect.appendChild(option);
         }
+
+        // Arriving from a course-detail page's "Apply for This Programme" link
+        // (course-detail.html?...  -> apply.html?programme={slug}) preselects the
+        // matching option here. An unknown/missing slug is a no-op -- the select
+        // simply keeps its default "Select a program" placeholder, and a returning
+        // applicant's own saved draft (restored later in showApplicationForm) takes
+        // precedence over this if one exists.
+        const requestedProgrammeSlug = new URLSearchParams(window.location.search).get('programme');
+        if (requestedProgrammeSlug) {
+            const requestedCourse = catalogCourses.find((course) => course.slug === requestedProgrammeSlug);
+            if (requestedCourse) programSelect.value = requestedCourse.title;
+        }
     }
 
     const showMessage = (element, text, type = '') => {

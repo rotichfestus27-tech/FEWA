@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="description" content="Activate your FEWA Student Portal account">
+    <title>Activate Your Student Account | FEWA Beauty &amp; Fashion College</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css?v=20260820-luxury">
+    <style>
+        /* Mirrors portal.html's login-card styling exactly (that CSS lives in
+           portal.html's own inline <style>, not in the shared stylesheet, so it
+           is repeated here rather than touching portal.html or style.css). */
+        :root {
+            --portal-ink: #1e1c1a;
+            --portal-muted: #756d67;
+            --portal-gold: #b88a44;
+            --portal-line: #e7dfd6;
+        }
+
+        body.setup-page {
+            min-height: 100vh;
+            display: grid;
+            place-items: center;
+            padding: 24px;
+            background: linear-gradient(135deg, #211f1d, #574a3d);
+            font-family: var(--font-sans, system-ui, sans-serif);
+        }
+
+        .setup-card {
+            width: min(100%, 430px);
+            background: #fff;
+            border-radius: 8px;
+            padding: 38px;
+            box-shadow: 0 18px 60px #17131055;
+        }
+
+        .setup-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 0 0 25px;
+            color: var(--portal-ink);
+        }
+
+        .setup-brand img {
+            width: 42px;
+            height: 42px;
+            object-fit: contain;
+        }
+
+        .setup-brand span {
+            display: block;
+            color: var(--portal-gold);
+            font-size: 0.72rem;
+            letter-spacing: 0.04em;
+        }
+
+        .setup-card h1 {
+            font: 600 27px Georgia, serif;
+            margin: 0 0 8px;
+            color: var(--portal-ink);
+        }
+
+        .setup-card>p {
+            color: var(--portal-muted);
+            margin: 0 0 24px;
+            font-size: 14px;
+        }
+
+        .setup-form label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--portal-ink);
+            margin-bottom: 6px;
+        }
+
+        .setup-form input {
+            width: 100%;
+            padding: 11px 14px;
+            border-radius: 6px;
+            border: 1.5px solid var(--portal-line);
+            background: #f8f5f0;
+            margin-bottom: 16px;
+            box-sizing: border-box;
+        }
+
+        .setup-button {
+            width: 100%;
+            border: 0;
+            border-radius: 4px;
+            padding: 12px 17px;
+            cursor: pointer;
+            background: var(--portal-gold);
+            color: #fff;
+            font-weight: 700;
+            font-size: 0.95rem;
+        }
+
+        .setup-button:disabled {
+            opacity: .6;
+            cursor: wait;
+        }
+
+        .setup-message {
+            min-height: 20px;
+            font-size: 13px;
+            margin: 14px 0 0;
+        }
+
+        .setup-message.error {
+            color: #a43f35;
+        }
+
+        .setup-message.success {
+            color: #39734b;
+        }
+
+        .setup-support {
+            margin-top: 20px;
+            font-size: 12.5px;
+            color: var(--portal-muted);
+        }
+
+        .setup-support a {
+            color: var(--portal-gold);
+            font-weight: 700;
+            text-decoration: none;
+        }
+    </style>
+</head>
+
+<body class="setup-page">
+    <section class="setup-card" aria-labelledby="setup-title">
+        <div class="setup-brand"><img src="assets/logo.png" alt="FEWA logo">
+            <div><strong>FEWA</strong><span>BEAUTY &amp; FASHION COLLEGE</span></div>
+        </div>
+        <div id="setup-loading">
+            <h1 id="setup-title">Activate Your Student Account</h1>
+            <p>Checking your activation link...</p>
+        </div>
+        <div id="setup-form-panel" hidden>
+            <h1>Create Your Password</h1>
+            <p>Activating the Student Portal account for <strong id="setup-email"></strong>.</p>
+            <form id="setup-form" class="setup-form">
+                <label for="setup-password">New password</label>
+                <input id="setup-password" type="password" autocomplete="new-password" minlength="8" required>
+                <label for="setup-password-confirm">Confirm password</label>
+                <input id="setup-password-confirm" type="password" autocomplete="new-password" minlength="8" required>
+                <button class="setup-button" type="submit" id="setup-submit">Activate My Student Portal</button>
+            </form>
+        </div>
+        <div id="setup-success" hidden>
+            <h1>Your Account Is Ready</h1>
+            <p>Your password has been set. You can now sign in to the Student Portal using your Student ID and this
+                password.</p>
+            <a class="setup-button" href="portal.html" style="display:block;text-align:center;text-decoration:none;box-sizing:border-box;">Go to Student Portal</a>
+        </div>
+        <div id="setup-error" hidden>
+            <h1>This Link Is No Longer Valid</h1>
+            <p>Activation links expire after a period of time for your security. Request a new one from the Student
+                Portal login screen using "Forgot password?", or contact FEWA Admissions for help.</p>
+            <a class="setup-button" href="portal.html" style="display:block;text-align:center;text-decoration:none;box-sizing:border-box;">Go to Student Portal</a>
+        </div>
+        <p id="setup-message" class="setup-message" role="alert"></p>
+        <p class="setup-support">Need help? Call <a href="tel:+254182368996">0182368996</a> or email
+            <a href="mailto:admissions@fewacollege.ac.ke">admissions@fewacollege.ac.ke</a>.</p>
+    </section>
+
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+    <script src="config.js"></script>
+    <script>
+        (() => {
+            const loadingPanel = document.getElementById('setup-loading');
+            const formPanel = document.getElementById('setup-form-panel');
+            const successPanel = document.getElementById('setup-success');
+            const errorPanel = document.getElementById('setup-error');
+            const messageEl = document.getElementById('setup-message');
+            const emailEl = document.getElementById('setup-email');
+            const form = document.getElementById('setup-form');
+
+            const showMessage = (text, type = '') => {
+                messageEl.textContent = text || '';
+                messageEl.className = `setup-message ${type}`;
+            };
+
+            const showPanel = (panel) => {
+                [loadingPanel, formPanel, successPanel, errorPanel].forEach((el) => { el.hidden = el !== panel; });
+            };
+
+            const config = window.FEWA_CONFIG?.firebase;
+            const validConfig = config && config.apiKey && config.appId
+                && !String(config.apiKey).match(/^(YOUR_|REPLACE_)/)
+                && !String(config.appId).match(/^(YOUR_|REPLACE_)/);
+
+            if (!validConfig || typeof firebase === 'undefined') {
+                showPanel(errorPanel);
+                showMessage('Firebase Authentication is not configured.', 'error');
+                return;
+            }
+            if (!firebase.apps.length) firebase.initializeApp(config);
+            const auth = firebase.auth();
+
+            const params = new URLSearchParams(window.location.search);
+            const mode = params.get('mode');
+            const oobCode = params.get('oobCode');
+
+            if (mode !== 'resetPassword' || !oobCode) {
+                showPanel(errorPanel);
+                return;
+            }
+
+            auth.verifyPasswordResetCode(oobCode).then((email) => {
+                emailEl.textContent = email;
+                showPanel(formPanel);
+            }).catch(() => {
+                showPanel(errorPanel);
+            });
+
+            form.addEventListener('submit', async (event) => {
+                event.preventDefault();
+                const password = document.getElementById('setup-password').value;
+                const confirmPassword = document.getElementById('setup-password-confirm').value;
+                if (password.length < 8) { showMessage('Your password must be at least 8 characters.', 'error'); return; }
+                if (password !== confirmPassword) { showMessage('Passwords do not match.', 'error'); return; }
+
+                const submitButton = document.getElementById('setup-submit');
+                submitButton.disabled = true;
+                showMessage('Activating your account...', '');
+                try {
+                    await auth.confirmPasswordReset(oobCode, password);
+                    showMessage('', '');
+                    showPanel(successPanel);
+                } catch (error) {
+                    showMessage(error.message || 'This link is no longer valid. Please request a new one.', 'error');
+                    submitButton.disabled = false;
+                }
+            });
+        })();
+    </script>
+</body>
+
+</html>

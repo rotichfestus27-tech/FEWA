@@ -788,7 +788,7 @@
             <h1 id="login-title">Student Portal</h1>
             <p>Access your academic information, learning materials and student services.</p>
             <form id="login-form" class="portal-form">
-                <label for="login-email">Student Email</label><input id="login-email" type="email"
+                <label for="login-email">Student ID or Email</label><input id="login-email" type="text"
                     autocomplete="username" required>
                 <label for="login-password">Password</label><input id="login-password" type="password"
                     autocomplete="current-password" required>
@@ -1037,9 +1037,26 @@
                 </section>
                 <section class="portal-view" id="view-settings">
                     <div class="portal-card portal-card-full">
-                        <h3>Account settings</h3>
-                        <p class="portal-muted">Manage your secure account session.</p><button class="portal-button"
-                            id="settings-reset" type="button">Send password reset email</button>
+                        <h3>Change password</h3>
+                        <p class="portal-muted">Enter your current password and choose a new one.</p>
+                        <form id="change-password-form" class="portal-form">
+                            <label for="current-password">Current password</label><input id="current-password"
+                                type="password" autocomplete="current-password" required>
+                            <label for="new-password">New password</label><input id="new-password" type="password"
+                                autocomplete="new-password" minlength="8" required>
+                            <label for="new-password-confirm">Confirm new password</label><input
+                                id="new-password-confirm" type="password" autocomplete="new-password" minlength="8"
+                                required>
+                            <button class="portal-button" type="submit" id="change-password-submit">Update
+                                password</button>
+                            <p id="change-password-message" class="portal-message" role="status"></p>
+                        </form>
+                    </div>
+                    <div class="portal-card portal-card-full">
+                        <h3>Forgot your password?</h3>
+                        <p class="portal-muted">Send a secure reset link to your account email instead.</p>
+                        <button class="portal-button" id="settings-reset" type="button">Send password reset
+                            email</button>
                         <p id="settings-message" class="portal-message" role="status"></p>
                     </div>
                 </section>
@@ -1050,6 +1067,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-storage-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-functions-compat.js"></script>
     <script src="config.js"></script>
     <script>
         (() => {
@@ -1062,6 +1080,7 @@
             let auth;
             let db;
             let storage;
+            let functions;
             let currentUser;
             let currentStudent;
             let pendingGoogleCredential = null;
@@ -1071,8 +1090,25 @@
             let messages = [];
             let materials = [];
             const validConfig = firebaseConfig && firebaseConfig.apiKey && firebaseConfig.appId && !String(firebaseConfig.apiKey).match(/^(YOUR_|REPLACE_)/) && !String(firebaseConfig.appId).match(/^(YOUR_|REPLACE_)/);
+            // Same branded "create your password" page used by the admin-triggered
+            // acceptance/activation email -- keeps every password-reset link on the
+            // site landing in one consistent place instead of Firebase's default page.
+            const PASSWORD_RESET_REDIRECT = { url: `${window.location.origin}/account-setup.html`, handleCodeInApp: false };
 
             function message(element, text, type) { element.textContent = text; element.className = 'portal-message' + (type ? ' ' + type : ''); }
+            // Login accepts either a Student ID (e.g. "2026/001") or an email address.
+            // Firebase Authentication itself only signs in by email, so a Student ID is
+            // resolved to its account email first via the resolveStudentLoginEmail
+            // Cloud Function (see functions/student-login-service.js) before the normal
+            // signInWithEmailAndPassword call -- password verification always happens
+            // there, never in the resolver. Anything containing "@" is passed straight
+            // through unchanged, so existing email-based sign-in is completely unaffected.
+            async function resolveLoginIdentifier(identifier) {
+                if (identifier.includes('@')) return identifier;
+                const resolve = functions.httpsCallable('resolveStudentLoginEmail');
+                const result = await resolve({ studentId: identifier });
+                return result.data.email;
+            }
             function text(id, value, fallback = 'Not available') { const element = document.getElementById(id); if (element) element.textContent = value || fallback; }
             function safeDate(value) { if (!value) return ''; const date = value.toDate ? value.toDate() : new Date(value); return Number.isNaN(date.getTime()) ? '' : date.toLocaleDateString(); }
             function escapeHtml(value) { return String(value ?? '').replace(/[&<>'"]/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[character])); }
@@ -1164,9 +1200,43 @@
             document.getElementById('menu-button').addEventListener('click', () => document.getElementById('app-screen').classList.toggle('menu-open'));
             document.getElementById('logout-button').addEventListener('click', () => auth.signOut());
             document.getElementById('profile-form').addEventListener('submit', async event => { event.preventDefault(); const button = document.getElementById('profile-save'); button.disabled = true; try { await db.collection('students').doc(currentUser.uid).update({ phone: document.getElementById('profile-phone').value.trim(), address: document.getElementById('profile-address').value.trim(), emergencyContact: document.getElementById('profile-emergency').value.trim() }); message(document.getElementById('profile-message'), 'Profile details updated.', 'success'); } catch (error) { message(document.getElementById('profile-message'), 'Unable to update these details. Please try again.', 'error'); } finally { button.disabled = false; } });
-            async function sendReset(element) { if (!currentUser) { message(element, 'Sign in before requesting a password reset.', 'error'); return; } try { await auth.sendPasswordResetEmail(currentUser.email); message(element, 'If an account exists for this email, a reset message has been sent.', 'success'); } catch (error) { message(element, 'If an account exists for this email, a reset message has been sent.', 'success'); } }
-            document.getElementById('reset-button').addEventListener('click', async () => { const email = document.getElementById('login-email').value.trim(); if (!email || !validConfig) { message(loginMessage, 'Enter your account email and configure Firebase Authentication.', 'error'); return; } try { await auth.sendPasswordResetEmail(email); message(loginMessage, 'If an account exists for this email, a reset message has been sent.', 'success'); } catch (error) { message(loginMessage, 'If an account exists for this email, a reset message has been sent.', 'success'); } });
+            async function sendReset(element) { if (!currentUser) { message(element, 'Sign in before requesting a password reset.', 'error'); return; } try { await auth.sendPasswordResetEmail(currentUser.email, PASSWORD_RESET_REDIRECT); message(element, 'If an account exists for this email, a reset message has been sent.', 'success'); } catch (error) { message(element, 'If an account exists for this email, a reset message has been sent.', 'success'); } }
+            document.getElementById('reset-button').addEventListener('click', async () => {
+                const identifierRaw = document.getElementById('login-email').value.trim();
+                if (!identifierRaw || !validConfig) { message(loginMessage, 'Enter your Student ID or account email, and configure Firebase Authentication.', 'error'); return; }
+                try {
+                    const email = await resolveLoginIdentifier(identifierRaw);
+                    await auth.sendPasswordResetEmail(email, PASSWORD_RESET_REDIRECT);
+                } catch (error) { /* Fall through to the same generic message either way -- do not reveal whether the Student ID/email exists. */ }
+                message(loginMessage, 'If an account exists for that Student ID or email, a reset message has been sent.', 'success');
+            });
             document.getElementById('settings-reset').addEventListener('click', () => sendReset(document.getElementById('settings-message')));
+            document.getElementById('change-password-form').addEventListener('submit', async (event) => {
+                event.preventDefault();
+                const messageEl = document.getElementById('change-password-message');
+                const currentPassword = document.getElementById('current-password').value;
+                const newPassword = document.getElementById('new-password').value;
+                const confirmPassword = document.getElementById('new-password-confirm').value;
+                if (newPassword.length < 8) { message(messageEl, 'Your new password must be at least 8 characters.', 'error'); return; }
+                if (newPassword !== confirmPassword) { message(messageEl, 'New password and confirmation do not match.', 'error'); return; }
+                const button = document.getElementById('change-password-submit');
+                button.disabled = true;
+                message(messageEl, 'Updating your password...', '');
+                try {
+                    // Firebase requires a recent sign-in before changing a password --
+                    // re-authenticating with the current password proves the caller is
+                    // genuinely the account owner (not just someone with a live session).
+                    const credential = firebase.auth.EmailAuthProvider.credential(currentUser.email, currentPassword);
+                    await currentUser.reauthenticateWithCredential(credential);
+                    await currentUser.updatePassword(newPassword);
+                    document.getElementById('change-password-form').reset();
+                    message(messageEl, 'Your password has been updated.', 'success');
+                } catch (error) {
+                    message(messageEl, error.code === 'auth/wrong-password' ? 'Your current password is incorrect.' : 'Your password could not be updated. Please try again.', 'error');
+                } finally {
+                    button.disabled = false;
+                }
+            });
             const googleMessage = document.getElementById('google-signin-message');
 
             // Standard Firebase "link accounts with the same email" flow. When Google sign-in
@@ -1202,7 +1272,8 @@
                 button.disabled = true;
                 message(loginMessage, linking ? 'Verifying your password to link Google sign-in...' : 'Signing in...', '');
                 try {
-                    const result = await auth.signInWithEmailAndPassword(document.getElementById('login-email').value.trim(), document.getElementById('login-password').value);
+                    const identifier = await resolveLoginIdentifier(document.getElementById('login-email').value.trim());
+                    const result = await auth.signInWithEmailAndPassword(identifier, document.getElementById('login-password').value);
                     document.getElementById('login-password').value = '';
                     if (linking) {
                         const credentialToLink = pendingGoogleCredential;
@@ -1217,7 +1288,7 @@
                     }
                     // Falls through to the existing auth.onAuthStateChanged listener below either way.
                 } catch (error) {
-                    message(loginMessage, 'Sign-in failed. Check your email and password.', 'error');
+                    message(loginMessage, 'Sign-in failed. Check your Student ID (or email) and password.', 'error');
                 } finally {
                     button.disabled = false;
                 }
@@ -1244,7 +1315,7 @@
             if (validConfig && window.firebase) {
                 try {
                     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-                    auth = firebase.auth(); db = firebase.firestore(); storage = firebase.storage();
+                    auth = firebase.auth(); db = firebase.firestore(); storage = firebase.storage(); functions = firebase.functions();
                     auth.getRedirectResult().catch(error => {
                         if (error.code === 'auth/account-exists-with-different-credential') {
                             startAccountLinking(error);

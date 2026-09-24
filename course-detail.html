@@ -29,16 +29,73 @@
     </header>
     <main id="course-detail" class="course-detail-content"></main>
     <script src="/scripts/course-catalog-data.js"></script>
+    <script src="/scripts/fees-catalog-data.js"></script>
     <script src="/scripts/courses.js"></script>
     <script>
         const pathSlug = window.location.pathname.split('/').filter(Boolean).pop();
         const slug = pathSlug && pathSlug !== 'course-detail.html' ? pathSlug : new URLSearchParams(window.location.search).get('course');
         const course = window.FEWA_COURSES.find((item) => item.slug === slug);
         const detail = document.querySelector('#course-detail');
+
+        // Connects a course to its official fee table ONLY where the client's own
+        // fee-table title names that course by subject (e.g. "Certificate & Diploma
+        // in Cosmetology (Beauty Therapy & Hairdressing)" explicitly covers both
+        // Cosmetology and Hairdressing). Every other course intentionally has no
+        // entry here -- see the final report for why an individual price is not
+        // assumed for them.
+        const COURSE_FEE_LINKS = {
+            'cosmetology-advanced-beauty-therapy': 'cosmetology',
+            'professional-hairdressing-trichology': 'cosmetology',
+            'fashion-design-creative-styling': 'fashionDesign'
+        };
+
+        function formatFeeAmount(amount) {
+            return `KSh ${Number(amount).toLocaleString('en-US')}`;
+        }
+
+        // Renders the same visual structure as scripts/fees.js's study-mode table
+        // (reusing the existing .fees-section/.fees-table CSS), but as a small,
+        // independently-scoped function -- fees.js itself is not loaded here since
+        // its top-level `mobileMenu`/`navLinks` declarations would collide with the
+        // ones scripts/courses.js already declares on this same page.
+        function renderCourseFeesSnippet(feesData) {
+            const periods = feesData.studyModes[0].payments.map((payment) => payment.period);
+            const rows = feesData.studyModes.map((studyMode) => `
+                <tr>
+                    <td data-label="Study Mode">${studyMode.mode}</td>
+                    ${studyMode.payments.map((payment) => `<td data-label="${payment.period}">${formatFeeAmount(payment.amount)}</td>`).join('')}
+                </tr>`).join('');
+            return `<section class="fees-section" aria-labelledby="course-fees-heading">
+                <h2 id="course-fees-heading">Fees</h2>
+                <div class="fees-table-wrap">
+                    <table class="fees-table">
+                        <thead><tr><th>Study Mode</th>${periods.map((period) => `<th>${period}</th>`).join('')}</tr></thead>
+                        <tbody>${rows}</tbody>
+                    </table>
+                </div>
+                <p class="fees-note">See the full <a href="/fees.html">FEWA fee structure</a> for admission charges and other programmes.</p>
+            </section>`;
+        }
+
+        function renderCourseFeesUnavailable() {
+            return `<section class="fees-section" aria-labelledby="course-fees-heading">
+                <h2 id="course-fees-heading">Fees</h2>
+                <p class="fees-contact-note">Fees: Contact FEWA Admissions for the applicable fee structure.</p>
+            </section>`;
+        }
+
         if (course) {
-            document.title = 'Course Details | FEWA Beauty & Fashion College';
+            document.title = `${course.title} | FEWA Beauty & Fashion College`;
             const courseImage = course.image.startsWith('/') ? course.image : `/${course.image}`;
-            detail.innerHTML = `<section class="detail-hero"><div class="detail-hero-image"><img src="${courseImage}" alt="${course.title}"></div><div class="detail-hero-copy"><span class="courses-eyebrow">${course.category}</span><h1>${course.title}</h1><p>${course.description}</p><div class="course-meta"><span><i class="fas fa-award"></i>${course.qualification}</span><span><i class="fas fa-clock"></i>${course.duration}</span></div><a class="cta-button" href="/apply.html">Apply for this course <span aria-hidden="true">&rarr;</span></a></div></section>`;
+            const feesKey = COURSE_FEE_LINKS[course.slug];
+            const feesData = feesKey && window.FEWA_FEES ? window.FEWA_FEES[feesKey] : null;
+            const feesSection = feesData ? renderCourseFeesSnippet(feesData) : renderCourseFeesUnavailable();
+            detail.innerHTML = `<section class="detail-hero"><div class="detail-hero-image"><img src="${courseImage}" alt="${course.title}"></div><div class="detail-hero-copy"><span class="courses-eyebrow">${course.category}</span><h1>${course.title}</h1><p>${course.description}</p><div class="course-meta"><span><i class="fas fa-award"></i>${course.qualification}</span><span><i class="fas fa-clock"></i>${course.duration}</span></div></div></section>
+                ${feesSection}
+                <section class="course-cta" aria-label="Apply for this programme">
+                    <div><span class="cta-kicker">Ready to apply?</span><h2>${course.title}</h2><p>Start your FEWA application for this programme.</p></div>
+                    <a class="cta-button" href="/apply.html?programme=${encodeURIComponent(course.slug)}">Apply for This Programme <span aria-hidden="true">&rarr;</span></a>
+                </section>`;
         } else {
             detail.innerHTML = '<section class="courses-intro"><span class="courses-eyebrow">Programme not found</span><h1>Explore our courses</h1><a class="cta-button" href="/courses.html">Back to Courses <span aria-hidden="true">&rarr;</span></a></section>';
         }

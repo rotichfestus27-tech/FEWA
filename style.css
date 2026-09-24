@@ -3837,6 +3837,23 @@ h4 {
     font-style: italic;
 }
 
+/* course-detail.html: fee table footnote + the "no confirmed individual
+   price" fallback message, reusing the same muted note styling as above. */
+.fees-note {
+    margin-top: 14px;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+}
+
+.fees-contact-note {
+    padding: 18px 20px;
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-md);
+    background: var(--purple-soft);
+    color: var(--text-secondary);
+    font-size: 0.92rem;
+}
+
 @media (max-width: 760px) {
     .fees-content {
         padding: 0 20px 10px;

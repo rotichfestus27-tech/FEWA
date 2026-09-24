@@ -273,6 +273,11 @@
         }
     }
 
+    // Same redirect target used by the manual "Send password reset email" button
+    // in the student detail panel -- both lead to account-setup.html's branded
+    // "create your password" page instead of Firebase's generic default one.
+    const ACTIVATION_REDIRECT = { url: `${window.location.origin}/account-setup.html`, handleCodeInApp: false };
+
     async function promoteSelectedApplication() {
         if (!state.selected || !staff()) return;
         const button = $('#accept-create-student');
@@ -281,9 +286,22 @@
         try {
             const promote = firebase.functions().httpsCallable('promoteAcceptedApplication');
             const result = await promote({ applicationId: state.selected.id });
+            const studentEmail = state.selected.personalInformation?.email;
+            let activationNote = '';
+            // Only send on a genuinely new acceptance (not idempotent) -- re-clicking
+            // "Ensure student record" on an already-accepted, already-set-up student
+            // must not repeatedly re-send them activation emails.
+            if (!result.data.idempotent && studentEmail) {
+                try {
+                    await firebase.auth().sendPasswordResetEmail(studentEmail, ACTIVATION_REDIRECT);
+                    activationNote = ` An activation email has been sent to ${studentEmail}.`;
+                } catch (emailError) {
+                    activationNote = ' The student record was created, but the activation email could not be sent automatically -- use "Send password reset email" in the student\'s profile to resend it.';
+                }
+            }
             await loadData();
             openApplication(state.selected.id);
-            detailMessage(`Student ${result.data.studentId} is ready.`, 'success');
+            detailMessage(`Student ${result.data.studentId} is ready.${activationNote}`, 'success');
         } catch (error) {
             detailMessage(error?.message || 'The applicant could not be admitted.', 'error');
         } finally {
@@ -958,7 +976,7 @@
         const button = $('#student-reset-password');
         const messageEl = $('#student-account-message');
         if (button) button.disabled = true;
-        try { await firebase.auth().sendPasswordResetEmail(student.email); } catch (error) { /* do not reveal whether the account exists */ }
+        try { await firebase.auth().sendPasswordResetEmail(student.email, ACTIVATION_REDIRECT); } catch (error) { /* do not reveal whether the account exists */ }
         if (messageEl) { messageEl.textContent = `If an account exists for ${student.email}, a password reset link has been sent.`; messageEl.className = 'admin-message success'; }
         if (button) button.disabled = false;
     }
