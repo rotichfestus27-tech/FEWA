@@ -36,7 +36,7 @@ window.FEWA_COURSES = [
         qualification: 'Certificate',
         duration: '1.5 Years',
         description: 'Cutting, colour systems, chemical work and scalp health.',
-        image: 'assets/03_professional_hairdressing_trichology.png',
+        image: 'assets/03_professional_hairdressing_trichology.webp',
         icon: 'fa-wand-magic-sparkles',
         slug: 'professional-hairdressing-trichology'
     },
