@@ -76,7 +76,7 @@ window.FEWA_COURSES = [
         qualification: 'Certificate',
         duration: '6 Months',
         description: 'Massage, body treatments, aromatherapy and holistic wellness.',
-        image: 'assets/07_spa_therapy_wellness.png',
+        image: 'assets/07_spa_therapy_wellness.webp',
         icon: 'fa-leaf',
         slug: 'spa-therapy-wellness'
     },
@@ -96,7 +96,7 @@ window.FEWA_COURSES = [
         qualification: 'Certificate',
         duration: '3 Months',
         description: 'Salon management, marketing, customer care and finance.',
-        image: 'assets/09_beauty_business_management.png',
+        image: 'assets/09_beauty_business_management.webp',
         icon: 'fa-chart-line',
         slug: 'beauty-business-management'
     },
