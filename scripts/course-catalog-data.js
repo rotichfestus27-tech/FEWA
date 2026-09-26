@@ -76,7 +76,7 @@ window.FEWA_COURSES = [
         qualification: 'Certificate',
         duration: '6 Months',
         description: 'Massage, body treatments, aromatherapy and holistic wellness.',
-        image: 'assets/07_spa_therapy_wellness.webp',
+        image: 'assets/07_spa_therapy_wellness.jpg',
         icon: 'fa-leaf',
         slug: 'spa-therapy-wellness'
     },
