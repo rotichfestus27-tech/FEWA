@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /portal
+Disallow: /account-setup
+
+Sitemap: https://fewa.ac.ke/sitemap.xml

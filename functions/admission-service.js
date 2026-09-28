@@ -87,7 +87,7 @@ async function allocateStudentId(transaction, db, year, counterRef) {
     return `${year}/${String(sequence).padStart(3, '0')}`;
 }
 
-async function promoteAcceptedApplication({ db, applicationId, authToken = {} }) {
+async function promoteAcceptedApplication({ db, applicationId, authToken = {}, sendAcceptanceEmail }) {
     if (!hasAuthorizedRole(authToken)) throw new Error('You are not authorized to admit applicants.');
     requireString(applicationId, 'Application ID');
 
@@ -97,7 +97,7 @@ async function promoteAcceptedApplication({ db, applicationId, authToken = {} })
     const year = new Date().getFullYear();
     const counterRef = db.collection('counters').doc(`studentIds-${year}`);
 
-    return db.runTransaction(async transaction => {
+    const result = await db.runTransaction(async transaction => {
         const applicationSnapshot = await transaction.get(applicationRef);
         const studentSnapshot = await transaction.get(studentRef);
         const notificationSnapshot = await transaction.get(notificationRef);
@@ -138,8 +138,33 @@ async function promoteAcceptedApplication({ db, applicationId, authToken = {} })
             });
         }
 
-        return { applicationId, studentId, status: 'Accepted', idempotent: application.status === 'Accepted' && studentSnapshot.exists && notificationSnapshot.exists };
+        return {
+            applicationId, studentId, status: 'Accepted',
+            idempotent: application.status === 'Accepted' && studentSnapshot.exists && notificationSnapshot.exists,
+            application
+        };
     });
+
+    // Only after the transaction above has committed -- application accepted,
+    // student record created/updated, student ID allocated, and the in-app
+    // notification written -- and only on a genuinely new acceptance, never
+    // on a repeat/idempotent call (matches the same guard already used by the
+    // client for the activation email, see admin-portal.js).
+    if (!result.idempotent && typeof sendAcceptanceEmail === 'function') {
+        try {
+            await sendAcceptanceEmail(result.application, result.studentId);
+        } catch (error) {
+            // The acceptance and student record already succeeded above; a failure to
+            // send the acceptance email is not fatal and must never undo or block that.
+            console.error(
+                'promoteAcceptedApplication: sendAcceptanceEmail failed for application',
+                result.application.applicationNumber || '(no reference number)',
+                '-', error.message
+            );
+        }
+    }
+
+    return { applicationId: result.applicationId, studentId: result.studentId, status: result.status, idempotent: result.idempotent };
 }
 
 // ------------------------------------------------------------------------
@@ -201,19 +226,20 @@ function validateApplicationForSubmission(application) {
     return email;
 }
 
-async function finalizeApplicationSubmission({ db, auth, applicationId }) {
+async function finalizeApplicationSubmission({ db, auth, applicationId, sendEmails }) {
     requireString(applicationId, 'Application ID');
     const applicationRef = db.collection('applications').doc(applicationId);
 
-    const email = await db.runTransaction(async transaction => {
+    const { email, application, isNewSubmission } = await db.runTransaction(async transaction => {
         const snapshot = await transaction.get(applicationRef);
         if (!snapshot.exists) throw new Error('Application not found.');
         const application = snapshot.data();
         if (application.applicantUid !== applicationId) throw new Error('Application ownership is invalid.');
 
         if (application.status === 'Submitted') {
-            // Idempotent: a retried request after a dropped response should not re-validate or re-write.
-            return application.personalInformation?.email || '';
+            // Idempotent: a retried request after a dropped response should not re-validate,
+            // re-write, or re-notify anyone by email.
+            return { email: application.personalInformation?.email || '', application, isNewSubmission: false };
         }
         if (application.status !== 'Draft') {
             throw new Error('This application has already been processed and cannot be resubmitted.');
@@ -225,7 +251,7 @@ async function finalizeApplicationSubmission({ db, auth, applicationId }) {
             submittedAt: Timestamp.now(),
             updatedAt: Timestamp.now()
         });
-        return validatedEmail;
+        return { email: validatedEmail, application, isNewSubmission: true };
     });
 
     if (email && auth) {
@@ -237,6 +263,23 @@ async function finalizeApplicationSubmission({ db, auth, applicationId }) {
         } catch (error) {
             // The application record is already safely submitted above; a failure to upgrade
             // the Auth account is not fatal and can be retried by an administrator later.
+        }
+    }
+
+    if (isNewSubmission && typeof sendEmails === 'function') {
+        try {
+            await sendEmails(application);
+        } catch (error) {
+            // Same principle as the Auth upgrade above: the submission already
+            // succeeded in Firestore, so a notification-email failure must never
+            // surface as a submission failure to the applicant. Logged (reference
+            // number and error message only -- no applicant details, no credentials)
+            // so a real SMTP problem is visible in Cloud Logging instead of silent.
+            console.error(
+                'finalizeApplicationSubmission: sendEmails failed for application',
+                application.applicationNumber || '(no reference number)',
+                '-', error.message
+            );
         }
     }
 

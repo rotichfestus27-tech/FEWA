@@ -5,21 +5,37 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Contact FEWA | Beauty & Fashion College</title>
+    <meta name="description" content="Get in touch with FEWA Beauty & Fashion College at View Park Towers, Utalii Lane, Nairobi, Kenya. Find our phone, email and location details for admissions enquiries.">
+    <link rel="canonical" href="https://fewa.ac.ke/contact">
+    <link rel="icon" type="image/png" href="/assets/logo.png">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="FEWA Beauty & Fashion College">
+    <meta property="og:title" content="Contact FEWA | Beauty & Fashion College">
+    <meta property="og:description" content="Get in touch with FEWA Beauty & Fashion College at View Park Towers, Utalii Lane, Nairobi, Kenya. Find our phone, email and location details for admissions enquiries.">
+    <meta property="og:url" content="https://fewa.ac.ke/contact">
+    <meta property="og:image" content="https://fewa.ac.ke/assets/logo.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Contact FEWA | Beauty & Fashion College">
+    <meta name="twitter:description" content="Get in touch with FEWA Beauty & Fashion College at View Park Towers, Utalii Lane, Nairobi, Kenya. Find our phone, email and location details for admissions enquiries.">
+    <meta name="twitter:image" content="https://fewa.ac.ke/assets/logo.png">
     <link rel="stylesheet" href="style.css?v=20260820-luxury">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="assets/fontawesome/fa-subset.css">
 </head>
 
 <body>
     <header class="main-header">
-        <div class="header-inner"><a href="index.html" class="logo-link"><img src="assets/logo.png"
-                    alt="FEWA Beauty and Fashion College" class="logo-img">
+        <div class="header-inner"><a href="index.html" class="logo-link"><picture><source srcset="assets/logo.webp" type="image/webp"><img src="assets/logo.png"
+                    alt="FEWA Beauty and Fashion College" class="logo-img"></picture>
                 <div class="logo-brand-text"><span class="brand-name">FEWA</span><span class="brand-tagline">BEAUTY
                         &amp; FASHION COLLEGE</span></div>
             </a>
+            <button class="menu-toggle" id="mobile-menu" aria-label="Open navigation" aria-expanded="false" type="button">
+                <span class="bar"></span><span class="bar"></span><span class="bar"></span>
+            </button>
             <nav class="nav-links"><a href="index.html">Home</a><a href="about.html">About Us</a><a
                     href="courses.html">Courses</a><a href="admissions.html">Admissions</a><a href="fees.html">Fees</a><a
                     href="portal.html">Student
-                    Portal</a><a href="contact.html">Contact</a></nav>
+                    Portal</a><a href="contact.html">Contact</a><a href="/apply" class="nav-item nav-item-cta">Enroll Now <i class="fas fa-arrow-right" aria-hidden="true"></i></a></nav>
         </div>
     </header>
     <main class="container" style="padding:90px 20px">
@@ -27,7 +43,7 @@
         <h1>We are ready to help</h1>
         <p><i class="fas fa-phone"></i> <a href="tel:+254182368996">0182368996</a></p>
         <p><i class="fas fa-envelope"></i> <a
-                href="mailto:admissions@fewacollege.ac.ke">admissions@fewacollege.ac.ke</a></p>
+                href="mailto:admissions@fewa.ac.ke">admissions@fewa.ac.ke</a></p>
         <p><i class="fas fa-location-dot"></i> <strong>View Park Towers, 10th Floor, Utalii Lane, Nairobi,
                 Kenya</strong></p>
         <p>
@@ -37,11 +53,48 @@
                 target="_blank" rel="noopener">Get Directions <i class="fas fa-location-arrow"></i></a>
         </p>
         <div class="contact-map-wrap">
-            <iframe class="contact-map-embed"
-                src="https://www.google.com/maps?q=View+Park+Towers,+10th+Floor,+Utalii+Lane,+Nairobi,+Kenya&output=embed"
-                loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="FEWA campus location map"></iframe>
+            <button type="button" class="contact-map-placeholder" id="contact-map-load">
+                <i class="fas fa-location-dot" aria-hidden="true"></i>
+                <span class="contact-map-placeholder-title">FEWA campus location</span>
+                <span class="contact-map-placeholder-address">View Park Towers, 10th Floor, Utalii Lane, Nairobi, Kenya</span>
+                <span class="contact-map-placeholder-action">View map <i class="fas fa-arrow-right" aria-hidden="true"></i></span>
+            </button>
+            <noscript>
+                <a class="contact-map-placeholder contact-map-placeholder-noscript"
+                    href="https://www.google.com/maps/search/?api=1&query=View+Park+Towers%2C+10th+Floor%2C+Utalii+Lane%2C+Nairobi%2C+Kenya"
+                    target="_blank" rel="noopener">
+                    <i class="fas fa-location-dot" aria-hidden="true"></i>
+                    <span class="contact-map-placeholder-title">FEWA campus location</span>
+                    <span class="contact-map-placeholder-address">View Park Towers, 10th Floor, Utalii Lane, Nairobi, Kenya</span>
+                    <span class="contact-map-placeholder-action">Open map <i class="fas fa-arrow-right" aria-hidden="true"></i></span>
+                </a>
+            </noscript>
         </div>
     </main>
+    <script>
+        const contactMapLoadButton = document.querySelector('#contact-map-load');
+        if (contactMapLoadButton) {
+            contactMapLoadButton.addEventListener('click', () => {
+                const iframe = document.createElement('iframe');
+                iframe.className = 'contact-map-embed';
+                iframe.src = 'https://www.google.com/maps?q=View+Park+Towers,+10th+Floor,+Utalii+Lane,+Nairobi,+Kenya&output=embed';
+                iframe.loading = 'lazy';
+                iframe.referrerPolicy = 'no-referrer-when-downgrade';
+                iframe.title = 'FEWA campus location map';
+                contactMapLoadButton.replaceWith(iframe);
+            }, { once: true });
+        }
+
+        const mobileMenu = document.querySelector('#mobile-menu');
+        const navLinks = document.querySelector('.nav-links');
+        if (mobileMenu && navLinks) {
+            mobileMenu.addEventListener('click', () => {
+                const isOpen = navLinks.classList.toggle('active');
+                mobileMenu.setAttribute('aria-expanded', String(isOpen));
+                mobileMenu.setAttribute('aria-label', isOpen ? 'Close navigation' : 'Open navigation');
+            });
+        }
+    </script>
 </body>
 
 </html>

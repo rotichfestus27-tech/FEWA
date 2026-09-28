@@ -5,15 +5,28 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Course Details | FEWA Beauty &amp; Fashion College</title>
+    <meta name="description" content="Explore professional beauty, wellness and fashion programmes at FEWA Beauty & Fashion College in Nairobi, Kenya.">
+    <link rel="canonical" href="https://fewa.ac.ke/courses">
+    <link rel="icon" type="image/png" href="/assets/logo.png">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="FEWA Beauty & Fashion College">
+    <meta property="og:title" content="Course Details | FEWA Beauty & Fashion College">
+    <meta property="og:description" content="Explore professional beauty, wellness and fashion programmes at FEWA Beauty & Fashion College in Nairobi, Kenya.">
+    <meta property="og:url" content="https://fewa.ac.ke/courses">
+    <meta property="og:image" content="https://fewa.ac.ke/assets/logo.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Course Details | FEWA Beauty & Fashion College">
+    <meta name="twitter:description" content="Explore professional beauty, wellness and fashion programmes at FEWA Beauty & Fashion College in Nairobi, Kenya.">
+    <meta name="twitter:image" content="https://fewa.ac.ke/assets/logo.png">
     <link rel="stylesheet" href="/style.css?v=20260820-luxury">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/assets/fontawesome/fa-subset.css">
 </head>
 
 <body class="courses-page course-detail-page">
     <header class="main-header">
         <div class="header-inner">
-            <a href="/index.html" class="logo-link"><img src="/assets/logo.png" alt="FEWA Beauty and Fashion College"
-                    class="logo-img"><span class="logo-brand-text"><span class="brand-name">FEWA</span><span
+            <a href="/index.html" class="logo-link"><picture><source srcset="/assets/logo.webp" type="image/webp"><img src="/assets/logo.png" alt="FEWA Beauty and Fashion College"
+                    class="logo-img"></picture><span class="logo-brand-text"><span class="brand-name">FEWA</span><span
                         class="brand-tagline">BEAUTY &amp; FASHION COLLEGE</span></span></a>
             <button class="menu-toggle" id="mobile-menu" aria-label="Open navigation" aria-expanded="false"
                 type="button"><span class="bar"></span><span class="bar"></span><span class="bar"></span></button>
@@ -22,7 +35,7 @@
                     class="nav-item active">Courses</a><a href="/admissions.html" class="nav-item">Admission</a><a
                     href="/fees.html" class="nav-item">Fees</a><a
                     href="/portal.html" class="nav-item">Student Portal</a><a href="/contact.html"
-                    class="nav-item">Contact Us</a></nav>
+                    class="nav-item">Contact Us</a><a href="/apply" class="nav-item nav-item-cta">Enroll Now <i class="fas fa-arrow-right" aria-hidden="true"></i></a></nav>
             <div class="header-cta"><a href="/apply.html" class="header-cta-btn">Enroll Now <i class="fas fa-arrow-right"
                         aria-hidden="true"></i></a></div>
         </div>
@@ -84,13 +97,56 @@
             </section>`;
         }
 
+        function setMetaTag(selector, attribute, value) {
+            const el = document.querySelector(selector);
+            if (el) el.setAttribute(attribute, value);
+        }
+
+        function addJsonLd(data) {
+            const script = document.createElement('script');
+            script.type = 'application/ld+json';
+            script.textContent = JSON.stringify(data);
+            document.head.appendChild(script);
+        }
+
         if (course) {
             document.title = `${course.title} | FEWA Beauty & Fashion College`;
             const courseImage = course.image.startsWith('/') ? course.image : `/${course.image}`;
+            const courseUrl = `https://fewa.ac.ke/courses/${course.slug}`;
+            const courseImageUrl = `https://fewa.ac.ke${courseImage}`;
+            const courseOgTitle = `${course.title} | FEWA Beauty & Fashion College`;
+
+            setMetaTag('meta[name="description"]', 'content', course.description);
+            setMetaTag('link[rel="canonical"]', 'href', courseUrl);
+            setMetaTag('meta[property="og:title"]', 'content', courseOgTitle);
+            setMetaTag('meta[property="og:description"]', 'content', course.description);
+            setMetaTag('meta[property="og:url"]', 'content', courseUrl);
+            setMetaTag('meta[property="og:image"]', 'content', courseImageUrl);
+            setMetaTag('meta[name="twitter:title"]', 'content', courseOgTitle);
+            setMetaTag('meta[name="twitter:description"]', 'content', course.description);
+            setMetaTag('meta[name="twitter:image"]', 'content', courseImageUrl);
+
+            addJsonLd({
+                '@context': 'https://schema.org',
+                '@type': 'Course',
+                name: course.title,
+                description: course.description,
+                url: courseUrl,
+                provider: {
+                    '@type': 'EducationalOrganization',
+                    name: 'FEWA Beauty & Fashion College',
+                    url: 'https://fewa.ac.ke/'
+                }
+            });
             const feesKey = COURSE_FEE_LINKS[course.slug];
             const feesData = feesKey && window.FEWA_FEES ? window.FEWA_FEES[feesKey] : null;
             const feesSection = feesData ? renderCourseFeesSnippet(feesData) : renderCourseFeesUnavailable();
-            detail.innerHTML = `<section class="detail-hero"><div class="detail-hero-image"><img src="${courseImage}" alt="${course.title}"></div><div class="detail-hero-copy"><span class="courses-eyebrow">${course.category}</span><h1>${course.title}</h1><p>${course.description}</p><div class="course-meta"><span><i class="fas fa-award"></i>${course.qualification}</span><span><i class="fas fa-clock"></i>${course.duration}</span></div></div></section>
+            // Every course image now has a WebP alongside its original PNG (same path,
+            // .webp extension). No loading="lazy" here -- this hero image is above the
+            // fold on its own course-detail page, so it should keep loading eagerly.
+            const heroWebpSrc = courseImage.replace(/\.png$/i, '.webp');
+            const heroImageMarkup = `<picture><source srcset="${heroWebpSrc}" type="image/webp"><img src="${courseImage}" alt="${course.title}"></picture>`;
+            detail.innerHTML = `<section class="detail-hero"><div class="detail-hero-image">${heroImageMarkup}</div><div class="detail-hero-copy"><span class="courses-eyebrow">${course.category}</span><h1>${course.title}</h1><p>${course.description}</p><div class="course-meta"><span><i class="fas fa-award"></i>${course.qualification}</span><span><i class="fas fa-clock"></i>${course.duration}</span></div></div></section>
                 ${feesSection}
                 <section class="course-cta" aria-label="Apply for this programme">
                     <div><span class="cta-kicker">Ready to apply?</span><h2>${course.title}</h2><p>Start your FEWA application for this programme.</p></div>

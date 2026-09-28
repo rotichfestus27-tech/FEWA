@@ -5,10 +5,12 @@
     "scripts": {
         "emu:start": "firebase emulators:start --only firestore,auth,storage",
         "test:rules": "firebase emulators:exec --project fewa-rules-test --only firestore \"node test/run-tests-ci.js\"",
-        "test:ci": "npm run test:rules"
+        "test:ci": "npm run test:rules",
+        "build:apply": "esbuild application-portal.modular.js --bundle --minify --format=iife --target=es2020 --outfile=application-portal.bundle.js"
     },
     "devDependencies": {
         "@firebase/rules-unit-testing": "^5.0.1",
+        "esbuild": "^0.28.2",
         "firebase": "^12.0.0",
         "firebase-tools": "^15.29.0",
         "jsdom": "^30.0.1"

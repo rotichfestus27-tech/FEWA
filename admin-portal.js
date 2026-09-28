@@ -260,6 +260,13 @@
         try {
             const statusEl = $('#application-status');
             const statusValue = statusEl ? statusEl.value : state.selected.status;
+            // Accepted must always go through promoteAcceptedApplication (the "Accept and
+            // create student" button) so the student record, student ID, and acceptance
+            // email are never skipped -- never allow this raw status field to set it directly.
+            if (statusValue === 'Accepted' && state.selected.status !== 'Accepted') {
+                detailMessage('Use "Accept and create student" to accept an application -- this creates the student record and sends the acceptance email.', 'error');
+                return;
+            }
             await firebase.firestore().collection('applications').doc(state.selected.id).update({
                 status: statusValue,
                 updatedAt: firebase.firestore.FieldValue.serverTimestamp()

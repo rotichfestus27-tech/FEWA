@@ -19,14 +19,14 @@ service firebase.storage {
       }
 
       function ownsApplication() {
-        return request.auth != null
-          && firestore.get(/databases/(default)/documents/applications/$(applicationId)).data.applicantUid == request.auth.uid;
+        return request.auth != null && request.auth.uid == applicationId;
       }
 
       allow read: if ownsApplication() || isStaff();
-      allow write: if (ownsApplication() || isStaff())
+      allow create, update: if (ownsApplication() || isStaff())
         && request.resource.size <= 5 * 1024 * 1024
         && request.resource.contentType.matches('application/pdf|image/jpeg|image/png');
+      allow delete: if ownsApplication() || isStaff();
     }
 
     match /students/{studentUid}/submissions/{submissionId}/{fileName} {

@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="robots" content="noindex,follow">
+    <link rel="icon" type="image/png" href="/assets/logo.png">
+    <title>Page Not Found | FEWA Beauty &amp; Fashion College</title>
+    <style>
+        :root {
+            --purple-deep: #190022;
+            --gold-primary: #D4AF37;
+            --gold-light: #F3E5AB;
+            --gold-dark: #B8962E;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: grid;
+            place-items: center;
+            padding: 24px;
+            background: var(--purple-deep);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        .notfound-card {
+            width: min(100%, 480px);
+            background: #fff;
+            border-radius: 10px;
+            padding: 40px 36px;
+            text-align: center;
+            box-shadow: 0 24px 70px rgba(0, 0, 0, 0.35);
+        }
+
+        .notfound-brand {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 28px;
+        }
+
+        .notfound-brand img {
+            width: 38px;
+            height: 38px;
+            object-fit: contain;
+        }
+
+        .notfound-brand span {
+            font-weight: 800;
+            letter-spacing: 0.04em;
+            color: var(--purple-deep);
+        }
+
+        .notfound-code {
+            margin: 0;
+            font-size: 0.8rem;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            color: var(--gold-dark);
+        }
+
+        h1 {
+            margin: 10px 0 14px;
+            font-size: 1.7rem;
+            color: var(--purple-deep);
+        }
+
+        p {
+            margin: 0 0 30px;
+            color: #5c5560;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        .notfound-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: center;
+        }
+
+        .notfound-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 0.85rem;
+            text-decoration: none;
+            min-width: 160px;
+        }
+
+        .notfound-btn-primary {
+            background: linear-gradient(135deg, var(--gold-light) 0%, var(--gold-primary) 50%, var(--gold-dark) 100%);
+            color: var(--purple-deep);
+        }
+
+        .notfound-btn-secondary {
+            background: transparent;
+            border: 1.5px solid var(--gold-primary);
+            color: var(--purple-deep);
+        }
+    </style>
+</head>
+
+<body>
+    <main class="notfound-card">
+        <div class="notfound-brand">
+            <img src="/assets/logo.png" alt="FEWA logo">
+            <span>FEWA BEAUTY &amp; FASHION COLLEGE</span>
+        </div>
+        <p class="notfound-code">ERROR 404</p>
+        <h1>Page Not Found</h1>
+        <p>The page you're looking for doesn't exist or may have moved. Check the address, or use one of the links
+            below to find your way back.</p>
+        <div class="notfound-actions">
+            <a class="notfound-btn notfound-btn-primary" href="/">Go to Homepage</a>
+            <a class="notfound-btn notfound-btn-secondary" href="/courses">Browse Courses</a>
+        </div>
+    </main>
+</body>
+
+</html>

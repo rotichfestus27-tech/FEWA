@@ -4,6 +4,7 @@ const { promoteAcceptedApplication, finalizeApplicationSubmission } = require('.
 const { isSuperadmin, setUserRole, listStaffAccounts } = require('./roles-service');
 const { checkApplicationStatus } = require('./status-check-service');
 const { resolveStudentLoginEmail } = require('./student-login-service');
+const { createEmailSender, createAcceptanceEmailSender } = require('./email-service');
 
 admin.initializeApp();
 
@@ -18,7 +19,11 @@ function requireSuperadmin(request) {
     }
 }
 
-exports.promoteAcceptedApplication = functions.https.onCall(async (request) => {
+// The { secrets: [...] } option makes ZOHO_SMTP_USER/ZOHO_SMTP_PASS available
+// as process.env.* ONLY inside this function's runtime, so the acceptance
+// email (see promoteAcceptedApplication in admission-service.js) can be sent
+// through the same Zoho relay used for submission emails.
+exports.promoteAcceptedApplication = functions.https.onCall({ secrets: ['ZOHO_SMTP_USER', 'ZOHO_SMTP_PASS'] }, async (request) => {
     if (!request.auth) {
         throw new functions.https.HttpsError('unauthenticated', 'Authentication is required.');
     }
@@ -27,7 +32,8 @@ exports.promoteAcceptedApplication = functions.https.onCall(async (request) => {
         return await promoteAcceptedApplication({
             db: admin.firestore(),
             applicationId: request.data?.applicationId,
-            authToken: request.auth.token
+            authToken: request.auth.token,
+            sendAcceptanceEmail: createAcceptanceEmailSender(process.env.ZOHO_SMTP_USER, process.env.ZOHO_SMTP_PASS)
         });
     } catch (error) {
         const code = error.message.includes('not authorized') ? 'permission-denied' : 'failed-precondition';
@@ -38,7 +44,13 @@ exports.promoteAcceptedApplication = functions.https.onCall(async (request) => {
 // Called by application-portal.js at final submit. Operates only on the caller's own
 // application (applications/{uid} is always keyed by the applicant's own uid), so no
 // client-supplied application ID is trusted or accepted here.
-exports.finalizeApplicationSubmission = functions.https.onCall(async (request) => {
+//
+// The { secrets: [...] } option makes ZOHO_SMTP_USER/ZOHO_SMTP_PASS available
+// as process.env.* ONLY inside this function's runtime -- never in any other
+// function, never in frontend code. Set them with:
+//   firebase functions:secrets:set ZOHO_SMTP_USER
+//   firebase functions:secrets:set ZOHO_SMTP_PASS
+exports.finalizeApplicationSubmission = functions.https.onCall({ secrets: ['ZOHO_SMTP_USER', 'ZOHO_SMTP_PASS'] }, async (request) => {
     if (!request.auth) {
         throw new functions.https.HttpsError('unauthenticated', 'Authentication is required.');
     }
@@ -47,7 +59,8 @@ exports.finalizeApplicationSubmission = functions.https.onCall(async (request) =
         return await finalizeApplicationSubmission({
             db: admin.firestore(),
             auth: admin.auth(),
-            applicationId: request.auth.uid
+            applicationId: request.auth.uid,
+            sendEmails: createEmailSender(process.env.ZOHO_SMTP_USER, process.env.ZOHO_SMTP_PASS)
         });
     } catch (error) {
         throw new functions.https.HttpsError('failed-precondition', error.message);

@@ -390,6 +390,13 @@ h4 {
     border-radius: 2px;
 }
 
+/* Mobile-only fallback for the "Enroll Now" action: hidden on desktop (where the
+   separate .header-cta button already provides it) and shown only inside the
+   hamburger dropdown once .header-cta is hidden at <=860px -- see that rule below. */
+.nav-item-cta {
+    display: none;
+}
+
 .header-cta .header-cta-btn {
     display: inline-flex;
     align-items: center;
@@ -417,9 +424,10 @@ h4 {
     display: none;
     flex-direction: column;
     justify-content: center;
+    align-items: center;
     gap: 5px;
-    width: 32px;
-    height: 32px;
+    width: 44px;
+    height: 44px;
     cursor: pointer;
     z-index: 70;
 }
@@ -2985,6 +2993,25 @@ h4 {
         display: flex;
     }
 
+    .header-cta {
+        display: none;
+    }
+
+    .nav-item-cta {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        margin-top: 10px;
+        padding: 12px 20px;
+        min-height: 44px;
+        width: 100%;
+        border: 1.5px solid var(--gold-primary);
+        border-radius: var(--radius-full);
+        background: var(--gold-primary);
+        color: var(--purple-deep);
+    }
+
     .hero-image {
         object-position: 85% center;
     }
@@ -3128,7 +3155,7 @@ h4 {
     }
 
     .application-status-timeline li {
-        font-size: 0.62rem;
+        font-size: 0.75rem;
     }
 
     .portal-header {
@@ -3726,6 +3753,76 @@ h4 {
     }
 }
 
+/* Click-to-load placeholder for the map embed above -- same fixed height as
+   .contact-map-embed at both breakpoints so swapping introduces no layout shift. */
+.contact-map-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    height: 320px;
+    padding: 24px;
+    text-align: center;
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.08) 0%, rgba(25, 0, 34, 0.04) 100%);
+    border: 0;
+    cursor: pointer;
+    font-family: inherit;
+}
+
+.contact-map-placeholder i {
+    font-size: 1.6rem;
+    color: var(--gold-dark);
+}
+
+.contact-map-placeholder-title {
+    font-weight: 700;
+    color: var(--purple-deep);
+}
+
+.contact-map-placeholder-address {
+    font-size: 0.85rem;
+    color: var(--purple-deep);
+    opacity: 0.75;
+    max-width: 320px;
+}
+
+.contact-map-placeholder-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+    padding: 10px 20px;
+    border-radius: var(--radius-sm);
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: var(--purple-deep);
+    background: linear-gradient(135deg, var(--gold-light) 0%, var(--gold-primary) 50%, var(--gold-dark) 100%);
+    box-shadow: 0 4px 16px rgba(212, 175, 55, 0.28);
+    transition: transform 0.2s ease;
+}
+
+.contact-map-placeholder:hover .contact-map-placeholder-action,
+.contact-map-placeholder:focus-visible .contact-map-placeholder-action {
+    transform: translateY(-2px);
+}
+
+.contact-map-placeholder:focus-visible {
+    outline: 2px solid var(--gold-primary);
+    outline-offset: 2px;
+}
+
+.contact-map-placeholder-noscript {
+    text-decoration: none;
+}
+
+@media (max-width: 600px) {
+    .contact-map-placeholder {
+        height: 240px;
+    }
+}
+
 /* ==========================================================================
    FEES PAGE (fees.html) — rendered from window.FEWA_FEES by scripts/fees.js
    ========================================================================== */
@@ -3734,6 +3831,7 @@ h4 {
     max-width: 1080px;
     margin: 0 auto;
     padding: 0 20px 20px;
+    min-height: clamp(1620px, 2520px - 75vw, 1950px);
 }
 
 .fees-section {
@@ -3857,6 +3955,7 @@ h4 {
 @media (max-width: 760px) {
     .fees-content {
         padding: 0 20px 10px;
+        min-height: 2500px;
     }
 
     .fees-package-grid {
