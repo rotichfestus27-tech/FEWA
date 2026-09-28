@@ -4,6 +4,13 @@
 // the grid by category.
 const courses = window.FEWA_COURSES;
 
+const SPECIAL_FILTERS = {
+    'Cosmetology': [
+        'cosmetology-advanced-beauty-therapy',
+        'professional-hairdressing-trichology'
+    ]
+};
+
 const courseGrid = document.querySelector('#course-grid');
 const filterButtons = document.querySelectorAll('[data-filter]');
 
@@ -36,10 +43,20 @@ function courseCard(course, index) {
 // Wellness" and "Hair & Barbering").
 function renderCourses(filter = 'All Courses') {
     if (!courseGrid) return;
-    const categories = Array.isArray(filter) ? filter : [filter];
-    const visibleCourses = categories.includes('All Courses')
-        ? courses
-        : courses.filter((course) => categories.includes(course.category));
+
+    let visibleCourses;
+
+    if (SPECIAL_FILTERS[filter]) {
+        visibleCourses = courses.filter((course) =>
+            SPECIAL_FILTERS[filter].includes(course.slug)
+        );
+    } else {
+        const categories = Array.isArray(filter) ? filter : [filter];
+
+        visibleCourses = categories.includes('All Courses')
+            ? courses
+            : courses.filter((course) => categories.includes(course.category));
+    }
 
     courseGrid.innerHTML = visibleCourses.map(courseCard).join('');
     requestAnimationFrame(() => {
@@ -62,10 +79,10 @@ filterButtons.forEach((button) => {
 // list for each is still derived entirely from window.FEWA_COURSES via the
 // category filter below, nothing here adds or changes course data.
 const SCHOOL_INTROS = {
-    'Beauty & Wellness,Hair & Barbering': {
+    'Cosmetology': {
         eyebrow: 'School of Cosmetology',
-        heading: 'Beauty, wellness and hair-care programmes',
-        body: 'Explore FEWA’s Cosmetology, Beauty Therapy and Hairdressing pathways.'
+        heading: 'Beauty Therapy and Hairdressing',
+        body: 'Explore FEWA’s Beauty Therapy and Hairdressing programmes.'
     },
     'Fashion Design': {
         eyebrow: 'School of Fashion & Design',
