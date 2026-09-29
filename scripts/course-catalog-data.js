@@ -11,11 +11,11 @@
 // index.html) ahead of that page's own display logic.
 window.FEWA_COURSES = [
     {
-        title: 'Cosmetology & Advanced Beauty Therapy',
-        category: 'Beauty & Wellness',
-        qualification: 'Diploma',
-        duration: '2 Years',
-        description: 'Skin therapies, aesthetics, spa treatments and salon management.',
+        title: 'Beauty Therapy',
+        category: 'Cosmetology',
+        qualification: 'Artisan Certificate, Diploma',
+        duration: '9 months, 18 months',
+        description: 'Makeup, Facial, Manicure, Pedicure, Waxing and Nail Technology.',
         image: 'assets/01_cosmetology_beauty_therapy.png',
         icon: 'fa-sparkles',
         slug: 'cosmetology-advanced-beauty-therapy'
@@ -41,11 +41,11 @@ window.FEWA_COURSES = [
         slug: 'fashion-marketing-branding'
     },
     {
-        title: 'Professional Hairdressing & Trichology',
-        category: 'Hair & Barbering',
-        qualification: 'Certificate',
-        duration: '1.5 Years',
-        description: 'Cutting, colour systems, chemical work and scalp health.',
+        title: 'Hairdressing',
+        category: 'Cosmetology',
+        qualification: 'Artisan Certificate, Certificate, Diploma',
+        duration: '9 months, 9 months, 18 months',
+        description: 'Braiding & Plaiting, Twisting, Wash & Blow-Dry etc.',
         image: 'assets/03_professional_hairdressing_trichology.webp',
         icon: 'fa-wand-magic-sparkles',
         slug: 'professional-hairdressing-trichology'
