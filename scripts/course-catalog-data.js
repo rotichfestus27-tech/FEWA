@@ -51,56 +51,6 @@ window.FEWA_COURSES = [
         slug: 'professional-hairdressing-trichology'
     },
     {
-        title: 'Professional Makeup Artistry',
-        category: 'Beauty & Wellness',
-        qualification: 'Certificate',
-        duration: '6 Months',
-        description: 'Makeup techniques for beauty, bridal, editorial and special effects.',
-        image: 'assets/04_professional_makeup_artistry.png',
-        icon: 'fa-paintbrush',
-        slug: 'professional-makeup-artistry'
-    },
-    {
-        title: 'Nail Technology & Art',
-        category: 'Beauty & Wellness',
-        qualification: 'Certificate',
-        duration: '6 Months',
-        description: 'Manicure, pedicure, nail extensions, nail art and business skills.',
-        image: 'assets/05_nail_technology_art.png',
-        icon: 'fa-hand-sparkles',
-        slug: 'nail-technology-art'
-    },
-    {
-        title: "Barbering & Men's Grooming",
-        category: 'Hair & Barbering',
-        qualification: 'Certificate',
-        duration: '6 Months',
-        description: "Haircutting, shaving, beard design and men's grooming.",
-        image: 'assets/06_barbering_mens_grooming.png',
-        icon: 'fa-scissors',
-        slug: 'barbering-mens-grooming'
-    },
-    {
-        title: 'Spa Therapy & Wellness',
-        category: 'Beauty & Wellness',
-        qualification: 'Certificate',
-        duration: '6 Months',
-        description: 'Massage, body treatments, aromatherapy and holistic wellness.',
-        image: 'assets/07_spa_therapy_wellness.jpg',
-        icon: 'fa-leaf',
-        slug: 'spa-therapy-wellness'
-    },
-    {
-        title: 'Skincare & Facial Therapy',
-        category: 'Beauty & Wellness',
-        qualification: 'Certificate',
-        duration: '6 Months',
-        description: 'Facial treatments, skincare analysis and product knowledge.',
-        image: 'assets/08_skincare_facial_therapy.png',
-        icon: 'fa-droplet',
-        slug: 'skincare-facial-therapy'
-    },
-    {
         title: 'Pattern Drafting and Garment Construction',
         category: 'Short Courses',
         qualification: 'Certificate',
