@@ -26,7 +26,7 @@ window.FEWA_COURSES = [
         qualification: 'Diploma',
         duration: '2 Years',
         description: 'Pattern Drafting & Garment Construction, Fashion Illustration, CAD (Fashion Computer-Aided Design.',
-        image: 'assets/02_fashion_design_creative_styling.png',
+        image: 'assets/02_fashion_design.jpg',
         icon: 'fa-scissors',
         slug: 'fashion-design'
     },
@@ -36,7 +36,7 @@ window.FEWA_COURSES = [
         qualification: 'Diploma',
         duration: '2 Years',
         description: 'Individual Project, Fabric manipulation, Modelling & Cat walking',
-        image: 'assets/02_fashion_design_creative_styling.png',
+        image: 'assets/fashion_marketing_&_branding.webp',
         icon: 'fa-scissors',
         slug: 'fashion-marketing-branding'
     },
@@ -56,7 +56,7 @@ window.FEWA_COURSES = [
         qualification: 'Certificate',
         duration: '3 Months',
         description: 'Specialize in either gowns, Mens wear, Suits, Childrens Wear etc.',
-        image: 'assets/09_beauty_business_management.webp',
+        image: 'assets/pattern_drafting_and_garment_construction.jpg',
         icon: 'fa-chart-line',
         slug: 'pattern-drafting-and-garment-construction'
     },
@@ -76,7 +76,7 @@ window.FEWA_COURSES = [
         qualification: '',
         duration: '3 Months',
         description: '',
-        image: 'assets/09_beauty_business_management.webp',
+        image: 'assets/fashion_aided_computer_design.jpg',
         icon: 'fa-chart-line',
         slug: 'fashion-computer-aided-designing'
     },
@@ -89,15 +89,5 @@ window.FEWA_COURSES = [
         image: 'assets/09_beauty_business_management.webp',
         icon: 'fa-chart-line',
         slug: 'fashion-marketing-and-fashion-brands'
-    },
-        {
-        title: 'Fashion Marketing and Fashion Brands',
-        category: 'Short Courses',
-        qualification: 'Certificate',
-        duration: '3 Months',
-        description: '',
-        image: 'assets/09_beauty_business_management.webp',
-        icon: 'fa-chart-line',
-        slug: 'fashion-and-textile-design'
     }
 ];
