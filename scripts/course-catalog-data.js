@@ -21,14 +21,24 @@ window.FEWA_COURSES = [
         slug: 'cosmetology-advanced-beauty-therapy'
     },
     {
-        title: 'Fashion Design & Creative Styling',
+        title: 'Fashion Design',
         category: 'Fashion Design',
         qualification: 'Diploma',
         duration: '2 Years',
-        description: 'Pattern drafting, textiles, garment construction and styling.',
+        description: 'Pattern Drafting & Garment Construction, Fashion Illustration, CAD (Fashion Computer-Aided Design.',
         image: 'assets/02_fashion_design_creative_styling.png',
         icon: 'fa-scissors',
-        slug: 'fashion-design-creative-styling'
+        slug: 'fashion-design'
+    },
+    {
+        title: 'Fashion Marketing & Branding',
+        category: 'Fashion Design',
+        qualification: 'Diploma',
+        duration: '2 Years',
+        description: 'Individual Project, Fabric manipulation, Modelling & Cat walking',
+        image: 'assets/02_fashion_design_creative_styling.png',
+        icon: 'fa-scissors',
+        slug: 'fashion-marketing-branding'
     },
     {
         title: 'Professional Hairdressing & Trichology',
@@ -91,23 +101,48 @@ window.FEWA_COURSES = [
         slug: 'skincare-facial-therapy'
     },
     {
-        title: 'Beauty Business Management',
+        title: 'Pattern Drafting and Garment Construction',
         category: 'Short Courses',
         qualification: 'Certificate',
         duration: '3 Months',
-        description: 'Salon management, marketing, customer care and finance.',
-        image: 'assets/09_beauty_business_management.png',
+        description: 'Specialize in either gowns, Mens wear, Suits, Childrens Wear etc.',
+        // Temporary placeholder image (reuses the Fashion Design photo) until a
+        // dedicated photo for this course is provided -- the previous
+        // Beauty Business Management photo did not depict this course.
+        image: 'assets/02_fashion_design_creative_styling.png',
         icon: 'fa-chart-line',
-        slug: 'beauty-business-management'
+        slug: 'pattern-drafting-and-garment-construction'
     },
     {
-        title: 'Short Courses & Workshops',
+        title: 'Fashion Illustration',
         category: 'Short Courses',
-        qualification: 'Various',
+        qualification: '',
         duration: 'Flexible',
         description: 'Short practical courses to upgrade your skills and boost your career.',
         image: 'assets/10_short_courses_workshops.png',
         icon: 'fa-lightbulb',
-        slug: 'short-courses-workshops'
+        slug: 'fashion-illustration'
+    },
+    {
+        title: 'Fashion Computer Aided Designing (CAD)',
+        category: 'Short Courses',
+        qualification: '',
+        duration: '3 Months',
+        description: '',
+        // Temporary placeholder image -- see note above.
+        image: 'assets/02_fashion_design_creative_styling.png',
+        icon: 'fa-chart-line',
+        slug: 'fashion-computer-aided-designing'
+    },
+    {
+        title: 'Fashion Marketing and Fashion Brands',
+        category: 'Short Courses',
+        qualification: 'Certificate',
+        duration: '3 Months',
+        description: '',
+        // Temporary placeholder image -- see note above.
+        image: 'assets/02_fashion_design_creative_styling.png',
+        icon: 'fa-chart-line',
+        slug: 'fashion-marketing-and-fashion-brands'
     }
 ];
