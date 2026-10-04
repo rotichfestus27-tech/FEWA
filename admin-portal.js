@@ -1504,6 +1504,35 @@
         }
     }
 
+    // Scoped to its own message element (not the shared #admin-message) so it
+    // never overwrites, or gets overwritten by, the Grant/Revoke card right
+    // below it in the same Superadmin section.
+    function inviteStaffMessage(text, type = '') {
+        const target = $('#invite-staff-message');
+        if (target) { target.textContent = text; target.className = `admin-message ${type}`; }
+    }
+
+    async function submitStaffInvite() {
+        const name = $('#invite-staff-name')?.value.trim();
+        const email = $('#invite-staff-email')?.value.trim();
+        const role = $('#invite-staff-role')?.value;
+        if (!name || !email || !role) return;
+        const submitButton = $('#invite-staff-button');
+        if (submitButton) submitButton.disabled = true;
+        inviteStaffMessage('Sending invitation...', '');
+        try {
+            const invite = firebase.functions().httpsCallable('inviteStaffAccount');
+            const result = await invite({ name, email, role });
+            inviteStaffMessage(`Invitation sent to ${result.data.email} (${result.data.role}).`, 'success');
+            $('#invite-staff-form')?.reset();
+            await loadStaff();
+        } catch (error) {
+            inviteStaffMessage(error?.message || 'The invitation could not be sent.', 'error');
+        } finally {
+            if (submitButton) submitButton.disabled = false;
+        }
+    }
+
     async function signOut() { await firebase.auth().signOut(); }
 
     function renderRoleState() {
@@ -1662,6 +1691,7 @@
         $('#detail-close')?.addEventListener('click', () => { const el = $('#application-detail'); if (el) el.hidden = true; });
         $('#role-form')?.addEventListener('submit', event => { event.preventDefault(); submitRoleChange(true); });
         $('#role-revoke-button')?.addEventListener('click', () => submitRoleChange(false));
+        $('#invite-staff-form')?.addEventListener('submit', event => { event.preventDefault(); submitStaffInvite(); });
         $('#student-search')?.addEventListener('input', renderStudents);
         $('#student-programme-filter')?.addEventListener('change', renderStudents);
         $('#student-status-filter')?.addEventListener('change', renderStudents);

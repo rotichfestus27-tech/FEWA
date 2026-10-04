@@ -186,12 +186,78 @@ function createAcceptanceEmailSender(smtpUser, smtpPass) {
     };
 }
 
+const STAFF_PORTAL_URL = 'https://fewa.ac.ke/staff';
+
+const ROLE_LABELS = {
+    admin: 'Administrator',
+    superadmin: 'Superadmin',
+    admissions: 'Admissions',
+    finance: 'Finance',
+    lecturer: 'Lecturer/Trainer'
+};
+
+async function sendStaffInvitation(transporter, { name, email, role, resetLink }) {
+    const roleLabel = ROLE_LABELS[role] || role;
+    await transporter.sendMail({
+        from: `"FEWA Beauty & Fashion College" <${ADMISSIONS_EMAIL}>`,
+        to: email,
+        subject: 'You Have Been Invited to the FEWA Staff Portal',
+        html: `
+            <div style="font-family: Arial, Helvetica, sans-serif; max-width: 600px; margin: 0 auto; color: #222;">
+                <h2 style="color: #7a1f3d;">Welcome to FEWA, ${escapeHtml(name)}!</h2>
+                <p>You have been invited to join the <strong>FEWA Staff Portal</strong> at FEWA Beauty &amp; Fashion College.</p>
+                <table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
+                    <tr><td style="padding: 6px 0; color: #555;">Assigned role</td><td style="padding: 6px 0;"><strong>${escapeHtml(roleLabel)}</strong></td></tr>
+                </table>
+                <p>To get started, use the secure link below to set your own password. No password has been generated for you -- you choose it yourself on the next screen.</p>
+                <p><a href="${escapeHtml(resetLink)}" style="display: inline-block; background: #7a1f3d; color: #fff; padding: 10px 18px; border-radius: 4px; text-decoration: none;">Set Your Password</a></p>
+                <p>Once your password is set, sign in to the Staff Portal any time at <a href="${STAFF_PORTAL_URL}">${STAFF_PORTAL_URL}</a> using this email address.</p>
+                <p>If you weren't expecting this invitation, you can safely ignore this email, or contact our admissions team at <a href="mailto:${ADMISSIONS_EMAIL}">${ADMISSIONS_EMAIL}</a> or ${SUPPORT_PHONE}.</p>
+                <p>Regards,<br><strong>FEWA Beauty &amp; Fashion College</strong></p>
+            </div>
+        `,
+        text: [
+            `Welcome to FEWA, ${name}!`,
+            '',
+            'You have been invited to join the FEWA Staff Portal at FEWA Beauty & Fashion College.',
+            '',
+            `Assigned role: ${roleLabel}`,
+            '',
+            'To get started, use the secure link below to set your own password. No password has been generated for you -- you choose it yourself on the next screen.',
+            '',
+            `Set your password: ${resetLink}`,
+            '',
+            `Once your password is set, sign in to the Staff Portal any time at ${STAFF_PORTAL_URL} using this email address.`,
+            '',
+            `If you weren't expecting this invitation, you can safely ignore this email, or contact our admissions team at ${ADMISSIONS_EMAIL} or ${SUPPORT_PHONE}.`,
+            '',
+            'Regards,',
+            'FEWA Beauty & Fashion College'
+        ].join('\n')
+    });
+}
+
+// Same injection shape as createEmailSender/createAcceptanceEmailSender.
+function createStaffInvitationEmailSender(smtpUser, smtpPass) {
+    if (!smtpUser || !smtpPass) {
+        return async function sendStaffInvitationUnconfigured() {
+            throw new Error('Zoho SMTP credentials are not configured (ZOHO_SMTP_USER/ZOHO_SMTP_PASS).');
+        };
+    }
+    const transporter = buildTransporter(smtpUser, smtpPass);
+    return async function sendInvitation({ name, email, role, resetLink }) {
+        await sendStaffInvitation(transporter, { name, email, role, resetLink });
+    };
+}
+
 module.exports = {
     createEmailSender,
     createAcceptanceEmailSender,
+    createStaffInvitationEmailSender,
     sendAdmissionsNotification,
     sendApplicantConfirmation,
     sendAcceptanceNotification,
+    sendStaffInvitation,
     buildTransporter,
     ADMISSIONS_EMAIL
 };

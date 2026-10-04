@@ -170,7 +170,7 @@ async function main() {
     console.log(`Superadmin claim assigned to ${user.email || user.uid} in ${PROJECT_ID}.`);
     console.log('Claims verified: roles includes superadmin.');
     console.log(`Firestore profile verified: users/${user.uid}.`);
-    console.log('The user must sign out and sign in again, or force-refresh the ID token, before opening admin.html.');
+    console.log('The user must sign out and sign in again, or force-refresh the ID token, before opening /staff.');
 }
 
 if (require.main === module) {

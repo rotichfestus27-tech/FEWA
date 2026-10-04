@@ -11,6 +11,8 @@
 // This is the same trust boundary server/create-superadmin.js already relies
 // on -- this module just makes it usable for more than one hardcoded account.
 
+const { Timestamp } = require('firebase-admin/firestore');
+
 const VALID_ROLES = new Set(['admin', 'superadmin', 'admissions', 'finance', 'lecturer']);
 
 function normalizeRoles(customClaims = {}) {
@@ -68,6 +70,93 @@ async function setUserRole({ auth, callerUid, targetEmail, role, grant }) {
     };
 }
 
+// Creates a brand-new staff Firebase Auth account (no password set -- the
+// invitee always chooses their own, via the same password-reset-link
+// mechanism already used for student account activation) and assigns it
+// exactly one role. Unlike setUserRole, this is for people who have never
+// signed in to FEWA before -- it is the only place in the codebase that
+// calls auth.createUser() for a staff account.
+//
+// sendInvitation is injected (same pattern as sendEmails/sendAcceptanceEmail
+// in admission-service.js) so this module never needs to know about
+// nodemailer/SMTP directly, and so tests can substitute a no-op.
+const STAFF_SETUP_REDIRECT = { url: 'https://fewa.ac.ke/account-setup.html?portal=staff', handleCodeInApp: true };
+
+async function inviteStaffAccount({ auth, db, callerUid, targetName, targetEmail, role, sendInvitation }) {
+    const name = typeof targetName === 'string' ? targetName.trim() : '';
+    if (!name) throw new Error('A full name is required.');
+    if (typeof targetEmail !== 'string' || !targetEmail.trim()) throw new Error('An email address is required.');
+    const email = targetEmail.trim().toLowerCase();
+    if (typeof role !== 'string' || !VALID_ROLES.has(role)) throw new Error(`"${role}" is not a recognized role.`);
+
+    // Duplicate check -- an account already existing is the normal, expected
+    // case for someone who has signed in before; direct the caller to the
+    // existing "grant role" action instead of silently doing something else.
+    let existing = null;
+    try {
+        existing = await auth.getUserByEmail(email);
+    } catch (error) {
+        existing = null; // not found is the expected, good outcome here
+    }
+    if (existing) {
+        throw new Error('An account already exists for that email address. Use "Grant role" to assign a role to an existing account instead.');
+    }
+
+    let newUser;
+    try {
+        newUser = await auth.createUser({ email, displayName: name, emailVerified: false });
+    } catch (error) {
+        if (error.code === 'auth/email-already-exists') {
+            throw new Error('An account already exists for that email address. Use "Grant role" to assign a role to an existing account instead.');
+        }
+        throw new Error(`Could not create the account: ${error.message}`);
+    }
+
+    try {
+        await auth.setCustomUserClaims(newUser.uid, { roles: { [role]: true } });
+    } catch (error) {
+        // Compensating cleanup: don't leave a role-less, unusable orphan account behind.
+        await auth.deleteUser(newUser.uid).catch(() => {});
+        throw new Error(`Could not assign the role, so the new account was removed. Please try again: ${error.message}`);
+    }
+
+    let resetLink;
+    try {
+        resetLink = await auth.generatePasswordResetLink(email, STAFF_SETUP_REDIRECT);
+    } catch (error) {
+        // The account and role are now real -- do not delete them, but do not
+        // report success either. The superadmin can retry the invite, or the
+        // person can use "Forgot password?" at /staff once told their account exists.
+        throw new Error(`The account was created with the "${role}" role, but the invitation link could not be generated. Please try again or contact support: ${error.message}`);
+    }
+
+    try {
+        await sendInvitation({ name, email, role, resetLink });
+    } catch (error) {
+        throw new Error(`The account was created with the "${role}" role, but the invitation email could not be sent. Please try again or contact support: ${error.message}`);
+    }
+
+    // Best-effort staff metadata, same users/{uid} shape server/create-superadmin.js
+    // already writes. Non-fatal: the invitation itself already fully succeeded by
+    // this point, so a metadata write failure must not turn this into an error.
+    try {
+        await db.collection('users').doc(newUser.uid).set({
+            uid: newUser.uid,
+            email,
+            displayName: name,
+            role,
+            active: true,
+            invitedBy: callerUid,
+            createdAt: Timestamp.now(),
+            updatedAt: Timestamp.now()
+        }, { merge: true });
+    } catch (error) {
+        console.error('inviteStaffAccount: staff metadata write failed for', newUser.uid, '-', error.message);
+    }
+
+    return { uid: newUser.uid, email, name, role };
+}
+
 async function listStaffAccounts({ auth }) {
     const accounts = [];
     let pageToken;
@@ -92,5 +181,6 @@ module.exports = {
     hasRole,
     isSuperadmin,
     setUserRole,
+    inviteStaffAccount,
     listStaffAccounts
 };

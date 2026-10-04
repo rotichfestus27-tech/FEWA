@@ -41,6 +41,13 @@
                 ]
             }
         ],
+        "redirects": [
+            {
+                "source": "/admin",
+                "destination": "/staff",
+                "type": 301
+            }
+        ],
         "rewrites": [
             {
                 "source": "/courses/**",

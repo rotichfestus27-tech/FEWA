@@ -1,10 +1,10 @@
 const admin = require('firebase-admin');
 const functions = require('firebase-functions');
 const { promoteAcceptedApplication, finalizeApplicationSubmission } = require('./admission-service');
-const { isSuperadmin, setUserRole, listStaffAccounts } = require('./roles-service');
+const { isSuperadmin, setUserRole, inviteStaffAccount, listStaffAccounts } = require('./roles-service');
 const { checkApplicationStatus } = require('./status-check-service');
 const { resolveStudentLoginEmail } = require('./student-login-service');
-const { createEmailSender, createAcceptanceEmailSender } = require('./email-service');
+const { createEmailSender, createAcceptanceEmailSender, createStaffInvitationEmailSender } = require('./email-service');
 
 admin.initializeApp();
 
@@ -80,6 +80,28 @@ exports.setUserRole = functions.https.onCall(async (request) => {
             targetEmail: request.data?.email,
             role: request.data?.role,
             grant: request.data?.grant !== false
+        });
+    } catch (error) {
+        throw new functions.https.HttpsError('failed-precondition', error.message);
+    }
+});
+
+// Creates a brand-new staff account and assigns its role in one step, for
+// people who have never signed in to FEWA before (setUserRole above only
+// ever works on an account that already exists). The { secrets: [...] }
+// option makes the Zoho credentials available to this function the same way
+// it already does for finalizeApplicationSubmission/promoteAcceptedApplication.
+exports.inviteStaffAccount = functions.https.onCall({ secrets: ['ZOHO_SMTP_USER', 'ZOHO_SMTP_PASS'] }, async (request) => {
+    requireSuperadmin(request);
+    try {
+        return await inviteStaffAccount({
+            auth: admin.auth(),
+            db: admin.firestore(),
+            callerUid: request.auth.uid,
+            targetName: request.data?.name,
+            targetEmail: request.data?.email,
+            role: request.data?.role,
+            sendInvitation: createStaffInvitationEmailSender(process.env.ZOHO_SMTP_USER, process.env.ZOHO_SMTP_PASS)
         });
     } catch (error) {
         throw new functions.https.HttpsError('failed-precondition', error.message);

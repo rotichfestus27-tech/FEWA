@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="FEWA authorized administration portal">
-    <meta name="robots" content="noindex,nofollow">
+    <meta name="description" content="Secure staff login for FEWA Beauty & Fashion College. For authorized administrators, admissions, finance and trainers to access the FEWA Staff Portal.">
+    <meta name="robots" content="index,follow">
+    <link rel="canonical" href="https://fewa.ac.ke/staff">
     <link rel="icon" type="image/png" href="/assets/logo.png">
-    <title>Staff Portal | FEWA Beauty &amp; Fashion College</title>
+    <title>FEWA Staff Portal | Staff Login | FEWA Beauty &amp; Fashion College</title>
     <link rel="stylesheet" href="style.css?v=20260820-luxury">
     <link rel="stylesheet" href="assets/fontawesome/fa-subset.css">
     <style>
@@ -730,8 +731,8 @@
 <div id="admin-login" class="admin-login-shell" hidden>
     <section class="admin-login-card" aria-labelledby="admin-login-title">
         <div class="admin-login-brand"><picture><source srcset="assets/logo.webp" type="image/webp"><img src="assets/logo.png" alt="FEWA logo"></picture><div><strong>FEWA</strong><span>Staff Portal</span></div></div>
-        <h1 id="admin-login-title">Staff sign in</h1>
-        <p class="admin-muted">Use an authorized FEWA account to manage college records.</p>
+        <h1 id="admin-login-title">FEWA Staff Portal</h1>
+        <p class="admin-muted">Sign in with an authorized FEWA staff account to manage college records.</p>
         <form id="login-form" class="admin-auth-form">
             <div><label for="login-email">Email address</label><input id="login-email" type="email" autocomplete="username" required></div>
             <div><label for="login-password">Password</label><input id="login-password" type="password" autocomplete="current-password" required></div>
@@ -1072,6 +1073,23 @@
 
             <section data-admin-view="superadmin" hidden>
                 <div class="admin-section-heading"><h2>Superadmin</h2><p class="admin-muted">Grant or revoke administration roles for FEWA staff accounts.</p></div>
+                <div class="admin-card">
+                    <h3>Add staff member</h3>
+                    <p class="admin-muted">Creates a new Staff Portal account and emails the person a secure link to set their own password. No password is generated or stored by FEWA.</p>
+                    <form id="invite-staff-form" class="admin-form">
+                        <label>Full name<input id="invite-staff-name" type="text" autocomplete="name" required></label>
+                        <label>Email address<input id="invite-staff-email" type="email" autocomplete="email" required></label>
+                        <label>Role<select id="invite-staff-role" required>
+                            <option value="admin">Admin</option>
+                            <option value="admissions">Admissions</option>
+                            <option value="finance">Finance</option>
+                            <option value="lecturer">Lecturer</option>
+                            <option value="superadmin">Superadmin</option>
+                        </select></label>
+                        <button type="submit" id="invite-staff-button" class="btn btn-primary">Send invitation</button>
+                    </form>
+                    <p id="invite-staff-message" class="admin-message" role="status"></p>
+                </div>
                 <div class="admin-card">
                     <h3>Grant or revoke a role</h3>
                     <p class="admin-muted">The person must have signed in to FEWA at least once before a role can be granted to their account.</p>
