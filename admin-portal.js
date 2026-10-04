@@ -34,7 +34,12 @@
     };
 
     const hasRole = (role) => state.roles.includes(role);
-    const staff = () => hasRole('admin') || hasRole('superadmin') || hasRole('admissions');
+    // Any of the 5 roles roles-service.js recognizes (VALID_ROLES) is a legitimate
+    // staff account and must be able to sign in to the Staff Portal -- what they can
+    // then see/do inside is governed by the narrower per-section predicates below,
+    // which already mirror firestore.rules exactly. This gate previously omitted
+    // 'finance' and 'lecturer', which silently locked those roles out entirely.
+    const staff = () => hasRole('admin') || hasRole('superadmin') || hasRole('admissions') || hasRole('finance') || hasRole('lecturer');
     const superadmin = () => hasRole('superadmin');
     const timestamp = (value) => value?.toDate ? value.toDate().toLocaleString() : value ? new Date(value).toLocaleString() : 'Not available';
 
@@ -1504,6 +1509,17 @@
     function renderRoleState() {
         const roleEl = $('#admin-role'); if (roleEl) roleEl.textContent = state.roles.join(', ');
         const panelEl = $('#superadmin-panel'); if (panelEl) panelEl.hidden = !superadmin();
+        // Nav items whose section has a hard all-or-nothing access gate (no graceful
+        // partial view) are hidden for roles that would just hit a denial -- mirrors
+        // each section's own existing gate exactly, does not change what any role can
+        // actually do. Sections that already degrade gracefully for restricted roles
+        // (Assignments, Learning Materials) stay visible to every staff role.
+        const applicationsNav = document.querySelector('[data-admin-nav="applications"]');
+        if (applicationsNav) applicationsNav.hidden = !(isAdminRole() || hasRole('admissions'));
+        const studentsNav = document.querySelector('[data-admin-nav="students"]');
+        if (studentsNav) studentsNav.hidden = !(isAdminRole() || hasRole('admissions'));
+        const trainersNav = document.querySelector('[data-admin-nav="trainers"]');
+        if (trainersNav) trainersNav.hidden = !isAdminRole();
     }
 
     function initialize() {
@@ -1584,7 +1600,7 @@
                 if (!staff()) {
                     if (loginEl) loginEl.hidden = false;
                     if (appEl) appEl.hidden = true;
-                    if (loginMessageEl) loginMessageEl.textContent = 'This account is not authorized for administration.';
+                    if (loginMessageEl) loginMessageEl.textContent = 'This account is not authorized for the Staff Portal.';
                     await auth.signOut();
                     return;
                 }
@@ -1597,7 +1613,7 @@
                 show('dashboard');
             } catch (error) {
                 if (loginEl) loginEl.hidden = false;
-                if (loginMessageEl) loginMessageEl.textContent = 'Administration access could not be verified.';
+                if (loginMessageEl) loginMessageEl.textContent = 'Staff Portal access could not be verified.';
             }
         });
 
