@@ -88,15 +88,39 @@
         });
     }
 
+    // Chromium's built-in PDF viewer unreliably shows "Failed to load PDF document"
+    // when navigated directly to a Firebase Storage getDownloadURL() response --
+    // even though the URL itself is valid and correctly authorized (proven by
+    // downloadApplicationDocument() below successfully fetching the exact same URL
+    // for Download). Fetching the bytes as a typed Blob first and opening THAT
+    // local blob: URL instead -- the same mechanism Download already uses -- opens
+    // reliably because there is no further Storage network/range negotiation once
+    // the viewer has the local blob.
+    //
+    // The new tab is opened synchronously, inside the click's user-activation
+    // window, before the (async) fetch -- navigating it to the blob URL once ready
+    // -- so a slow network can never cause the browser to treat this as a blocked
+    // popup. Deliberately NOT passing 'noopener' here: per spec, window.open()
+    // always returns null when 'noopener' is set, which would make it impossible
+    // to later navigate this same pre-opened window to the resolved blob URL.
     async function viewApplicationDocument(data, reportMessage) {
+        const isImage = (data.docType || '').startsWith('image/');
+        const pendingWindow = isImage ? null : window.open('', '_blank');
         try {
             const url = await firebase.storage().ref(data.docPath).getDownloadURL();
-            if ((data.docType || '').startsWith('image/')) {
+            if (isImage) {
                 openDocumentPreview(url, data.docPath, data.docLabel, data.docFilename);
-            } else {
-                window.open(url, '_blank', 'noopener');
+                return;
             }
+            const response = await fetch(url);
+            if (!response.ok) throw new Error(`Storage responded with ${response.status}`);
+            const bytes = await response.blob();
+            const typedBlob = bytes.type ? bytes : new Blob([bytes], { type: data.docType || 'application/octet-stream' });
+            const blobUrl = URL.createObjectURL(typedBlob);
+            if (pendingWindow) pendingWindow.location.href = blobUrl;
+            else window.open(blobUrl, '_blank', 'noopener');
         } catch (error) {
+            if (pendingWindow) pendingWindow.close();
             reportMessage('The document could not be opened.', 'error');
         }
     }
