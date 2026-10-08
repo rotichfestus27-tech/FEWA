@@ -102,11 +102,10 @@
     // "storage/unknown", or a plain network-level failure. Never includes the
     // download URL itself (which carries a live access token) in anything
     // user-visible or logged -- only the filePath, which the admin is already
-    // authorized to see on screen.
-    function describeStorageError(error) {
-        if (error?.code) return `${error.code}${error.message ? ': ' + error.message : ''}`;
-        if (error?.message) return error.message;
-        return 'unknown error';
+    // authorized to see on screen. Renders as 4 lines via CSS white-space:
+    // pre-line on .admin-message (see staff.html).
+    function describeStorageError(action, error, filePath) {
+        return `${action} failed\nCode: ${error?.code || 'unknown'}\nMessage: ${error?.message || 'unknown'}\nPath: ${filePath}`;
     }
 
     // The new tab is opened synchronously, inside the click's user-activation
@@ -120,8 +119,16 @@
         const pendingWindow = isImage ? null : window.open('', '_blank');
         console.info('[documents] View clicked -- filePath:', data.docPath, 'declared type:', data.docType || '(none recorded)');
         try {
-            const url = await firebase.storage().ref(data.docPath).getDownloadURL();
-            console.info('[documents] getDownloadURL() succeeded -- valid https URL:', typeof url === 'string' && url.startsWith('https://'));
+            let storageRef;
+            try {
+                storageRef = firebase.storage().ref(data.docPath);
+                console.info('[documents] firebase.storage().ref() created successfully for:', data.docPath);
+            } catch (refError) {
+                console.error('[documents] firebase.storage().ref() threw for', data.docPath, '--', refError);
+                throw refError;
+            }
+            const url = await storageRef.getDownloadURL();
+            console.info('[documents] getDownloadURL() succeeded -- a URL was obtained (not shown here; it carries a live access token).');
             if (isImage) {
                 openDocumentPreview(url, data.docPath, data.docLabel, data.docFilename);
                 return;
@@ -135,9 +142,9 @@
             if (pendingWindow) pendingWindow.location.href = blobUrl;
             else window.open(blobUrl, '_blank', 'noopener');
         } catch (error) {
-            console.error('[documents] View failed for', data.docPath, '--', error);
+            console.error('[documents] View failed -- full error object:', error);
             if (pendingWindow) pendingWindow.close();
-            reportMessage(`The document could not be opened (${describeStorageError(error)}).`, 'error');
+            reportMessage(describeStorageError('Document open', error, data.docPath), 'error');
         }
     }
 
@@ -163,8 +170,8 @@
             link.remove();
             URL.revokeObjectURL(blobUrl);
         } catch (error) {
-            console.error('[documents] Download failed for', data.docPath, '--', error);
-            reportMessage(`The document could not be downloaded (${describeStorageError(error)}).`, 'error');
+            console.error('[documents] Download failed -- full error object:', error);
+            reportMessage(describeStorageError('Document download', error, data.docPath), 'error');
         } finally {
             if (button) button.disabled = false;
         }
