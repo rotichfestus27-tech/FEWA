@@ -1128,6 +1128,66 @@ h4 {
 }
 
 /* ==========================================================================
+   FEES PAGE -- content-replacement sections. Reuses .help-contact-card/
+   .help-contact-grid built for the Admissions page for the Call/Email cards.
+   ========================================================================== */
+
+.fees-info-section {
+    padding: 70px 0;
+    background: var(--white);
+    border-top: 1px solid var(--border-light);
+}
+
+.fees-info-alt {
+    background: var(--purple-soft);
+}
+
+.fees-info-copy {
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 0 24px;
+}
+
+.fees-info-copy h2 {
+    font-size: 1.6rem;
+    margin-bottom: 18px;
+}
+
+.fees-info-copy p {
+    color: var(--text-secondary);
+    line-height: 1.8;
+    margin-bottom: 16px;
+}
+
+.fees-enrolment-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 20px;
+}
+
+.fees-enrolment-list li {
+    position: relative;
+    padding-left: 26px;
+    margin-bottom: 10px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+}
+
+.fees-enrolment-list li::before {
+    content: '\2713';
+    position: absolute;
+    left: 0;
+    color: var(--gold-dark);
+    font-weight: 700;
+}
+
+.fees-contact-grid {
+    max-width: 640px;
+    margin: 32px auto 0;
+    grid-template-columns: repeat(2, 1fr);
+}
+
+/* ==========================================================================
    CAMPUS & FACILITIES
    ========================================================================== */
 
