@@ -97,6 +97,18 @@
     // reliably because there is no further Storage network/range negotiation once
     // the viewer has the local blob.
     //
+    // Surfaces the REAL Firebase error (code + message) instead of a generic
+    // string -- e.g. "storage/object-not-found", "storage/unauthorized",
+    // "storage/unknown", or a plain network-level failure. Never includes the
+    // download URL itself (which carries a live access token) in anything
+    // user-visible or logged -- only the filePath, which the admin is already
+    // authorized to see on screen.
+    function describeStorageError(error) {
+        if (error?.code) return `${error.code}${error.message ? ': ' + error.message : ''}`;
+        if (error?.message) return error.message;
+        return 'unknown error';
+    }
+
     // The new tab is opened synchronously, inside the click's user-activation
     // window, before the (async) fetch -- navigating it to the blob URL once ready
     // -- so a slow network can never cause the browser to treat this as a blocked
@@ -106,22 +118,26 @@
     async function viewApplicationDocument(data, reportMessage) {
         const isImage = (data.docType || '').startsWith('image/');
         const pendingWindow = isImage ? null : window.open('', '_blank');
+        console.info('[documents] View clicked -- filePath:', data.docPath, 'declared type:', data.docType || '(none recorded)');
         try {
             const url = await firebase.storage().ref(data.docPath).getDownloadURL();
+            console.info('[documents] getDownloadURL() succeeded -- valid https URL:', typeof url === 'string' && url.startsWith('https://'));
             if (isImage) {
                 openDocumentPreview(url, data.docPath, data.docLabel, data.docFilename);
                 return;
             }
             const response = await fetch(url);
-            if (!response.ok) throw new Error(`Storage responded with ${response.status}`);
+            console.info('[documents] fetch() status:', response.status, '-- Content-Type:', response.headers.get('content-type'));
+            if (!response.ok) throw new Error(`Storage responded with HTTP ${response.status}`);
             const bytes = await response.blob();
             const typedBlob = bytes.type ? bytes : new Blob([bytes], { type: data.docType || 'application/octet-stream' });
             const blobUrl = URL.createObjectURL(typedBlob);
             if (pendingWindow) pendingWindow.location.href = blobUrl;
             else window.open(blobUrl, '_blank', 'noopener');
         } catch (error) {
+            console.error('[documents] View failed for', data.docPath, '--', error);
             if (pendingWindow) pendingWindow.close();
-            reportMessage('The document could not be opened.', 'error');
+            reportMessage(`The document could not be opened (${describeStorageError(error)}).`, 'error');
         }
     }
 
@@ -131,9 +147,12 @@
     // open the file in a new tab exactly like "View".
     async function downloadApplicationDocument(data, reportMessage, button) {
         if (button) button.disabled = true;
+        console.info('[documents] Download clicked -- filePath:', data.docPath);
         try {
             const url = await firebase.storage().ref(data.docPath).getDownloadURL();
             const response = await fetch(url);
+            console.info('[documents] fetch() status:', response.status, '-- Content-Type:', response.headers.get('content-type'));
+            if (!response.ok) throw new Error(`Storage responded with HTTP ${response.status}`);
             const blob = await response.blob();
             const blobUrl = URL.createObjectURL(blob);
             const link = document.createElement('a');
@@ -144,7 +163,8 @@
             link.remove();
             URL.revokeObjectURL(blobUrl);
         } catch (error) {
-            reportMessage('The document could not be downloaded.', 'error');
+            console.error('[documents] Download failed for', data.docPath, '--', error);
+            reportMessage(`The document could not be downloaded (${describeStorageError(error)}).`, 'error');
         } finally {
             if (button) button.disabled = false;
         }
@@ -155,8 +175,16 @@
         const titleEl = $('#document-preview-title');
         const imageEl = $('#document-preview-image');
         const downloadBtn = $('#document-preview-download');
+        const previewMessageEl = $('#document-preview-message');
         if (!overlay || !imageEl) { window.open(url, '_blank', 'noopener'); return; }
         if (titleEl) titleEl.textContent = label || 'Document preview';
+        if (previewMessageEl) { previewMessageEl.textContent = ''; previewMessageEl.className = 'admin-message'; }
+        // getDownloadURL() having succeeded only means the SDK generated a URL --
+        // it does not guarantee the image actually loads (expired/invalid token,
+        // the object having been deleted after upload, etc.), so surface that too.
+        imageEl.onerror = () => {
+            if (previewMessageEl) { previewMessageEl.textContent = 'The image could not be loaded from Storage.'; previewMessageEl.className = 'admin-message error'; }
+        };
         imageEl.src = url;
         imageEl.alt = label || 'Document preview';
         if (downloadBtn) { downloadBtn.dataset.docPath = path; downloadBtn.dataset.docFilename = filename || ''; }
