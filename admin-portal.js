@@ -134,11 +134,29 @@
                 return;
             }
             const response = await fetch(url);
-            console.info('[documents] fetch() status:', response.status, '-- Content-Type:', response.headers.get('content-type'));
+            // DIAGNOSTIC (temporary) -- pinpointing whether "Failed to load PDF
+            // document" is caused by the response itself, the Blob, or the viewer.
+            // Never logs the URL/token, only response/blob metadata and the file's
+            // own magic-byte signature.
+            console.info('[documents] DIAGNOSTIC response.ok:', response.ok, 'response.status:', response.status);
+            console.info('[documents] DIAGNOSTIC Content-Type:', response.headers.get('content-type'), 'Content-Length:', response.headers.get('content-length'));
             if (!response.ok) throw new Error(`Storage responded with HTTP ${response.status}`);
             const bytes = await response.blob();
+            console.info('[documents] DIAGNOSTIC blob.size:', bytes.size, 'blob.type:', bytes.type);
+            try {
+                const signature = await bytes.slice(0, 8).text();
+                console.info('[documents] DIAGNOSTIC first 8 bytes of blob (a valid PDF starts with "%PDF-"):', JSON.stringify(signature));
+            } catch (sigError) {
+                console.warn('[documents] DIAGNOSTIC could not read blob signature:', sigError);
+            }
             const typedBlob = bytes.type ? bytes : new Blob([bytes], { type: data.docType || 'application/octet-stream' });
+            console.info('[documents] DIAGNOSTIC final Blob handed to the viewer -- size:', typedBlob.size, 'type:', typedBlob.type);
             const blobUrl = URL.createObjectURL(typedBlob);
+            // DIAGNOSTIC (temporary) -- also opens the raw Storage download URL
+            // directly in a second tab, purely so the blob-based tab and the direct
+            // URL can be compared side by side. Remove once the PDF viewer issue is
+            // diagnosed. The URL itself is never logged or stored anywhere.
+            window.open(url, '_blank', 'noopener');
             if (pendingWindow) pendingWindow.location.href = blobUrl;
             else window.open(blobUrl, '_blank', 'noopener');
         } catch (error) {
