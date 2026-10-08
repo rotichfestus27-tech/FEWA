@@ -33,6 +33,119 @@
         if (target) { target.textContent = text; target.className = `admin-message ${type}`; }
     };
 
+    // ------------------------------------------------------------------
+    // APPLICATION DOCUMENTS -- shared "Uploaded Documents" renderer used by
+    // both openApplication() (Applications tab) and loadApplicationDocuments()
+    // (Student Detail tab). filePath values come straight from the application's
+    // existing `documents` array (written by application-portal.modular.js's
+    // uploadDocuments()) -- no new Firestore fields, no stored download URLs.
+    // getDownloadURL() is only ever called from a click handler below, never
+    // while rendering, so opening either panel makes zero Storage requests.
+    // ------------------------------------------------------------------
+    const APPLICATION_DOCUMENT_FIELDS = [
+        { name: 'identityDocument', label: 'Identity Document' },
+        { name: 'photo', label: 'Passport Photo' },
+        { name: 'schoolCertificate', label: 'KCPE/KCSE Certificate or Result Slip' },
+        { name: 'collegeCertificate', label: 'College/TVET Certificate' },
+        { name: 'otherCertificates', label: 'Other Supporting Documents' }
+    ];
+
+    function renderApplicationDocuments(documents) {
+        const byName = new Map((documents || []).map(doc => [doc.name, doc]));
+        const rows = APPLICATION_DOCUMENT_FIELDS.map(field => {
+            const doc = byName.get(field.name);
+            if (!doc) {
+                return `<div class="doc-row">
+                    <div class="doc-row-info">
+                        <span class="doc-row-name">${escapeHtml(field.label)}</span>
+                        <span class="doc-row-status missing">Not uploaded</span>
+                    </div>
+                </div>`;
+            }
+            const isImage = (doc.type || '').startsWith('image/');
+            const dataAttrs = `data-doc-path="${escapeHtml(doc.filePath)}" data-doc-type="${escapeHtml(doc.type || '')}" data-doc-label="${escapeHtml(field.label)}" data-doc-filename="${escapeHtml(doc.fileName || '')}"`;
+            const actions = isImage
+                ? `<button type="button" class="admin-action doc-view-btn" ${dataAttrs}>View</button>`
+                : `<button type="button" class="admin-action doc-view-btn" ${dataAttrs}>View</button>
+                   <button type="button" class="admin-action doc-download-btn" ${dataAttrs}>Download</button>`;
+            return `<div class="doc-row">
+                <div class="doc-row-info">
+                    <span class="doc-row-name">${escapeHtml(field.label)}</span>
+                    <span class="doc-row-status uploaded"><i class="fa-solid fa-circle-check" aria-hidden="true"></i> Uploaded</span>
+                </div>
+                <div class="doc-row-actions">${actions}</div>
+            </div>`;
+        });
+        return `<div class="admin-documents-list">${rows.join('')}</div>`;
+    }
+
+    function bindApplicationDocumentButtons(container, reportMessage) {
+        container?.querySelectorAll('.doc-view-btn').forEach(button => {
+            button.addEventListener('click', () => viewApplicationDocument(button.dataset, reportMessage));
+        });
+        container?.querySelectorAll('.doc-download-btn').forEach(button => {
+            button.addEventListener('click', () => downloadApplicationDocument(button.dataset, reportMessage, button));
+        });
+    }
+
+    async function viewApplicationDocument(data, reportMessage) {
+        try {
+            const url = await firebase.storage().ref(data.docPath).getDownloadURL();
+            if ((data.docType || '').startsWith('image/')) {
+                openDocumentPreview(url, data.docPath, data.docLabel, data.docFilename);
+            } else {
+                window.open(url, '_blank', 'noopener');
+            }
+        } catch (error) {
+            reportMessage('The document could not be opened.', 'error');
+        }
+    }
+
+    // Fetches the file as a blob rather than relying on the <a download> attribute,
+    // which browsers ignore for cross-origin URLs (every Firebase Storage download
+    // URL is cross-origin to fewa.ac.ke) -- without this, "Download" would just
+    // open the file in a new tab exactly like "View".
+    async function downloadApplicationDocument(data, reportMessage, button) {
+        if (button) button.disabled = true;
+        try {
+            const url = await firebase.storage().ref(data.docPath).getDownloadURL();
+            const response = await fetch(url);
+            const blob = await response.blob();
+            const blobUrl = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = blobUrl;
+            link.download = data.docFilename || 'document';
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            URL.revokeObjectURL(blobUrl);
+        } catch (error) {
+            reportMessage('The document could not be downloaded.', 'error');
+        } finally {
+            if (button) button.disabled = false;
+        }
+    }
+
+    function openDocumentPreview(url, path, label, filename) {
+        const overlay = $('#document-preview-overlay');
+        const titleEl = $('#document-preview-title');
+        const imageEl = $('#document-preview-image');
+        const downloadBtn = $('#document-preview-download');
+        if (!overlay || !imageEl) { window.open(url, '_blank', 'noopener'); return; }
+        if (titleEl) titleEl.textContent = label || 'Document preview';
+        imageEl.src = url;
+        imageEl.alt = label || 'Document preview';
+        if (downloadBtn) { downloadBtn.dataset.docPath = path; downloadBtn.dataset.docFilename = filename || ''; }
+        overlay.hidden = false;
+    }
+
+    function closeDocumentPreview() {
+        const overlay = $('#document-preview-overlay');
+        const imageEl = $('#document-preview-image');
+        if (overlay) overlay.hidden = true;
+        if (imageEl) imageEl.src = '';
+    }
+
     const hasRole = (role) => state.roles.includes(role);
     // Any of the 5 roles roles-service.js recognizes (VALID_ROLES) is a legitimate
     // staff account and must be able to sign in to the Staff Portal -- what they can
@@ -237,8 +350,12 @@
                     <dt>Programme</dt><dd>${escapeHtml(programme.program)}</dd>
                     <dt>Intake</dt><dd>${escapeHtml(programme.intake)}</dd>
                     <dt>Submitted</dt><dd>${escapeHtml(timestamp(application.submittedAt))}</dd>
-                    <dt>Documents</dt><dd>${(application.documents || []).map(d => escapeHtml(d.fileName || d.name)).join(', ') || 'None recorded'}</dd>
-                </dl>`;
+                </dl>
+                <div class="admin-documents-section">
+                    <h4>Uploaded Documents</h4>
+                    ${renderApplicationDocuments(application.documents)}
+                </div>`;
+            bindApplicationDocumentButtons(contentEl, detailMessage);
         }
 
         const statusEl = $('#application-status');
@@ -914,9 +1031,10 @@
                 const snapshot = await firebase.firestore().collection('applications').doc(student.sourceApplicationId).get();
                 state.applicationBackground = snapshot.exists ? snapshot.data() : null;
             }
-            const documents = state.applicationBackground?.documents || [];
-            if (!documents.length) { blockEl.hidden = true; return; }
-            listEl.innerHTML = `<ul>${documents.map(document => `<li>${escapeHtml(document.fileName || document.name || 'Document')}</li>`).join('')}</ul>`;
+            const application = state.applicationBackground;
+            if (!application) { blockEl.hidden = true; return; }
+            listEl.innerHTML = renderApplicationDocuments(application.documents);
+            bindApplicationDocumentButtons(listEl, studentMessage);
             blockEl.hidden = false;
         } catch (error) {
             blockEl.hidden = true;
@@ -1689,6 +1807,9 @@
         $('#programme-form')?.addEventListener('submit', createProgramme);
         $('#trainer-form')?.addEventListener('submit', createTrainer);
         $('#detail-close')?.addEventListener('click', () => { const el = $('#application-detail'); if (el) el.hidden = true; });
+        $('#document-preview-close')?.addEventListener('click', closeDocumentPreview);
+        $('#document-preview-overlay')?.addEventListener('click', (event) => { if (event.target.id === 'document-preview-overlay') closeDocumentPreview(); });
+        $('#document-preview-download')?.addEventListener('click', (event) => downloadApplicationDocument(event.currentTarget.dataset, (text, type) => { const el = $('#document-preview-message'); if (el) { el.textContent = text; el.className = `admin-message ${type}`; } }, event.currentTarget));
         $('#role-form')?.addEventListener('submit', event => { event.preventDefault(); submitRoleChange(true); });
         $('#role-revoke-button')?.addEventListener('click', () => submitRoleChange(false));
         $('#invite-staff-form')?.addEventListener('submit', event => { event.preventDefault(); submitStaffInvite(); });

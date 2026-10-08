@@ -507,6 +507,40 @@
            the student detail tabs are the first place a .admin-form is toggled via JS. */
         .admin-form[hidden] { display: none; }
 
+        /* ---------- uploaded documents (Application details + Student Detail) ---------- */
+        .admin-documents-section { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border-light); }
+        .admin-documents-section h4 { margin: 0 0 4px; font-size: 1rem; }
+        .admin-documents-list { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
+        .doc-row {
+            display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+            padding: 12px 14px; border: 1px solid var(--border-light); border-radius: var(--radius-sm);
+            background: var(--white);
+        }
+        .doc-row-name { display: block; font-weight: 700; font-size: 0.86rem; color: var(--purple-deep); }
+        .doc-row-status { display: flex; align-items: center; gap: 5px; margin-top: 2px; font-size: 0.78rem; }
+        .doc-row-status.uploaded { color: #205c39; }
+        .doc-row-status.missing { color: var(--text-muted); }
+        .doc-row-actions { display: flex; gap: 8px; flex-shrink: 0; }
+        .doc-row-actions .admin-action { padding: 7px 12px; font-size: 0.78rem; }
+        .doc-row-actions .admin-action:disabled { opacity: .6; cursor: wait; }
+
+        /* ---------- document preview modal (images) ---------- */
+        .doc-preview-overlay {
+            position: fixed; inset: 0; z-index: 200; display: grid; place-items: center;
+            padding: 24px; background: rgba(20, 0, 28, 0.72); backdrop-filter: blur(2px);
+        }
+        .doc-preview-overlay[hidden] { display: none; }
+        .doc-preview-panel {
+            width: min(100%, 720px); max-height: 90vh; overflow-y: auto;
+            background: var(--white); border-radius: var(--radius-lg); padding: 20px;
+            box-shadow: var(--shadow-lg); display: flex; flex-direction: column; gap: 12px;
+        }
+        .doc-preview-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+        .doc-preview-header h4 { margin: 0; font-size: 1rem; }
+        .doc-preview-image-wrap { overflow: auto; text-align: center; background: var(--purple-soft); border-radius: var(--radius-sm); padding: 10px; }
+        .doc-preview-image-wrap img { max-width: 100%; max-height: 70vh; border-radius: 4px; }
+        .doc-preview-actions { display: flex; justify-content: flex-end; gap: 10px; }
+
         /* ---------- student detail: tabs ---------- */
         .student-detail-panel { width: min(100%, 900px); }
 
@@ -826,6 +860,23 @@
                     </div>
                 </section>
             </section>
+
+            <!-- Shared image preview for "Uploaded Documents" (Applications detail + Student
+                 Detail panels both open this) -- not nested in a data-admin-view section
+                 since it must work from either view. -->
+            <div id="document-preview-overlay" class="doc-preview-overlay" hidden>
+                <div class="doc-preview-panel">
+                    <div class="doc-preview-header">
+                        <h4 id="document-preview-title">Document preview</h4>
+                        <button id="document-preview-close" type="button" class="admin-icon-button" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
+                    </div>
+                    <div class="doc-preview-image-wrap"><img id="document-preview-image" alt="Document preview"></div>
+                    <p id="document-preview-message" class="admin-message" role="status"></p>
+                    <div class="doc-preview-actions">
+                        <button id="document-preview-download" type="button" class="admin-action">Download</button>
+                    </div>
+                </div>
+            </div>
 
             <section data-admin-view="students" hidden>
                 <div class="admin-section-heading"><h2>Students</h2><p class="admin-muted">Every applicant accepted and promoted to an active student record.</p></div>
