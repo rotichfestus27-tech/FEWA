@@ -948,6 +948,185 @@ h4 {
     text-align: center;
 }
 
+.journey-grid.three-col {
+    grid-template-columns: repeat(3, 1fr);
+}
+
+/* ==========================================================================
+   ADMISSIONS PAGE -- intro actions, document checklist, status-check card,
+   help contact cards. All reuse existing colour variables/section rhythm;
+   no new page-level layout primitives.
+   ========================================================================== */
+
+.admissions-intro-actions {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 28px;
+}
+
+.checklist-section {
+    background: var(--purple-soft);
+}
+
+.checklist-grid {
+    max-width: var(--max-width);
+    margin: 0 auto;
+    padding: 0 24px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+}
+
+.checklist-card {
+    background: var(--white);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-md);
+    padding: 28px 26px;
+}
+
+.checklist-card h3 {
+    font-size: 1rem;
+    margin-bottom: 16px;
+    color: var(--purple-deep);
+}
+
+.checklist-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border-light);
+    cursor: pointer;
+    font-size: 0.92rem;
+    color: var(--text-secondary);
+}
+
+.checklist-item:last-of-type {
+    border-bottom: none;
+}
+
+.checklist-item input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    margin-top: 2px;
+    accent-color: var(--gold-primary);
+    cursor: pointer;
+}
+
+.checklist-note {
+    margin-top: 16px;
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    line-height: 1.6;
+}
+
+.checklist-reset {
+    text-align: center;
+    margin: 28px 0 0;
+}
+
+.after-submission-section {
+    padding: 90px 0;
+    background: var(--white);
+    border-top: 1px solid var(--border-light);
+}
+
+.status-check-card {
+    max-width: 620px;
+    margin: 0 auto;
+    padding: 0 24px;
+    text-align: center;
+}
+
+.status-check-card h3 {
+    font-size: 1.15rem;
+    color: var(--purple-deep);
+    margin-bottom: 14px;
+}
+
+.status-check-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 24px;
+    display: inline-block;
+    text-align: left;
+}
+
+.status-check-list li {
+    position: relative;
+    padding-left: 26px;
+    margin-bottom: 8px;
+    font-size: 0.92rem;
+    color: var(--text-secondary);
+}
+
+.status-check-list li::before {
+    content: '\2713';
+    position: absolute;
+    left: 0;
+    color: var(--gold-dark);
+    font-weight: 700;
+}
+
+.how-to-apply-tip {
+    max-width: var(--max-width);
+    margin: 0 auto 32px;
+    padding: 0 24px;
+    text-align: center;
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+}
+
+.how-to-apply-tip i {
+    color: var(--gold-dark);
+}
+
+.help-section {
+    padding: 90px 0;
+    background: var(--purple-soft);
+    border-top: 1px solid var(--border-light);
+}
+
+.help-contact-grid {
+    max-width: var(--max-width);
+    margin: 0 auto 32px;
+    padding: 0 24px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+}
+
+.help-contact-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: var(--white);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-md);
+    padding: 20px;
+    color: var(--purple-deep);
+    font-weight: 600;
+    font-size: 0.92rem;
+    text-decoration: none;
+    transition: all 0.25s ease;
+}
+
+.help-contact-card:hover {
+    border-color: var(--border-gold);
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-md);
+}
+
+.help-contact-card i {
+    color: var(--gold-dark);
+    font-size: 1.2rem;
+    flex-shrink: 0;
+}
+
 /* ==========================================================================
    CAMPUS & FACILITIES
    ========================================================================== */
@@ -2952,9 +3131,12 @@ h4 {
 
     .courses-grid,
     .journey-grid,
+    .journey-grid.three-col,
     .feature-grid,
     .careers-grid,
-    .experience-features {
+    .experience-features,
+    .checklist-grid,
+    .help-contact-grid {
         grid-template-columns: repeat(2, 1fr);
     }
 
@@ -3074,6 +3256,7 @@ h4 {
 
     .courses-grid,
     .journey-grid,
+    .journey-grid.three-col,
     .feature-grid,
     .careers-grid,
     .experience-features,
@@ -3082,7 +3265,9 @@ h4 {
     .stats-section,
     .footer-container,
     .dashboard-grid,
-    .portal-actions {
+    .portal-actions,
+    .checklist-grid,
+    .help-contact-grid {
         grid-template-columns: 1fr;
     }
 
