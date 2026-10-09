@@ -225,7 +225,7 @@
                         <span class="course-tag">Diploma | Certificate</span>
                         <h3>School of Cosmetology</h3>
                         <p>Cosmetology (beauty &amp; hairdressing), Beauty Therapy and Hairdressing.</p>
-                        <a href="courses.html?category=Cosmetology" class="course-link">Explore Programs <i
+                        <a href="courses.html?category=School%20of%20Cosmetology" class="course-link">Explore Programs <i
                                 class="fas fa-arrow-right"></i></a>
                     </div>
                 </article>
@@ -237,7 +237,7 @@
                         <span class="course-tag">Diploma | Certificate</span>
                         <h3>School of Fashion &amp; Design</h3>
                         <p>Pattern drafting &amp; garment construction, fashion illustration &amp; CAD, fashion marketing &amp; fashion brands, and fashion &amp; textile design.</p>
-                        <a href="courses.html?category=Fashion%20Design" class="course-link">Explore Programs <i
+                        <a href="courses.html?category=School%20of%20Fashion%20Design" class="course-link">Explore Programs <i
                                 class="fas fa-arrow-right"></i></a>
                     </div>
                 </article>
@@ -476,7 +476,7 @@
                     </blockquote>
                     <footer>
                         <cite class="testimonial-name">Amina Okoth</cite>
-                        <span class="testimonial-program" data-course-slug="cosmetology-advanced-beauty-therapy"></span>
+                        <span class="testimonial-program" data-course-slug="beauty-therapy"></span>
                     </footer>
                 </article>
                 <article class="testimonial-card">
@@ -487,7 +487,7 @@
                     </blockquote>
                     <footer>
                         <cite class="testimonial-name">Keith Mwangi</cite>
-                        <span class="testimonial-program" data-course-slug="fashion-design-creative-styling"></span>
+                        <span class="testimonial-program" data-course-slug="pattern-drafting-and-garment-construction"></span>
                     </footer>
                 </article>
                 <article class="testimonial-card">
@@ -498,7 +498,7 @@
                     </blockquote>
                     <footer>
                         <cite class="testimonial-name">Sharon Wanjiku</cite>
-                        <span class="testimonial-program" data-course-slug="professional-hairdressing-trichology"></span>
+                        <span class="testimonial-program" data-course-slug="hairdressing"></span>
                     </footer>
                 </article>
             </div>
@@ -514,14 +514,15 @@
                 <details class="faq-item">
                     <summary>What programs does FEWA offer?</summary>
                     <div class="faq-answer">
-                        <p>FEWA offers Cosmetology &amp; Advanced Beauty Therapy (Diploma, 2 Years), Fashion Design (Diploma, 2 Years), and Professional Hairdressing &amp; Trichology (Certificate, 1.5 Years).</p>
+                        <p>FEWA offers programmes across three schools: the School of Cosmetology (Cosmetology, Beauty Therapy and Hairdressing), the School of Fashion Design, and a range of Short Courses.</p>
                     </div>
                 </details>
                 <details class="faq-item">
                     <summary>What are the admission requirements?</summary>
                     <div class="faq-answer">
-                        <p>Applicants require a minimum KCSE qualification or equivalent certificate. Contact FEWA
-                            Admissions for specific program intake prerequisites.</p>
+                        <p>Requirements depend on the qualification level you're entering at -- from KCPE/KCSE (any
+                            grade) for Trade Test and Level 3, up to a KCSE C- for Diploma level. Contact FEWA
+                            Admissions to confirm the exact requirement for your chosen programme.</p>
                     </div>
                 </details>
                 <details class="faq-item">
@@ -722,6 +723,10 @@
             const monthsByQualification = {};
             let hasFlexible = false;
             catalogCourses.forEach((course) => {
+                // Courses with a duration pending FEWA's confirmation are excluded
+                // entirely rather than folded into the "flexible" sentence below --
+                // "pending confirmation" and "flexible by design" are not the same claim.
+                if (course.duration === window.FEWA_UNCONFIRMED_META) return;
                 const months = monthsFromDuration(course.duration);
                 if (months === null) { hasFlexible = true; return; }
                 (monthsByQualification[course.qualification] ||= []).push(months);

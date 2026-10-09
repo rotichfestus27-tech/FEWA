@@ -4273,6 +4273,66 @@ h4 {
     font-size: 0.92rem;
 }
 
+/* course-detail.html: "About the Course" section (replaces the former
+   per-course fee table). Reuses .fees-section/.fees-contact-note above for
+   the outer wrapper and heading; these rules style the new sub-blocks only. */
+.course-about-draft-note {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: -8px 0 20px;
+    padding: 10px 14px;
+    border: 1px solid var(--border-gold);
+    border-radius: var(--radius-sm);
+    background: var(--gold-soft);
+    color: var(--gold-dark);
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.course-about-block {
+    margin-bottom: 26px;
+}
+
+.course-about-block:last-child {
+    margin-bottom: 0;
+}
+
+.course-about-block h3 {
+    margin-bottom: 8px;
+    color: var(--purple-deep);
+    font-size: 1.02rem;
+    font-weight: 700;
+}
+
+.course-about-block p {
+    color: var(--text-secondary);
+    line-height: 1.75;
+}
+
+.course-about-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 8px;
+}
+
+.course-about-list li {
+    position: relative;
+    padding-left: 24px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+}
+
+.course-about-list li::before {
+    content: '\2713';
+    position: absolute;
+    left: 0;
+    color: var(--gold-dark);
+    font-weight: 700;
+}
+
 @media (max-width: 760px) {
     .fees-content {
         padding: 0 20px 10px;

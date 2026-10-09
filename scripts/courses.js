@@ -7,17 +7,6 @@ const courses = window.FEWA_COURSES;
 const courseGrid = document.querySelector('#course-grid');
 const filterButtons = document.querySelectorAll('[data-filter]');
 
-// Cross-cutting groupings that don't map to a single catalogue category --
-// selected by course slug rather than category, and triggered only via a
-// homepage link's ?category= param (there is no dedicated filter button for
-// these; see applyCategoryFilterFromUrl below).
-const SPECIAL_FILTERS = {
-    'Cosmetology': [
-        'cosmetology-advanced-beauty-therapy',
-        'professional-hairdressing-trichology'
-    ]
-};
-
 // Every course image now has a WebP alongside its original PNG (same path,
 // .webp extension) -- the browser uses WebP when supported and falls back to
 // the original PNG (course.image, from course-catalog-data.js) otherwise.
@@ -39,8 +28,7 @@ function courseCard(course, index) {
                 <span class="course-category">${course.category}</span>
                 <h2>${course.title}</h2>
                 <div class="course-meta">
-                    <span><i class="fas fa-award" aria-hidden="true"></i>${course.qualification}</span>
-                    <span><i class="fas fa-clock" aria-hidden="true"></i>${course.duration}</span>
+                    ${window.FEWA_courseMetaBadges(course).map((b) => `<span><i class="fas ${b.icon}" aria-hidden="true"></i>${b.text}</span>`).join('')}
                 </div>
                 <div class="course-divider"></div>
                 <p>${course.description}</p>
@@ -50,21 +38,16 @@ function courseCard(course, index) {
 }
 
 // filter is either 'All Courses', a single category string, or an array of
-// category strings (used when a homepage "school" spans more than one
-// catalogue category -- e.g. School of Cosmetology covers both "Beauty &
-// Wellness" and "Hair & Barbering").
+// category strings. Categories now map 1:1 to the 3 schools in
+// course-catalog-data.js (School of Cosmetology / School of Fashion Design /
+// Short Courses), so no special-case slug grouping is needed any more.
 function renderCourses(filter = 'All Courses') {
     if (!courseGrid) return;
 
-    let visibleCourses;
-    if (SPECIAL_FILTERS[filter]) {
-        visibleCourses = courses.filter((course) => SPECIAL_FILTERS[filter].includes(course.slug));
-    } else {
-        const categories = Array.isArray(filter) ? filter : [filter];
-        visibleCourses = categories.includes('All Courses')
-            ? courses
-            : courses.filter((course) => categories.includes(course.category));
-    }
+    const categories = Array.isArray(filter) ? filter : [filter];
+    const visibleCourses = categories.includes('All Courses')
+        ? courses
+        : courses.filter((course) => categories.includes(course.category));
 
     courseGrid.innerHTML = visibleCourses.map(courseCard).join('');
     requestAnimationFrame(() => {
@@ -87,15 +70,15 @@ filterButtons.forEach((button) => {
 // list for each is still derived entirely from window.FEWA_COURSES via the
 // category filter below, nothing here adds or changes course data.
 const SCHOOL_INTROS = {
-    'Cosmetology': {
+    'School of Cosmetology': {
         eyebrow: 'School of Cosmetology',
-        heading: 'Beauty Therapy and Hairdressing',
-        body: 'Explore FEWA’s Beauty Therapy and Hairdressing programmes.'
+        heading: 'Cosmetology, Beauty Therapy and Hairdressing',
+        body: 'Explore FEWA’s Cosmetology, Beauty Therapy and Hairdressing programmes.'
     },
-    'Fashion Design': {
-        eyebrow: 'School of Fashion & Design',
+    'School of Fashion Design': {
+        eyebrow: 'School of Fashion Design',
         heading: 'Fashion design programmes',
-        body: 'Explore FEWA’s Fashion Design & Creative Styling pathway.'
+        body: 'Explore FEWA’s Fashion Design pathway, from pattern drafting to fashion marketing.'
     },
     'Short Courses': {
         eyebrow: 'Short Courses & Workshops',
@@ -113,16 +96,15 @@ function applyCategoryFilterFromUrl() {
     const requested = new URLSearchParams(window.location.search).get('category');
     if (!requested) return false;
     const categories = requested.split(',').map((value) => value.trim()).filter(Boolean);
-    const isSpecial = categories.length === 1 && SPECIAL_FILTERS[categories[0]];
     const matchingButtons = [...filterButtons].filter((button) => categories.includes(button.dataset.filter));
-    if (!isSpecial && !matchingButtons.length) return false; // unknown category value(s) -- keep default "All Courses" view
+    if (!matchingButtons.length) return false; // unknown category value(s) -- keep default "All Courses" view
 
     filterButtons.forEach((item) => {
         const isMatch = matchingButtons.includes(item);
         item.classList.toggle('is-active', isMatch);
         item.setAttribute('aria-selected', isMatch ? 'true' : 'false');
     });
-    renderCourses(isSpecial ? categories[0] : categories);
+    renderCourses(categories);
 
     const intro = SCHOOL_INTROS[categories.join(',')];
     if (intro) {

@@ -5,18 +5,18 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Course Details | FEWA Beauty &amp; Fashion College</title>
-    <meta name="description" content="Explore professional beauty, wellness and fashion programmes at FEWA Beauty & Fashion College in Nairobi, Kenya.">
+    <meta name="description" content="Explore professional cosmetology and fashion design programmes at FEWA Beauty & Fashion College in Nairobi, Kenya.">
     <link rel="canonical" href="https://fewa.ac.ke/courses">
     <link rel="icon" type="image/png" href="/assets/logo.png">
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="FEWA Beauty & Fashion College">
     <meta property="og:title" content="Course Details | FEWA Beauty & Fashion College">
-    <meta property="og:description" content="Explore professional beauty, wellness and fashion programmes at FEWA Beauty & Fashion College in Nairobi, Kenya.">
+    <meta property="og:description" content="Explore professional cosmetology and fashion design programmes at FEWA Beauty & Fashion College in Nairobi, Kenya.">
     <meta property="og:url" content="https://fewa.ac.ke/courses">
     <meta property="og:image" content="https://fewa.ac.ke/assets/logo.png">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Course Details | FEWA Beauty & Fashion College">
-    <meta name="twitter:description" content="Explore professional beauty, wellness and fashion programmes at FEWA Beauty & Fashion College in Nairobi, Kenya.">
+    <meta name="twitter:description" content="Explore professional cosmetology and fashion design programmes at FEWA Beauty & Fashion College in Nairobi, Kenya.">
     <meta name="twitter:image" content="https://fewa.ac.ke/assets/logo.png">
     <link rel="stylesheet" href="/style.css?v=20261010-feesfix">
     <link rel="stylesheet" href="/assets/fontawesome/fa-subset.css">
@@ -42,7 +42,6 @@
     </header>
     <main id="course-detail" class="course-detail-content"></main>
     <script src="/scripts/course-catalog-data.js"></script>
-    <script src="/scripts/fees-catalog-data.js"></script>
     <script src="/scripts/courses.js"></script>
     <script>
         const pathSlug = window.location.pathname.split('/').filter(Boolean).pop();
@@ -50,50 +49,38 @@
         const course = window.FEWA_COURSES.find((item) => item.slug === slug);
         const detail = document.querySelector('#course-detail');
 
-        // Connects a course to its official fee table ONLY where the client's own
-        // fee-table title names that course by subject (e.g. "Certificate & Diploma
-        // in Cosmetology (Beauty Therapy & Hairdressing)" explicitly covers both
-        // Cosmetology and Hairdressing). Every other course intentionally has no
-        // entry here -- see the final report for why an individual price is not
-        // assumed for them.
-        const COURSE_FEE_LINKS = {
-            'cosmetology-advanced-beauty-therapy': 'cosmetology',
-            'professional-hairdressing-trichology': 'cosmetology',
-            'fashion-design-creative-styling': 'fashionDesign'
-        };
+        const escapeHtml = (value) => String(value ?? '').replace(/[&<>'"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[c]));
 
-        function formatFeeAmount(amount) {
-            return `KSh ${Number(amount).toLocaleString('en-US')}`;
-        }
-
-        // Renders the same visual structure as scripts/fees.js's study-mode table
-        // (reusing the existing .fees-section/.fees-table CSS), but as a small,
-        // independently-scoped function -- fees.js itself is not loaded here since
-        // its top-level `mobileMenu`/`navLinks` declarations would collide with the
-        // ones scripts/courses.js already declares on this same page.
-        function renderCourseFeesSnippet(feesData) {
-            const periods = feesData.studyModes[0].payments.map((payment) => payment.period);
-            const rows = feesData.studyModes.map((studyMode) => `
-                <tr>
-                    <td data-label="Study Mode">${studyMode.mode}</td>
-                    ${studyMode.payments.map((payment) => `<td data-label="${payment.period}">${formatFeeAmount(payment.amount)}</td>`).join('')}
-                </tr>`).join('');
-            return `<section class="fees-section" aria-labelledby="course-fees-heading">
-                <h2 id="course-fees-heading">Fees</h2>
-                <div class="fees-table-wrap">
-                    <table class="fees-table">
-                        <thead><tr><th>Study Mode</th>${periods.map((period) => `<th>${period}</th>`).join('')}</tr></thead>
-                        <tbody>${rows}</tbody>
-                    </table>
+        // Replaces the former fee-table section. about.* is draft placeholder
+        // copy (see course-catalog-data.js) pending real content from FEWA --
+        // flagged visibly here rather than presented as finished/verified text.
+        function renderAboutSection(about) {
+            if (!about) {
+                return `<section class="fees-section" aria-labelledby="course-about-heading">
+                    <h2 id="course-about-heading">About the Course</h2>
+                    <p class="fees-contact-note">Contact FEWA Admissions for full details on this programme.</p>
+                </section>`;
+            }
+            const learnItems = (about.whatYouWillLearn || []).map((item) => `<li>${escapeHtml(item)}</li>`).join('');
+            return `<section class="fees-section course-about-section" aria-labelledby="course-about-heading">
+                <h2 id="course-about-heading">About the Course</h2>
+                ${about.isDraft ? '<p class="course-about-draft-note"><i class="fas fa-circle-info" aria-hidden="true"></i> Draft content -- pending final review by FEWA.</p>' : ''}
+                <div class="course-about-block">
+                    <h3>Course Overview</h3>
+                    <p>${escapeHtml(about.overview)}</p>
                 </div>
-                <p class="fees-note">See the full <a href="/fees.html">FEWA fee structure</a> for admission charges and other programmes.</p>
-            </section>`;
-        }
-
-        function renderCourseFeesUnavailable() {
-            return `<section class="fees-section" aria-labelledby="course-fees-heading">
-                <h2 id="course-fees-heading">Fees</h2>
-                <p class="fees-contact-note">Fees: Contact FEWA Admissions for the applicable fee structure.</p>
+                ${learnItems ? `<div class="course-about-block">
+                    <h3>What You Will Learn</h3>
+                    <ul class="course-about-list">${learnItems}</ul>
+                </div>` : ''}
+                <div class="course-about-block">
+                    <h3>Practical Training</h3>
+                    <p>${escapeHtml(about.practicalTraining)}</p>
+                </div>
+                <div class="course-about-block">
+                    <h3>Career Opportunities</h3>
+                    <p>${escapeHtml(about.careerOpportunities)}</p>
+                </div>
             </section>`;
         }
 
@@ -138,19 +125,21 @@
                     url: 'https://fewa.ac.ke/'
                 }
             });
-            const feesKey = COURSE_FEE_LINKS[course.slug];
-            const feesData = feesKey && window.FEWA_FEES ? window.FEWA_FEES[feesKey] : null;
-            const feesSection = feesData ? renderCourseFeesSnippet(feesData) : renderCourseFeesUnavailable();
+            const aboutSection = renderAboutSection(course.about);
             // Every course image now has a WebP alongside its original PNG (same path,
             // .webp extension). No loading="lazy" here -- this hero image is above the
             // fold on its own course-detail page, so it should keep loading eagerly.
             const heroWebpSrc = courseImage.replace(/\.png$/i, '.webp');
             const heroImageMarkup = `<picture><source srcset="${heroWebpSrc}" type="image/webp"><img src="${courseImage}" alt="${course.title}"></picture>`;
-            detail.innerHTML = `<section class="detail-hero"><div class="detail-hero-image">${heroImageMarkup}</div><div class="detail-hero-copy"><span class="courses-eyebrow">${course.category}</span><h1>${course.title}</h1><p>${course.description}</p><div class="course-meta"><span><i class="fas fa-award"></i>${course.qualification}</span><span><i class="fas fa-clock"></i>${course.duration}</span></div></div></section>
-                ${feesSection}
+            const metaParts = window.FEWA_courseMetaBadges(course)
+                .map((b) => `<span><i class="fas ${b.icon}"></i>${escapeHtml(b.text)}</span>`)
+                .join('');
+            const courseMetaMarkup = metaParts ? `<div class="course-meta">${metaParts}</div>` : '';
+            detail.innerHTML = `<section class="detail-hero"><div class="detail-hero-image">${heroImageMarkup}</div><div class="detail-hero-copy"><span class="courses-eyebrow">${escapeHtml(course.category)}</span><h1>${escapeHtml(course.title)}</h1><p>${escapeHtml(course.description)}</p>${courseMetaMarkup}</div></section>
+                ${aboutSection}
                 <section class="course-cta" aria-label="Apply for this programme">
-                    <div><span class="cta-kicker">Ready to apply?</span><h2>${course.title}</h2><p>Start your FEWA application for this programme.</p></div>
-                    <a class="cta-button" href="/apply.html?programme=${encodeURIComponent(course.slug)}">Apply for This Programme <span aria-hidden="true">&rarr;</span></a>
+                    <div><span class="cta-kicker">Ready to apply?</span><h2>${escapeHtml(course.title)}</h2><p>Start your FEWA application for this programme.</p></div>
+                    <a class="cta-button" href="/apply.html?programme=${encodeURIComponent(course.slug)}">Apply Now <span aria-hidden="true">&rarr;</span></a>
                 </section>`;
         } else {
             detail.innerHTML = '<section class="courses-intro"><span class="courses-eyebrow">Programme not found</span><h1>Explore our courses</h1><a class="cta-button" href="/courses.html">Back to Courses <span aria-hidden="true">&rarr;</span></a></section>';

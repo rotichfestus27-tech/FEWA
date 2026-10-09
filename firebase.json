@@ -46,6 +46,61 @@
                 "source": "/admin",
                 "destination": "/staff",
                 "type": 301
+            },
+            {
+                "source": "/courses/cosmetology-advanced-beauty-therapy",
+                "destination": "/courses/cosmetology",
+                "type": 301
+            },
+            {
+                "source": "/courses/professional-hairdressing-trichology",
+                "destination": "/courses/hairdressing",
+                "type": 301
+            },
+            {
+                "source": "/courses/professional-makeup-artistry",
+                "destination": "/courses/makeup",
+                "type": 301
+            },
+            {
+                "source": "/courses/nail-technology-art",
+                "destination": "/courses/nail-technology",
+                "type": 301
+            },
+            {
+                "source": "/courses/fashion-illustration",
+                "destination": "/courses/fashion-illustration-and-cad",
+                "type": 301
+            },
+            {
+                "source": "/courses/fashion-computer-aided-designing",
+                "destination": "/courses/fashion-illustration-and-cad",
+                "type": 301
+            },
+            {
+                "source": "/courses/fashion-design",
+                "destination": "/courses",
+                "type": 301
+            },
+            {
+                "source": "/courses/fashion-marketing-branding",
+                "destination": "/courses",
+                "type": 301
+            },
+            {
+                "source": "/courses/barbering-mens-grooming",
+                "destination": "/courses",
+                "type": 301
+            },
+            {
+                "source": "/courses/spa-therapy-wellness",
+                "destination": "/courses",
+                "type": 301
+            },
+            {
+                "source": "/courses/skincare-facial-therapy",
+                "destination": "/courses",
+                "type": 301
             }
         ],
         "rewrites": [

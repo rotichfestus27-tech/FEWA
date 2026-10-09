@@ -73,7 +73,12 @@ import { getFunctions, httpsCallable, connectFunctionsEmulator } from 'firebase/
     const catalogCourses = window.FEWA_COURSES || [];
     const programSummaryText = (title) => {
         const course = catalogCourses.find((item) => item.title === title);
-        return course ? `${course.qualification} | ${course.duration}. ${course.description}` : '';
+        if (!course) return '';
+        const metaParts = [...new Set([course.qualification, course.duration].filter(Boolean))];
+        const meta = metaParts.length === 1 && metaParts[0] === window.FEWA_UNCONFIRMED_META
+            ? 'Qualification & duration to be confirmed by FEWA'
+            : metaParts.join(' | ');
+        return meta ? `${meta}. ${course.description}` : course.description;
     };
 
     const programSelect = document.getElementById('program');
