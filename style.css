@@ -1173,23 +1173,26 @@ h4 {
 }
 
 .fees-page .fees-enrolment-grid {
-    max-width: 720px;
+    max-width: 820px;
     margin: 0 auto;
     padding: 0 24px;
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0 32px;
-    border-top: 1px solid var(--border-light);
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
 }
 
 .fees-page .fees-enrolment-row {
     display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 14px;
-    padding: 16px 0;
-    border-bottom: 1px solid var(--border-light);
+    text-align: center;
+    gap: 10px;
+    padding: 22px 14px;
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-sm);
+    background: var(--white);
     font-weight: 600;
-    font-size: 0.95rem;
+    font-size: 0.88rem;
     color: var(--purple-deep);
 }
 
@@ -1203,6 +1206,12 @@ h4 {
     display: grid;
     place-items: center;
     flex-shrink: 0;
+}
+
+@media (max-width: 900px) {
+    .fees-page .fees-enrolment-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
 }
 
 .fees-page .fees-enrolment-note {
