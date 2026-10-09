@@ -51,9 +51,10 @@
 
         const escapeHtml = (value) => String(value ?? '').replace(/[&<>'"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[c]));
 
-        // Replaces the former fee-table section. about.* is draft placeholder
-        // copy (see course-catalog-data.js) pending real content from FEWA --
-        // flagged visibly here rather than presented as finished/verified text.
+        // Replaces the former fee-table section. about.overview holds the
+        // official programme description(s) supplied by FEWA (see
+        // course-catalog-data.js) -- isDraft is only true for a course whose
+        // description has not yet been supplied/approved by FEWA.
         function renderAboutSection(about) {
             if (!about) {
                 return `<section class="fees-section" aria-labelledby="course-about-heading">
@@ -61,26 +62,12 @@
                     <p class="fees-contact-note">Contact FEWA Admissions for full details on this programme.</p>
                 </section>`;
             }
-            const learnItems = (about.whatYouWillLearn || []).map((item) => `<li>${escapeHtml(item)}</li>`).join('');
+            const paragraphs = Array.isArray(about.overview) ? about.overview : [about.overview];
+            const overviewHtml = paragraphs.filter(Boolean).map((p) => `<p>${escapeHtml(p)}</p>`).join('');
             return `<section class="fees-section course-about-section" aria-labelledby="course-about-heading">
                 <h2 id="course-about-heading">About the Course</h2>
                 ${about.isDraft ? '<p class="course-about-draft-note"><i class="fas fa-circle-info" aria-hidden="true"></i> Draft content -- pending final review by FEWA.</p>' : ''}
-                <div class="course-about-block">
-                    <h3>Course Overview</h3>
-                    <p>${escapeHtml(about.overview)}</p>
-                </div>
-                ${learnItems ? `<div class="course-about-block">
-                    <h3>What You Will Learn</h3>
-                    <ul class="course-about-list">${learnItems}</ul>
-                </div>` : ''}
-                <div class="course-about-block">
-                    <h3>Practical Training</h3>
-                    <p>${escapeHtml(about.practicalTraining)}</p>
-                </div>
-                <div class="course-about-block">
-                    <h3>Career Opportunities</h3>
-                    <p>${escapeHtml(about.careerOpportunities)}</p>
-                </div>
+                <div class="course-about-block">${overviewHtml}</div>
             </section>`;
         }
 

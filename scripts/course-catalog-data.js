@@ -18,12 +18,17 @@
 // figure was checked against FEWA's own source documents and found to be
 // either unsupported or inconsistent with them (see pre-deployment review).
 //
-// about.* fields are DRAFT placeholder copy (clearly marked here and in the
-// rendered page) pending real content from FEWA -- not sourced from a
-// verified document. Everything else (title, category, qualification,
-// duration) reflects the approved course list only.
+// about.overview holds the official programme description supplied by FEWA
+// for each course, as one or more paragraphs (array of strings). For the 3
+// Short Courses, the first paragraph is the shared FEWA_SHORT_COURSES_INTRO
+// text, followed by the course-specific paragraph. isDraft is false for
+// every course below -- the client has supplied and approved this content,
+// so no "pending review" banner is shown. qualification/duration remain
+// separate from this text and are NOT authorized by it (see UNCONFIRMED).
 const UNCONFIRMED = 'To be confirmed by FEWA';
 window.FEWA_UNCONFIRMED_META = UNCONFIRMED;
+
+window.FEWA_SHORT_COURSES_INTRO = 'Designed for beginners, career changers, entrepreneurs and working professionals, our short courses provide focused, hands-on training in specific areas of beauty. They offer a practical way to develop new skills, strengthen existing abilities or prepare for income-generating opportunities.';
 
 // Shared badge builder so every page that displays qualification/duration
 // (course cards, course-detail hero) renders a single combined badge instead
@@ -52,16 +57,10 @@ window.FEWA_COURSES = [
         icon: 'fa-sparkles',
         slug: 'cosmetology',
         about: {
-            isDraft: true,
-            overview: 'FEWA’s Cosmetology programme introduces you to the full scope of professional beauty science, preparing you to work confidently in salons, spas and clinics.',
-            whatYouWillLearn: [
-                'Skin anatomy and analysis',
-                'Professional treatment techniques',
-                'Product knowledge and safe practice',
-                'Client consultation and salon hygiene standards'
-            ],
-            practicalTraining: 'Hands-on practice in FEWA’s training salon, working on real treatments under instructor supervision from early in the programme.',
-            careerOpportunities: 'Graduates go on to work in salons and spas, or start their own cosmetology practice.'
+            isDraft: false,
+            overview: [
+                'Our comprehensive Cosmetology programme brings together the essential skills of beauty and hair artistry in one well-rounded qualification. Students gain practical experience in hair cutting, styling, colouring and treatments, alongside skincare, makeup, manicures and pedicures. Training also emphasises client care, hygiene, professional standards and essential business skills, preparing graduates to work confidently in salons, spas and beauty studios or establish and manage their own businesses.'
+            ]
         }
     },
     {
@@ -76,16 +75,10 @@ window.FEWA_COURSES = [
         icon: 'fa-spa',
         slug: 'beauty-therapy',
         about: {
-            isDraft: true,
-            overview: 'The Beauty Therapy programme builds the practical skills needed to deliver professional facial, skin and body treatments.',
-            whatYouWillLearn: [
-                'Facial treatments and skincare routines',
-                'Body treatments and client care',
-                'Hygiene and safety standards',
-                'Product and equipment knowledge'
-            ],
-            practicalTraining: 'Supervised practical sessions in FEWA’s training facility, working with real clients and professional equipment.',
-            careerOpportunities: 'Prepares graduates for roles in spas, salons and wellness centres, or self-employment as a beauty therapist.'
+            isDraft: false,
+            overview: [
+                'This programme focuses on skin, body care and wellness, equipping students with practical skills in facials, skin analysis, waxing, massage, manicures, pedicures and spa treatments. Students also develop knowledge of beauty products, safe and hygienic practices, and professional client consultation. The programme prepares graduates for opportunities in beauty clinics, spas, hotels, wellness centres and related settings.'
+            ]
         }
     },
     {
@@ -98,16 +91,10 @@ window.FEWA_COURSES = [
         icon: 'fa-wand-magic-sparkles',
         slug: 'hairdressing',
         about: {
-            isDraft: true,
-            overview: 'FEWA’s Hairdressing programme trains you in the full range of modern hairdressing techniques, from cutting and colour to scalp health.',
-            whatYouWillLearn: [
-                'Cutting and styling techniques',
-                'Colour theory and application',
-                'Chemical processes and scalp health',
-                'Client consultation'
-            ],
-            practicalTraining: 'Extensive hands-on training in FEWA’s salon, working on live models and real client services.',
-            careerOpportunities: 'Graduates work as professional hairdressers in salons, or go on to open their own salon business.'
+            isDraft: false,
+            overview: [
+                'Develop professional hairdressing skills from foundational techniques to advanced salon practices. Training covers hair cutting, styling, colouring, relaxing, perming, scalp and hair care, together with essential salon management skills. Through hands-on practical training, students build the confidence, creativity and technical ability needed to succeed as salon professionals or independent hairstylists.'
+            ]
         }
     },
 
@@ -122,16 +109,10 @@ window.FEWA_COURSES = [
         icon: 'fa-shirt',
         slug: 'pattern-drafting-and-garment-construction',
         about: {
-            isDraft: true,
-            overview: 'This programme focuses on the technical foundation of fashion design: drafting patterns and constructing garments to a professional standard.',
-            whatYouWillLearn: [
-                'Pattern drafting techniques',
-                'Garment construction methods',
-                'Fitting and finishing',
-                'Working across categories such as gowns, menswear, suits and childrenswear'
-            ],
-            practicalTraining: 'Hands-on studio work constructing real garments from pattern to finished piece.',
-            careerOpportunities: 'Prepares graduates for roles as pattern makers, garment constructors or independent fashion designers.'
+            isDraft: false,
+            overview: [
+                'Transform creative concepts into well-constructed, wearable garments. Students learn professional measurement techniques, pattern drafting, fabric cutting and garment construction using appropriate sewing techniques. The programme develops technical accuracy, creativity and quality finishing, preparing graduates for opportunities in tailoring, garment production, fashion houses and their own fashion labels.'
+            ]
         }
     },
     {
@@ -144,16 +125,10 @@ window.FEWA_COURSES = [
         icon: 'fa-lightbulb',
         slug: 'fashion-illustration-and-cad',
         about: {
-            isDraft: true,
-            overview: 'This programme combines traditional fashion illustration with Computer-Aided Design (CAD), giving you the tools to sketch and digitally develop your designs.',
-            whatYouWillLearn: [
-                'Fashion figure drawing and illustration techniques',
-                'Rendering fabric, texture and colour',
-                'Digital design using CAD software',
-                'Building a professional design portfolio'
-            ],
-            practicalTraining: 'Studio-based practice combining hand-drawn illustration with computer-based design work.',
-            careerOpportunities: 'Prepares graduates for roles as fashion illustrators, design assistants or freelance designers.'
+            isDraft: false,
+            overview: [
+                'Learn to communicate fashion ideas clearly through both traditional illustration and digital design. Students develop skills in figure drawing, fabric and texture rendering, design presentation and computer-aided design (CAD), including digital sketches, technical flats and professional portfolios. This programme is ideal for aspiring designers who want to present their creative concepts with confidence and professionalism.'
+            ]
         }
     },
     {
@@ -166,16 +141,10 @@ window.FEWA_COURSES = [
         icon: 'fa-bullhorn',
         slug: 'fashion-marketing-and-fashion-brands',
         about: {
-            isDraft: true,
-            overview: 'This programme introduces the business side of fashion -- how brands are built, marketed and positioned in a competitive industry.',
-            whatYouWillLearn: [
-                'Fashion brand development',
-                'Marketing strategy and promotion',
-                'Industry trends and consumer behaviour',
-                'Building a fashion business'
-            ],
-            practicalTraining: 'Practical projects developing and presenting a fashion brand concept.',
-            careerOpportunities: 'Prepares graduates for roles in fashion marketing, brand management or launching their own fashion label.'
+            isDraft: false,
+            overview: [
+                'Discover the business, communication and marketing principles behind successful fashion brands. Students explore branding, retail and merchandising, trend analysis, social media and digital marketing, as well as strategies for building and promoting fashion labels. Graduates can pursue opportunities in fashion retail, communications, buying and brand management, or use their skills to develop and grow their own fashion businesses.'
+            ]
         }
     },
     {
@@ -190,16 +159,10 @@ window.FEWA_COURSES = [
         icon: 'fa-paintbrush',
         slug: 'fashion-and-textile-design',
         about: {
-            isDraft: true,
-            overview: 'This programme explores the relationship between textiles and fashion, teaching you to design and work with fabric as a creative material.',
-            whatYouWillLearn: [
-                'Textile design principles',
-                'Fabric manipulation and surface design',
-                'Integrating textiles into fashion pieces',
-                'Material selection and sourcing'
-            ],
-            practicalTraining: 'Hands-on studio work designing and developing original textile-based fashion pieces.',
-            careerOpportunities: 'Prepares graduates for roles in textile design, fashion production or independent design practice.'
+            isDraft: false,
+            overview: [
+                'Explore the creative relationship between fashion, textiles and material design. Students develop skills in design development, fabric selection and manipulation, surface decoration, printing, dyeing and other textile techniques, while learning how to develop cohesive fashion collections. The programme encourages creativity and original thinking, preparing graduates for careers in fashion and textile design, creative production and entrepreneurship.'
+            ]
         }
     },
 
@@ -214,15 +177,11 @@ window.FEWA_COURSES = [
         icon: 'fa-paint-brush',
         slug: 'makeup',
         about: {
-            isDraft: true,
-            overview: 'FEWA’s Makeup programme builds professional makeup artistry skills across a range of styles and settings.',
-            whatYouWillLearn: [
-                'Beauty and everyday makeup application',
-                'Bridal and editorial makeup techniques',
-                'Hygiene and professional kit management'
-            ],
-            practicalTraining: 'Hands-on practice working on real models for beauty, bridal and editorial looks.',
-            careerOpportunities: 'Prepares graduates for work as freelance or salon-based makeup artists.'
+            isDraft: false,
+            overview: [
+                window.FEWA_SHORT_COURSES_INTRO,
+                'Learn colour theory, skin preparation and professional makeup application for day, evening and bridal looks.'
+            ]
         }
     },
     {
@@ -235,16 +194,11 @@ window.FEWA_COURSES = [
         icon: 'fa-hand-sparkles',
         slug: 'nail-technology',
         about: {
-            isDraft: true,
-            overview: 'This programme trains you in the full range of professional nail care and nail art techniques.',
-            whatYouWillLearn: [
-                'Manicure and pedicure techniques',
-                'Nail extensions and enhancements',
-                'Nail art design',
-                'Hygiene and safety standards'
-            ],
-            practicalTraining: 'Supervised hands-on practice in FEWA’s training facility, working with real clients.',
-            careerOpportunities: 'Prepares graduates for roles in salons and spas, or self-employment as a nail technician.'
+            isDraft: false,
+            overview: [
+                window.FEWA_SHORT_COURSES_INTRO,
+                'Develop practical skills in manicures, pedicures, gel and acrylic applications, nail art and nail health.'
+            ]
         }
     },
     {
@@ -259,16 +213,11 @@ window.FEWA_COURSES = [
         icon: 'fa-cut',
         slug: 'braiding-and-plaiting',
         about: {
-            isDraft: true,
-            overview: 'This short course builds professional skill in braiding and plaiting, a core service offered in salons across Kenya.',
-            whatYouWillLearn: [
-                'Braiding and plaiting techniques across styles',
-                'Hair preparation and sectioning',
-                'Working with extensions',
-                'Client care and finishing'
-            ],
-            practicalTraining: 'Hands-on practice on real models, building speed and precision under instructor guidance.',
-            careerOpportunities: 'Prepares graduates for salon-based braiding roles or mobile/freelance styling services.'
+            isDraft: false,
+            overview: [
+                window.FEWA_SHORT_COURSES_INTRO,
+                'Learn and practise a wide range of braiding techniques, from classic plaits to modern protective and decorative styles.'
+            ]
         }
     }
 ];
