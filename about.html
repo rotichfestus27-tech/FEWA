@@ -22,51 +22,128 @@
     <link rel="stylesheet" href="assets/fontawesome/fa-subset.css">
 </head>
 
-<body>
+<body class="about-page">
     <header class="main-header">
-        <div class="header-inner"><a href="index.html" class="logo-link"><picture><source srcset="assets/logo.webp" type="image/webp"><img src="assets/logo.png"
-                    alt="FEWA Beauty and Fashion College" class="logo-img"></picture>
-                <div class="logo-brand-text"><span class="brand-name">FEWA</span><span class="brand-tagline">BEAUTY
-                        &amp; FASHION COLLEGE</span></div>
+        <div class="header-inner">
+            <a href="index.html" class="logo-link">
+                <picture><source srcset="assets/logo.webp" type="image/webp"><img src="assets/logo.png" alt="FEWA Beauty and Fashion College" class="logo-img"></picture>
+                <span class="logo-brand-text"><span class="brand-name">FEWA</span><span class="brand-tagline">BEAUTY
+                        &amp; FASHION COLLEGE</span></span>
             </a>
-            <button class="menu-toggle" id="mobile-menu" aria-label="Open navigation" aria-expanded="false" type="button">
+            <button class="menu-toggle" id="mobile-menu" aria-label="Open navigation" aria-expanded="false"
+                type="button">
                 <span class="bar"></span><span class="bar"></span><span class="bar"></span>
             </button>
-            <nav class="nav-links"><a href="index.html">Home</a><a href="about.html">About Us</a><a
-                    href="courses.html">Courses</a><a href="admissions.html">Admissions</a><a href="fees.html">Fees</a><a
-                    href="portal.html">Student
-                    Portal</a><a href="contact.html">Contact</a><a href="/apply" class="nav-item nav-item-cta">Enroll Now <i class="fas fa-arrow-right" aria-hidden="true"></i></a></nav>
+            <nav class="nav-links" aria-label="Main navigation">
+                <a href="index.html" class="nav-item">Home</a>
+                <a href="about.html" class="nav-item active" aria-current="page">About Us</a>
+                <a href="courses.html" class="nav-item">Courses</a>
+                <a href="admissions.html" class="nav-item">Admission</a>
+                <a href="fees.html" class="nav-item">Fees</a>
+                <a href="portal.html" class="nav-item">Student Portal</a>
+                <a href="contact.html" class="nav-item">Contact Us</a>
+                <a href="/apply" class="nav-item nav-item-cta">Enroll Now <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
+            </nav>
+            <div class="header-cta"><a href="apply.html" class="header-cta-btn">Enroll Now <i class="fas fa-arrow-right"
+                        aria-hidden="true"></i></a></div>
         </div>
     </header>
-    <main class="container" style="padding:90px 20px">
-        <p class="section-eyebrow">About FEWA</p>
-        <h1>Where beauty meets skill and opportunity</h1>
-        <p>FEWA Beauty &amp; Fashion College develops skilled, creative and confident professionals through practical
-            training in beauty, fashion and personal care.</p>
-        <h2>Our Mission</h2>
-        <p>We exist to train, inspire, and launch beauty and fashion professionals — grounded in faith, driven by
-            passion, and equipped to lead with skill and style.</p>
-        <h2>Our Vision</h2>
-        <p>To be a beacon of faith-driven creativity, where every student discovers their God-given craft, radiates
-            confidence, and rises to shape the future of beauty and fashion — one purpose-filled design at a time.</p>
-        <h2>Our Motto</h2>
-        <p>Craft It. Glow In It. Own Your Style</p>
-        <h2>Core Values</h2>
-        <ul>
-            <li>God-Centeredness</li>
-            <li>Teamwork</li>
-            <li>Integrity</li>
-            <li>Professionalism</li>
-            <li>Discipline</li>
-        </ul>
-        <h2>Our approach</h2>
-        <p>Students learn from experienced trainers in a hands-on environment designed to build technical ability,
-            confidence and career readiness.</p>
-        <h2 id="facilities">Campus facilities</h2>
-        <p>Our practical learning spaces support salon practice, beauty therapy, garment construction and creative
-            styling.</p>
-        <p><a class="btn btn-primary" href="courses.html">View our courses <i class="fas fa-arrow-right"></i></a></p>
-        <p><a class="btn btn-primary" href="/apply">Apply Now <i class="fas fa-arrow-right"></i></a></p>
+
+    <main>
+        <section class="courses-intro" aria-labelledby="about-heading">
+            <span class="courses-eyebrow">About FEWA</span>
+            <h1 id="about-heading">Where beauty meets skill and opportunity</h1>
+            <p>FEWA Beauty &amp; Fashion College nurtures skilled, creative and confident professionals through
+                practical training in beauty, fashion and personal care. We aim to help every student develop their
+                talents, refine their craft and pursue opportunities with confidence, purpose and style.</p>
+        </section>
+
+        <section class="about-info-section" aria-labelledby="mission-heading">
+            <div class="about-card">
+                <h2 id="mission-heading">Our Mission</h2>
+                <p>To train, inspire and launch beauty and fashion professionals — grounded in faith, driven by
+                    passion, and equipped to lead with skill and style.</p>
+            </div>
+        </section>
+
+        <section class="about-info-section about-info-alt" aria-labelledby="vision-heading">
+            <div class="about-card">
+                <h2 id="vision-heading">Our Vision</h2>
+                <p>To be a beacon of faith-driven creativity, where every student discovers their God-given craft,
+                    radiates confidence and rises to shape the future of beauty and fashion — one purpose-filled
+                    design at a time.</p>
+            </div>
+        </section>
+
+        <section class="about-motto-section" aria-label="Our motto">
+            <span class="section-kicker">Our Motto</span>
+            <p class="about-motto gold-gradient-text">Craft It. Glow In It. Own Your Style.</p>
+        </section>
+
+        <section class="about-info-section" aria-labelledby="values-heading">
+            <div class="section-title">
+                <span class="section-kicker">What We Stand For</span>
+                <h2 id="values-heading">Our Core Values</h2>
+            </div>
+            <div class="journey-grid five-col">
+                <div class="journey-card">
+                    <span class="journey-step" aria-hidden="true"><i class="fas fa-cross"></i></span>
+                    <h3>God-Centeredness</h3>
+                    <p>Keeping faith and purpose at the heart of our journey.</p>
+                </div>
+                <div class="journey-card">
+                    <span class="journey-step" aria-hidden="true"><i class="fas fa-users"></i></span>
+                    <h3>Teamwork</h3>
+                    <p>Growing together through collaboration, mutual support and shared success.</p>
+                </div>
+                <div class="journey-card">
+                    <span class="journey-step" aria-hidden="true"><i class="fas fa-shield-halved"></i></span>
+                    <h3>Integrity</h3>
+                    <p>Upholding honesty, accountability and ethical conduct.</p>
+                </div>
+                <div class="journey-card">
+                    <span class="journey-step" aria-hidden="true"><i class="fas fa-award"></i></span>
+                    <h3>Professionalism</h3>
+                    <p>Delivering quality, respect and excellence in our work.</p>
+                </div>
+                <div class="journey-card">
+                    <span class="journey-step" aria-hidden="true"><i class="fas fa-chart-line"></i></span>
+                    <h3>Discipline</h3>
+                    <p>Embracing commitment, consistency and a dedication to continuous improvement.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="about-info-section about-info-alt" aria-labelledby="approach-heading">
+            <div class="about-card">
+                <h2 id="approach-heading">Our Approach to Learning</h2>
+                <p>At FEWA, learning goes beyond theory. Students develop their technical abilities, creativity and
+                    confidence through practical training and guided learning, with an emphasis on building the
+                    skills needed to pursue opportunities in the beauty and fashion industries.</p>
+            </div>
+        </section>
+
+        <section class="about-info-section" aria-labelledby="facilities-heading">
+            <div class="about-card" id="facilities">
+                <h2 id="facilities-heading">Our Campus Facilities</h2>
+                <p>Our learning spaces support practical activities in beauty therapy, salon practice, garment
+                    construction and creative styling. These spaces are intended to help students develop their
+                    skills and translate creative ideas into practical work.</p>
+            </div>
+        </section>
+
+        <section class="course-cta" aria-label="Discover your potential at FEWA">
+            <div>
+                <h2>Discover Your Potential at FEWA</h2>
+                <p>Whether your passion lies in beauty, fashion or personal care, FEWA invites you to explore your
+                    interests and take the next step towards developing your craft.</p>
+                <p class="about-cta-emphasis">Explore our programmes and begin your journey today.</p>
+            </div>
+            <div class="about-cta-buttons">
+                <a class="cta-button" href="courses.html">View Our Courses <span aria-hidden="true">&rarr;</span></a>
+                <a class="cta-button" href="/apply">Apply Now <span aria-hidden="true">&rarr;</span></a>
+            </div>
+        </section>
     </main>
     <script>
         const mobileMenu = document.querySelector('#mobile-menu');

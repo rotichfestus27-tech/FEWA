@@ -952,6 +952,10 @@ h4 {
     grid-template-columns: repeat(3, 1fr);
 }
 
+.journey-grid.five-col {
+    grid-template-columns: repeat(5, 1fr);
+}
+
 /* ==========================================================================
    ADMISSIONS PAGE -- intro actions, document checklist, status-check card,
    help contact cards. All reuse existing colour variables/section rhythm;
@@ -1260,6 +1264,115 @@ h4 {
        here or it would force 2 columns even on narrow phones. */
     .fees-page .fees-contact-grid {
         grid-template-columns: 1fr;
+    }
+}
+
+/* ==========================================================================
+   ABOUT PAGE -- scoped under .about-page so there is zero risk of affecting
+   any other page. Mission/Vision/Approach/Facilities reuse the same
+   alternating .about-info-section/.about-info-alt card rhythm as the Fees
+   page; Core Values reuses .journey-grid/.journey-card (Admissions) with a
+   5-column modifier; the closing banner reuses .course-cta exactly.
+   ========================================================================== */
+
+/* Deep purple hero with white text and gold accents -- overrides the
+   shared .courses-intro (light bg) used by other pages; scoped so those
+   pages are unaffected. */
+.about-page .courses-intro {
+    background: linear-gradient(135deg, #24002F 0%, #17001F 100%);
+}
+
+.about-page .courses-intro .courses-eyebrow {
+    color: var(--gold-bright);
+}
+
+.about-page .courses-intro h1 {
+    color: #fff;
+}
+
+.about-page .courses-intro p {
+    color: rgba(255, 255, 255, 0.78);
+}
+
+.about-page .about-info-section {
+    padding: 72px 0;
+    background: var(--white);
+    border-top: 1px solid var(--border-light);
+}
+
+/* Soft lavender alternate (distinct from the near-white --purple-soft used
+   elsewhere, so the alternating rhythm reads clearly on this page). */
+.about-page .about-info-alt {
+    background: #F3EEFA;
+}
+
+.about-page .about-card {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 40px 44px;
+    background: var(--white);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+}
+
+.about-page .about-card h2 {
+    margin-bottom: 18px;
+    color: var(--purple-deep);
+    font-family: var(--font-serif);
+    font-size: clamp(1.3rem, 2.4vw, 1.7rem);
+    font-weight: 600;
+}
+
+.about-page .about-card p {
+    color: var(--text-secondary);
+    line-height: 1.8;
+}
+
+.about-page .about-motto-section {
+    text-align: center;
+    padding: 70px 24px;
+    background: linear-gradient(135deg, #24002F 0%, #17001F 100%);
+}
+
+.about-page .about-motto-section .section-kicker {
+    color: var(--gold-bright);
+}
+
+.about-page .about-motto {
+    max-width: 720px;
+    margin: 0 auto;
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: clamp(1.6rem, 4vw, 2.6rem);
+    font-weight: 700;
+}
+
+.about-page .about-cta-emphasis {
+    margin-top: 10px;
+    color: #fff;
+    font-weight: 700;
+}
+
+.about-page .about-cta-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+@media (max-width: 520px) {
+    .about-page .about-card {
+        padding: 32px 26px;
+    }
+
+    .about-page .about-cta-buttons {
+        flex-direction: column;
+        align-items: stretch;
+        width: 100%;
+    }
+
+    .about-page .about-cta-buttons .cta-button {
+        justify-content: center;
     }
 }
 
@@ -3268,6 +3381,7 @@ h4 {
     .courses-grid,
     .journey-grid,
     .journey-grid.three-col,
+    .journey-grid.five-col,
     .feature-grid,
     .careers-grid,
     .experience-features,
@@ -3393,6 +3507,7 @@ h4 {
     .courses-grid,
     .journey-grid,
     .journey-grid.three-col,
+    .journey-grid.five-col,
     .feature-grid,
     .careers-grid,
     .experience-features,
