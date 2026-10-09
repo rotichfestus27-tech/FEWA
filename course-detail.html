@@ -85,9 +85,7 @@
 
         if (course) {
             document.title = `${course.title} | FEWA Beauty & Fashion College`;
-            const courseImage = course.image.startsWith('/') ? course.image : `/${course.image}`;
             const courseUrl = `https://fewa.ac.ke/courses/${course.slug}`;
-            const courseImageUrl = `https://fewa.ac.ke${courseImage}`;
             const courseOgTitle = `${course.title} | FEWA Beauty & Fashion College`;
 
             setMetaTag('meta[name="description"]', 'content', course.description);
@@ -95,10 +93,12 @@
             setMetaTag('meta[property="og:title"]', 'content', courseOgTitle);
             setMetaTag('meta[property="og:description"]', 'content', course.description);
             setMetaTag('meta[property="og:url"]', 'content', courseUrl);
-            setMetaTag('meta[property="og:image"]', 'content', courseImageUrl);
+            // og:image/twitter:image intentionally left at their static default
+            // (the FEWA logo, set in <head>) -- course.image is a placeholder
+            // AI image, not a real photo, so it should not appear in link
+            // previews either until official photography is supplied.
             setMetaTag('meta[name="twitter:title"]', 'content', courseOgTitle);
             setMetaTag('meta[name="twitter:description"]', 'content', course.description);
-            setMetaTag('meta[name="twitter:image"]', 'content', courseImageUrl);
 
             addJsonLd({
                 '@context': 'https://schema.org',
@@ -113,11 +113,7 @@
                 }
             });
             const aboutSection = renderAboutSection(course.about);
-            // Every course image now has a WebP alongside its original PNG (same path,
-            // .webp extension). No loading="lazy" here -- this hero image is above the
-            // fold on its own course-detail page, so it should keep loading eagerly.
-            const heroWebpSrc = courseImage.replace(/\.png$/i, '.webp');
-            const heroImageMarkup = `<picture><source srcset="${heroWebpSrc}" type="image/webp"><img src="${courseImage}" alt="${course.title}"></picture>`;
+            const heroImageMarkup = window.FEWA_coursePlaceholderMarkup(course);
             const metaParts = window.FEWA_courseMetaBadges(course)
                 .map((b) => `<span><i class="fas ${b.icon}"></i>${escapeHtml(b.text)}</span>`)
                 .join('');

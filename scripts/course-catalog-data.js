@@ -45,16 +45,29 @@ window.FEWA_courseMetaBadges = function (course) {
     return badges;
 };
 
+// Official course photography has not been supplied yet. This shared panel
+// (used by both courses.js and course-detail.html) replaces the photo with a
+// branded CSS placeholder -- course.icon and course.tagline -- so swapping in
+// a real photo later only means restoring a <picture>/<img> in its place.
+window.FEWA_coursePlaceholderMarkup = function (course) {
+    return `<div class="course-image-placeholder" aria-hidden="true">
+        <span class="placeholder-icon"><i class="fas ${course.icon}"></i></span>
+        <span class="placeholder-tagline">${course.tagline}</span>
+        <span class="placeholder-photo-note">Official photo coming soon</span>
+    </div>`;
+};
+
 window.FEWA_COURSES = [
     // ---------------- School of Cosmetology ----------------
     {
         title: 'Cosmetology',
+        tagline: 'The Art of Beauty',
         category: 'School of Cosmetology',
         qualification: '',
         duration: '',
         description: 'Professional cosmetology training covering skin science, treatments and salon practice.',
         image: 'assets/01_cosmetology_beauty_therapy.png',
-        icon: 'fa-sparkles',
+        icon: 'fa-star',
         slug: 'cosmetology',
         about: {
             isDraft: false,
@@ -65,6 +78,7 @@ window.FEWA_COURSES = [
     },
     {
         title: 'Beauty Therapy',
+        tagline: 'Craft Your Glow',
         category: 'School of Cosmetology',
         qualification: '',
         duration: '',
@@ -83,6 +97,7 @@ window.FEWA_COURSES = [
     },
     {
         title: 'Hairdressing',
+        tagline: 'Create Your Signature Style',
         category: 'School of Cosmetology',
         qualification: UNCONFIRMED,
         duration: UNCONFIRMED,
@@ -101,6 +116,7 @@ window.FEWA_COURSES = [
     // ---------------- School of Fashion Design ----------------
     {
         title: 'Pattern Drafting & Garment Construction',
+        tagline: 'Design Your Future',
         category: 'School of Fashion Design',
         qualification: UNCONFIRMED,
         duration: UNCONFIRMED,
@@ -117,6 +133,7 @@ window.FEWA_COURSES = [
     },
     {
         title: 'Fashion Illustration & CAD',
+        tagline: 'Sketch Your Vision',
         category: 'School of Fashion Design',
         qualification: '',
         duration: '',
@@ -133,6 +150,7 @@ window.FEWA_COURSES = [
     },
     {
         title: 'Fashion Marketing & Fashion Brands',
+        tagline: 'Build Your Brand',
         category: 'School of Fashion Design',
         qualification: UNCONFIRMED,
         duration: UNCONFIRMED,
@@ -149,6 +167,7 @@ window.FEWA_COURSES = [
     },
     {
         title: 'Fashion & Textile Design',
+        tagline: 'Weave Your Story',
         category: 'School of Fashion Design',
         qualification: '',
         duration: '',
@@ -169,6 +188,7 @@ window.FEWA_COURSES = [
     // ---------------- Short Courses ----------------
     {
         title: 'Makeup',
+        tagline: 'Define Your Beauty',
         category: 'Short Courses',
         qualification: UNCONFIRMED,
         duration: UNCONFIRMED,
@@ -186,6 +206,7 @@ window.FEWA_COURSES = [
     },
     {
         title: 'Nail Technology',
+        tagline: 'Polish Your Craft',
         category: 'Short Courses',
         qualification: UNCONFIRMED,
         duration: UNCONFIRMED,
@@ -203,6 +224,7 @@ window.FEWA_COURSES = [
     },
     {
         title: 'Braiding & Plaiting',
+        tagline: 'Crown Your Style',
         category: 'Short Courses',
         qualification: '',
         duration: '',

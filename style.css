@@ -3771,19 +3771,119 @@ h4 {
     transform: scale(1.06);
 }
 
-.course-icon {
+/* Branded placeholder artwork shown in place of a course photo until FEWA
+   supplies official photography -- see FEWA_coursePlaceholderMarkup() in
+   scripts/course-catalog-data.js, shared by courses.js and course-detail.html.
+   Composition: a gold-ringed icon, an elegant serif tagline, a delicate inset
+   frame + texture, and a small unobtrusive "photo coming soon" caption. */
+.course-image-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(10px, 2.5vw, 16px);
+    width: 100%;
+    height: 100%;
+    padding: 22px;
+    background: linear-gradient(135deg, #24002F 0%, #17001F 100%);
+    position: relative;
+    overflow: hidden;
+    text-align: center;
+}
+
+/* Delicate inset frame -- reads as deliberate editorial artwork rather than
+   an empty box. */
+.course-image-placeholder::before {
+    content: '';
     position: absolute;
-    right: 19px;
-    bottom: -20px;
+    inset: 13px;
+    border: 1px solid rgba(212, 175, 55, 0.3);
+    border-radius: 10px;
+    pointer-events: none;
+}
+
+/* Soft gold glow + a very faint diagonal hairline texture for depth. */
+.course-image-placeholder::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(circle at 20% 14%, rgba(212, 175, 55, 0.18), transparent 46%),
+        radial-gradient(circle at 88% 92%, rgba(212, 175, 55, 0.12), transparent 42%),
+        repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.025) 0px, rgba(255, 255, 255, 0.025) 1px, transparent 1px, transparent 15px);
+    pointer-events: none;
+}
+
+.placeholder-icon {
+    position: relative;
     display: grid;
     place-items: center;
-    width: 48px;
-    height: 48px;
-    border: 3px solid var(--gold-primary);
+    width: 52px;
+    height: 52px;
+    flex-shrink: 0;
+    border: 1.5px solid var(--gold-primary);
     border-radius: 50%;
-    background: var(--purple-deep);
+    background: rgba(212, 175, 55, 0.08);
     color: var(--gold-bright);
-    box-shadow: 0 5px 14px rgba(25, 0, 34, 0.3);
+    font-size: 1.25rem;
+}
+
+.placeholder-tagline {
+    position: relative;
+    max-width: 85%;
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-weight: 600;
+    font-size: clamp(1rem, 2.4vw, 1.2rem);
+    line-height: 1.3;
+    background: linear-gradient(135deg, #F3E5AB 0%, #D4AF37 55%, #AA7C11 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+.placeholder-photo-note {
+    position: absolute;
+    left: 50%;
+    bottom: 12px;
+    transform: translateX(-50%);
+    font-family: var(--font-sans);
+    font-size: 0.6rem;
+    font-weight: 500;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: rgba(243, 229, 171, 0.42);
+    white-space: nowrap;
+}
+
+.premium-course-card:hover .placeholder-icon {
+    border-color: var(--gold-hover);
+    transition: border-color 0.4s ease;
+}
+
+.detail-hero-image .placeholder-icon {
+    width: 68px;
+    height: 68px;
+    font-size: 1.65rem;
+}
+
+.detail-hero-image .placeholder-tagline {
+    font-size: clamp(1.3rem, 3vw, 1.75rem);
+}
+
+.detail-hero-image .placeholder-photo-note {
+    bottom: 18px;
+    font-size: 0.68rem;
+}
+
+@media (max-width: 420px) {
+    .placeholder-tagline {
+        max-width: 92%;
+    }
+
+    .placeholder-photo-note {
+        font-size: 0.56rem;
+    }
 }
 
 .premium-course-body {

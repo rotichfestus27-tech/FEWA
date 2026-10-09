@@ -7,21 +7,12 @@ const courses = window.FEWA_COURSES;
 const courseGrid = document.querySelector('#course-grid');
 const filterButtons = document.querySelectorAll('[data-filter]');
 
-// Every course image now has a WebP alongside its original PNG (same path,
-// .webp extension) -- the browser uses WebP when supported and falls back to
-// the original PNG (course.image, from course-catalog-data.js) otherwise.
-function courseImageMarkup(course) {
-    const webpSrc = course.image.replace(/\.png$/i, '.webp');
-    return `<picture><source srcset="${webpSrc}" type="image/webp"><img src="${course.image}" alt="${course.title}" loading="lazy"></picture>`;
-}
-
 function courseCard(course, index) {
     return `
         <article class="premium-course-card reveal" data-category="${course.category}" style="--card-delay: ${index * 45}ms">
             <a class="course-image-link" href="/courses/${course.slug}" aria-label="View details for ${course.title}">
                 <div class="premium-course-image">
-                    ${courseImageMarkup(course)}
-                    <span class="course-icon" aria-hidden="true"><i class="fas ${course.icon}"></i></span>
+                    ${window.FEWA_coursePlaceholderMarkup(course)}
                 </div>
             </a>
             <div class="premium-course-body">
