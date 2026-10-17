@@ -5,7 +5,8 @@
     "scripts": {
         "emu:start": "firebase emulators:start --only firestore,auth,storage",
         "test:rules": "firebase emulators:exec --project fewa-rules-test --only firestore \"node test/run-tests-ci.js\"",
-        "test:ci": "npm run test:rules",
+        "test:storage": "firebase emulators:exec --project fewa-storage-test --only storage,firestore \"node test/storage-rules-check.js\"",
+        "test:ci": "npm run test:rules && npm run test:storage",
         "build:apply": "esbuild application-portal.modular.js --bundle --minify --format=iife --target=es2020 --outfile=application-portal.bundle.js"
     },
     "devDependencies": {
