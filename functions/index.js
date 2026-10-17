@@ -1,10 +1,11 @@
 const admin = require('firebase-admin');
 const functions = require('firebase-functions');
-const { promoteAcceptedApplication, finalizeApplicationSubmission } = require('./admission-service');
+const { promoteAcceptedApplication, resendAcceptanceLetter, finalizeApplicationSubmission } = require('./admission-service');
 const { isSuperadmin, setUserRole, inviteStaffAccount, listStaffAccounts } = require('./roles-service');
 const { checkApplicationStatus } = require('./status-check-service');
 const { resolveStudentLoginEmail } = require('./student-login-service');
 const { createEmailSender, createAcceptanceEmailSender, createStaffInvitationEmailSender } = require('./email-service');
+const { createAcceptanceLetterSender } = require('./acceptance-delivery-service');
 
 admin.initializeApp();
 
@@ -29,11 +30,43 @@ exports.promoteAcceptedApplication = functions.https.onCall({ secrets: ['ZOHO_SM
     }
 
     try {
+        const applicationId = request.data?.applicationId;
         return await promoteAcceptedApplication({
             db: admin.firestore(),
-            applicationId: request.data?.applicationId,
+            applicationId,
             authToken: request.auth.token,
-            sendAcceptanceEmail: createAcceptanceEmailSender(process.env.ZOHO_SMTP_USER, process.env.ZOHO_SMTP_PASS)
+            sendAcceptanceEmail: createAcceptanceLetterSender({
+                bucket: admin.storage().bucket(),
+                applicationId,
+                sendAcceptanceEmail: createAcceptanceEmailSender(process.env.ZOHO_SMTP_USER, process.env.ZOHO_SMTP_PASS)
+            })
+        });
+    } catch (error) {
+        const code = error.message.includes('not authorized') ? 'permission-denied' : 'failed-precondition';
+        throw new functions.https.HttpsError(code, error.message);
+    }
+});
+
+// Lets an authorized staff member explicitly retry acceptance-letter
+// generation/email after a recorded failure (see the "acceptanceLetter"
+// status field on the student record), or resend on request. Same secrets
+// binding as promoteAcceptedApplication, since it uses the same Zoho relay.
+exports.resendAcceptanceLetter = functions.https.onCall({ secrets: ['ZOHO_SMTP_USER', 'ZOHO_SMTP_PASS'] }, async (request) => {
+    if (!request.auth) {
+        throw new functions.https.HttpsError('unauthenticated', 'Authentication is required.');
+    }
+
+    try {
+        const applicationId = request.data?.applicationId;
+        return await resendAcceptanceLetter({
+            db: admin.firestore(),
+            applicationId,
+            authToken: request.auth.token,
+            sendAcceptanceEmail: createAcceptanceLetterSender({
+                bucket: admin.storage().bucket(),
+                applicationId,
+                sendAcceptanceEmail: createAcceptanceEmailSender(process.env.ZOHO_SMTP_USER, process.env.ZOHO_SMTP_PASS)
+            })
         });
     } catch (error) {
         const code = error.message.includes('not authorized') ? 'permission-denied' : 'failed-precondition';

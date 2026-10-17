@@ -234,6 +234,12 @@
             color: #d9d0c7;
         }
 
+        .portal-hero-actions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
         .portal-kicker {
             color: #d3b27b;
             text-transform: uppercase;
@@ -811,6 +817,7 @@
             <div class="portal-login-links">
                 <div class="portal-reset"><button type="button" id="reset-button">Forgot password?</button></div>
                 <p class="portal-applicant">New applicant? <a href="apply.html">Apply for Admission</a></p>
+                <p class="portal-applicant">Need help? <a href="mailto:support@fewa.ac.ke">support@fewa.ac.ke</a></p>
             </div>
         </section>
     </div>
@@ -859,7 +866,11 @@
                         <div><span class="portal-kicker">Welcome back</span>
                             <h2>Welcome back, <span id="welcome-name">Student</span></h2>
                             <p id="welcome-detail">Your FEWA academic overview.</p>
-                        </div><a class="portal-button" href="contact.html">Contact support</a>
+                        </div>
+                        <div class="portal-hero-actions">
+                            <button class="portal-button" id="download-acceptance-letter" type="button" hidden>Download Acceptance Letter</button>
+                            <a class="portal-button" href="contact.html">Contact support</a>
+                        </div>
                     </div>
                     <div class="portal-grid portal-quick-grid">
                         <button class="portal-card portal-quick" data-view="elearning" type="button">
@@ -1130,6 +1141,13 @@
                 const name = student.fullName || user.displayName || user.email.split('@')[0];
                 text('welcome-name', name.split(' ')[0]); text('elearning-name', name.split(' ')[0]); text('top-name', name); text('top-avatar', name.charAt(0).toUpperCase()); text('welcome-detail', student.studentId ? `Student ${student.studentId} | ${student.program || 'Programme not published'}` : 'Your FEWA academic overview.');
                 text('stat-programme', student.program || 'Not available'); text('stat-status', student.admissionStatus || 'Academic status unavailable');
+                const letterButton = document.getElementById('download-acceptance-letter');
+                if (letterButton) {
+                    const letter = student.acceptanceLetter;
+                    const available = Boolean(letter && letter.status === 'sent' && letter.storagePath);
+                    letterButton.hidden = !available;
+                    letterButton.dataset.docPath = letter?.storagePath || '';
+                }
                 document.getElementById('profile-name').value = name; document.getElementById('profile-student-id').value = student.studentId || 'Not available'; document.getElementById('profile-email').value = student.email || user.email || ''; document.getElementById('profile-phone').value = student.phone || ''; document.getElementById('profile-address').value = student.address || ''; document.getElementById('profile-emergency').value = student.emergencyContact || '';
                 text('course-content', student.program, 'Programme information has not been published for your account.');
                 renderElearningCourses();
@@ -1197,6 +1215,20 @@
             document.querySelectorAll('.portal-quick[data-view]').forEach(button => button.addEventListener('click', () => openView(button.dataset.view)));
             document.getElementById('notifications-bell').addEventListener('click', () => openView('notifications'));
             document.getElementById('elearning-back').addEventListener('click', closeCourse);
+            document.getElementById('download-acceptance-letter')?.addEventListener('click', async (event) => {
+                const button = event.currentTarget;
+                const path = button.dataset.docPath;
+                if (!path || !storage) return;
+                button.disabled = true;
+                try {
+                    const url = await storage.ref(path).getDownloadURL();
+                    window.open(url, '_blank', 'noopener');
+                } catch (error) {
+                    console.error('Acceptance letter download failed:', error);
+                } finally {
+                    button.disabled = false;
+                }
+            });
             document.getElementById('assignment-filter').addEventListener('change', renderAssignments);
             document.getElementById('attendance-semester').addEventListener('change', renderAttendance);
             document.getElementById('attendance-unit').addEventListener('change', renderAttendance);

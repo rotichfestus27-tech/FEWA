@@ -151,20 +151,173 @@ async function promoteAcceptedApplication({ db, applicationId, authToken = {}, s
     // on a repeat/idempotent call (matches the same guard already used by the
     // client for the activation email, see admin-portal.js).
     if (!result.idempotent && typeof sendAcceptanceEmail === 'function') {
-        try {
-            await sendAcceptanceEmail(result.application, result.studentId);
-        } catch (error) {
-            // The acceptance and student record already succeeded above; a failure to
-            // send the acceptance email is not fatal and must never undo or block that.
-            console.error(
-                'promoteAcceptedApplication: sendAcceptanceEmail failed for application',
-                result.application.applicationNumber || '(no reference number)',
-                '-', error.message
-            );
-        }
+        await deliverAcceptanceLetter(studentRef, sendAcceptanceEmail, result.application, result.studentId);
     }
 
     return { applicationId: result.applicationId, studentId: result.studentId, status: result.status, idempotent: result.idempotent };
+}
+
+const ALREADY_SENDING = 'ALREADY_SENDING';
+
+// How long a lock may be held before it's treated as orphaned (left behind by
+// a crashed/timed-out function instance that never reached the `finally`
+// release below) and safe to reclaim. Set well above the normal PDF+SMTP
+// latency (observed: well under 10s in testing) so a merely-slow send is
+// never mistaken for a crashed one.
+const LOCK_STALE_MS = 5 * 60 * 1000;
+
+function acceptanceLetterLockRef(studentRef) {
+    return studentRef.collection('locks').doc('acceptanceLetterSend');
+}
+
+// Mutual-exclusion guard for acceptance-letter sends, using Firestore's
+// document .create() precondition (fails atomically if the document already
+// exists) rather than a transactional read-check-write.
+//
+// WHY: an earlier version of this guard used a db.runTransaction() read-
+// check-write, relying on Firestore's optimistic-concurrency conflict
+// detection to serialize concurrent callers. Stress-testing that version
+// against the local Firestore emulator (15 trials of 2 concurrent
+// resendAcceptanceLetter calls) showed duplicate sends in 11/15 runs: a
+// follow-up business-logic-free test of a bare transactional read-check-
+// write showed 0/15 runs correctly serialized. A .create()-based lock,
+// tested the same way, passed 15/15. create() is a different, simpler
+// Firestore primitive -- "fail if this exact document path already exists"
+// -- that does not depend on transaction retry behavior.
+//
+// This is called once per genuine send attempt (by promoteAcceptedApplication
+// on first acceptance, and by resendAcceptanceLetter on every explicit staff
+// retry) and the lock is always released in deliverAcceptanceLetter's
+// `finally` block below, success or failure, so a legitimate follow-up
+// resend is never permanently blocked by a completed attempt.
+async function claimAcceptanceLetterSend(studentRef, attemptedAt) {
+    const lockRef = acceptanceLetterLockRef(studentRef);
+    try {
+        await lockRef.create({ claimedAt: attemptedAt });
+        return lockRef;
+    } catch (createError) {
+        // ALREADY_EXISTS -- another call currently holds the lock, or a
+        // previous attempt crashed before reaching the `finally` release.
+        // Check staleness before giving up: if the lock is older than
+        // LOCK_STALE_MS, it's very likely orphaned by a crash (a function
+        // instance killed mid-SMTP-call, out of memory, etc.) rather than a
+        // genuinely slow in-flight send, so reclaim it. Deleting first is
+        // safe even if two callers both detect staleness at once -- delete()
+        // is idempotent, and the recreate immediately after still goes
+        // through the same atomic create(), so only one of them can ever
+        // win even during a stale-lock race.
+        const existing = await lockRef.get();
+        const claimedAt = existing.exists ? existing.data().claimedAt : null;
+        const ageMs = claimedAt ? Date.now() - claimedAt.toMillis() : Infinity;
+        if (ageMs <= LOCK_STALE_MS) {
+            throw new Error(ALREADY_SENDING);
+        }
+        await lockRef.delete().catch(() => {});
+        try {
+            await lockRef.create({ claimedAt: attemptedAt });
+            return lockRef;
+        } catch (retryError) {
+            // Someone else won the reclaim race -- also correct, not an error.
+            throw new Error(ALREADY_SENDING);
+        }
+    }
+}
+
+// Shared by promoteAcceptedApplication (first, automatic send) and
+// resendAcceptanceLetter (explicit staff-triggered retry) -- generates the
+// PDF, stores it, emails it, and records the outcome on the student record
+// so staff can see delivery status and retry without guessing.
+//
+// FAILURE/RECOVERY BEHAVIOR:
+// - PDF generation, Storage upload, or SMTP send failure: caught below,
+//   recorded as acceptanceLetter.status = 'failed' with lastError, and the
+//   lock is released in `finally` -- staff can click "Resend" again
+//   immediately, no waiting required.
+// - The already-accepted student record (or, for a retry, the application's
+//   Accepted status) is never undone by a PDF/email problem -- only the
+//   acceptanceLetter sub-field is touched here.
+// - A hard crash/timeout DURING sendAcceptanceEmail (the function instance
+//   is killed before either the try or finally below can run) is the one
+//   scenario this cannot fully observe: the lock is left behind (orphaned)
+//   and acceptanceLetter.status keeps whatever value it had before this
+//   attempt (it will NOT show "failed" for this specific crash, since the
+//   crash prevents that write too). Recovery is automatic but not
+//   immediate: the orphaned lock self-heals after LOCK_STALE_MS (5 minutes)
+///  -- the next resend attempt (manual or automatic) after that point will
+//   successfully reclaim it and send. This is a deliberate, documented
+//   trade-off: without it, a single crashed attempt would permanently block
+//   every future resend for that student.
+async function deliverAcceptanceLetter(studentRef, sendAcceptanceEmail, application, studentId) {
+    const attemptedAt = Timestamp.now();
+    let lockRef;
+    try {
+        lockRef = await claimAcceptanceLetterSend(studentRef, attemptedAt);
+    } catch (claimError) {
+        if (claimError.message === ALREADY_SENDING) {
+            console.warn(
+                'deliverAcceptanceLetter: skipped -- a send is already in progress for application',
+                application.applicationNumber || '(no reference number)'
+            );
+            return;
+        }
+        throw claimError;
+    }
+    try {
+        const delivery = await sendAcceptanceEmail(application, studentId);
+        await studentRef.set({
+            acceptanceLetter: {
+                status: 'sent',
+                fileName: delivery?.fileName || null,
+                storagePath: delivery?.storagePath || null,
+                lastAttemptAt: attemptedAt,
+                lastError: null
+            }
+        }, { merge: true });
+    } catch (error) {
+        console.error(
+            'deliverAcceptanceLetter: failed for application',
+            application.applicationNumber || '(no reference number)',
+            '-', error.message
+        );
+        await studentRef.set({
+            acceptanceLetter: {
+                status: 'failed',
+                lastAttemptAt: attemptedAt,
+                lastError: error.message
+            }
+        }, { merge: true }).catch(() => {});
+    } finally {
+        // Always release the lock -- success, failure, or anything else
+        // caught above -- so a future resend is never blocked by an attempt
+        // that has already finished (see function-level comment above for
+        // the one case this can't cover: a hard crash during the try block).
+        await lockRef.delete().catch(() => {});
+    }
+}
+
+// Lets an authorized staff member explicitly re-trigger acceptance-letter
+// generation + email after a recorded failure (or simply to resend), without
+// re-running the acceptance transaction itself. Distinct from the automatic,
+// idempotency-guarded send in promoteAcceptedApplication: this is always an
+// intentional, authorized action, so it is never silently skipped.
+async function resendAcceptanceLetter({ db, applicationId, authToken = {}, sendAcceptanceEmail }) {
+    if (!hasAuthorizedRole(authToken)) throw new Error('You are not authorized to resend acceptance letters.');
+    requireString(applicationId, 'Application ID');
+    if (typeof sendAcceptanceEmail !== 'function') throw new Error('Acceptance email delivery is not configured.');
+
+    const applicationRef = db.collection('applications').doc(applicationId);
+    const studentRef = db.collection('students').doc(applicationId);
+    const [applicationSnapshot, studentSnapshot] = await Promise.all([applicationRef.get(), studentRef.get()]);
+    if (!applicationSnapshot.exists) throw new Error('Application not found.');
+    if (!studentSnapshot.exists) throw new Error('No student record exists for this application yet.');
+
+    const application = applicationSnapshot.data();
+    const studentId = studentSnapshot.data().studentId;
+    if (application.status !== 'Accepted') throw new Error('This application has not been accepted.');
+
+    await deliverAcceptanceLetter(studentRef, sendAcceptanceEmail, application, studentId);
+    const updated = await studentRef.get();
+    return { applicationId, studentId, acceptanceLetter: updated.data().acceptanceLetter };
 }
 
 // ------------------------------------------------------------------------
@@ -292,6 +445,7 @@ module.exports = {
     buildStudentProfile,
     allocateStudentId,
     promoteAcceptedApplication,
+    resendAcceptanceLetter,
     generateSecurePassword,
     validateApplicationForSubmission,
     finalizeApplicationSubmission

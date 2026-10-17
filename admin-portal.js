@@ -231,6 +231,11 @@
     // 'finance' and 'lecturer', which silently locked those roles out entirely.
     const staff = () => hasRole('admin') || hasRole('superadmin') || hasRole('admissions') || hasRole('finance') || hasRole('lecturer');
     const superadmin = () => hasRole('superadmin');
+    // Matches AUTHORIZED_ROLES / hasAuthorizedRole in functions/admission-service.js
+    // exactly -- promoteAcceptedApplication and resendAcceptanceLetter only ever
+    // authorize admin/superadmin/admissions server-side, so a finance or lecturer
+    // role seeing these controls would only ever get permission-denied clicking them.
+    const canManageAdmissions = () => hasRole('admin') || hasRole('superadmin') || hasRole('admissions');
     const timestamp = (value) => value?.toDate ? value.toDate().toLocaleString() : value ? new Date(value).toLocaleString() : 'Not available';
 
     // ------------------------------------------------------------------
@@ -451,6 +456,62 @@
         // firestore.rules: allow delete: if isApplicationStaff() -- exactly matches staff() here.
         const deleteButton = $('#delete-application');
         if (deleteButton) deleteButton.hidden = !staff();
+
+        refreshAcceptanceLetterButtons(application);
+    }
+
+    // Reads the acceptanceLetter status recorded on the student record (see
+    // deliverAcceptanceLetter in functions/admission-service.js) to show/hide
+    // Download and Resend -- fetched separately from the application itself
+    // since acceptance-letter delivery status lives on the student record,
+    // not the application.
+    async function refreshAcceptanceLetterButtons(application) {
+        const downloadButton = $('#download-acceptance-letter');
+        const resendButton = $('#resend-acceptance-letter');
+        if (!downloadButton && !resendButton) return;
+        if (application.status !== 'Accepted' || !canManageAdmissions()) {
+            if (downloadButton) downloadButton.hidden = true;
+            if (resendButton) resendButton.hidden = true;
+            return;
+        }
+        try {
+            const studentDoc = await firebase.firestore().collection('students').doc(application.id).get();
+            const letter = studentDoc.exists ? studentDoc.data().acceptanceLetter : null;
+            if (downloadButton) {
+                const available = Boolean(letter && letter.status === 'sent' && letter.storagePath);
+                downloadButton.hidden = !available;
+                downloadButton.dataset.docPath = letter?.storagePath || '';
+                downloadButton.dataset.docFilename = letter?.fileName || '';
+            }
+            if (resendButton) {
+                resendButton.hidden = false;
+                resendButton.textContent = letter && letter.status === 'failed' ? 'Retry Acceptance Letter' : 'Resend Acceptance Letter';
+            }
+        } catch (error) {
+            if (downloadButton) downloadButton.hidden = true;
+            if (resendButton) resendButton.hidden = true;
+        }
+    }
+
+    async function resendAcceptanceLetterForSelected() {
+        if (!state.selected || !canManageAdmissions()) return;
+        const button = $('#resend-acceptance-letter');
+        if (button) button.disabled = true;
+        detailMessage('Resending the acceptance letter...', '');
+        try {
+            const resend = firebase.functions().httpsCallable('resendAcceptanceLetter');
+            const result = await resend({ applicationId: state.selected.id });
+            const status = result.data?.acceptanceLetter?.status;
+            detailMessage(
+                status === 'sent' ? 'Acceptance letter resent successfully.' : 'The acceptance letter could not be sent. Check Cloud Logging for details and try again.',
+                status === 'sent' ? 'success' : 'error'
+            );
+            openApplication(state.selected.id);
+        } catch (error) {
+            detailMessage(error?.message || 'The acceptance letter could not be resent.', 'error');
+        } finally {
+            if (button) button.disabled = false;
+        }
     }
 
     async function updateApplicationStatus() {
@@ -504,7 +565,16 @@
                     await firebase.auth().sendPasswordResetEmail(studentEmail, ACTIVATION_REDIRECT);
                     activationNote = ` An activation email has been sent to ${studentEmail}.`;
                 } catch (emailError) {
-                    activationNote = ' The student record was created, but the activation email could not be sent automatically -- use "Send password reset email" in the student\'s profile to resend it.';
+                    // The error was previously discarded entirely -- neither logged nor
+                    // shown -- making any real failure (auth/too-many-requests,
+                    // auth/unauthorized-continue-uri, a quota limit, etc.) impossible to
+                    // diagnose after the fact. Logging the code/message (no student PII
+                    // beyond what's already on screen) and surfacing the code in the
+                    // displayed note matches the existing describeStorageError pattern
+                    // used elsewhere in this file for document-download failures.
+                    console.error('[activation email] sendPasswordResetEmail failed -- code:', emailError?.code, 'message:', emailError?.message);
+                    const codeNote = emailError?.code ? ` (${emailError.code})` : '';
+                    activationNote = ` The student record was created, but the activation email could not be sent automatically${codeNote} -- use "Send password reset email" in the student's profile to resend it.`;
                 }
             }
             await loadData();
@@ -1185,7 +1255,11 @@
         const button = $('#student-reset-password');
         const messageEl = $('#student-account-message');
         if (button) button.disabled = true;
-        try { await firebase.auth().sendPasswordResetEmail(student.email, ACTIVATION_REDIRECT); } catch (error) { /* do not reveal whether the account exists */ }
+        // The displayed message intentionally never reveals whether the account
+        // exists (shown to staff either way) -- but the actual error is still worth
+        // capturing in the console for diagnosis, same reasoning as the automatic
+        // activation-email path in promoteSelectedApplication above.
+        try { await firebase.auth().sendPasswordResetEmail(student.email, ACTIVATION_REDIRECT); } catch (error) { console.error('[activation email] manual resend failed -- code:', error?.code, 'message:', error?.message); }
         if (messageEl) { messageEl.textContent = `If an account exists for ${student.email}, a password reset link has been sent.`; messageEl.className = 'admin-message success'; }
         if (button) button.disabled = false;
     }
@@ -1880,6 +1954,12 @@
         $('#application-filter')?.addEventListener('change', renderApplications);
         $('#save-application-status')?.addEventListener('click', updateApplicationStatus);
         $('#accept-create-student')?.addEventListener('click', promoteSelectedApplication);
+        $('#download-acceptance-letter')?.addEventListener('click', (event) => {
+            const button = event.currentTarget;
+            if (!button.dataset.docPath) return;
+            downloadApplicationDocument({ docPath: button.dataset.docPath, docFilename: button.dataset.docFilename }, detailMessage, button);
+        });
+        $('#resend-acceptance-letter')?.addEventListener('click', resendAcceptanceLetterForSelected);
         $('#delete-application')?.addEventListener('click', deleteSelectedApplication);
         $('#programme-form')?.addEventListener('submit', createProgramme);
         $('#trainer-form')?.addEventListener('submit', createTrainer);

@@ -47,11 +47,21 @@ service firebase.storage {
     }
 
     match /students/{studentUid}/documents/{documentId}/{fileName} {
+      // 'admissions' added here to match the role already authorized to accept
+      // applications and trigger acceptance-letter delivery (see
+      // AUTHORIZED_ROLES in functions/admission-service.js) and already granted
+      // staff read access to the sibling applications/.../documents rule above
+      // -- without it, an admissions-only staff member (no admin/superadmin
+      // role) could accept a student and send their letter, but got Storage
+      // permission-denied clicking "Download Acceptance Letter" for the exact
+      // student they just processed.
       allow read: if request.auth != null && (request.auth.uid == studentUid
         || (request.auth.token.get('roles', []) is list && 'admin' in request.auth.token.get('roles', []))
         || (request.auth.token.get('roles', []) is list && 'superadmin' in request.auth.token.get('roles', []))
+        || (request.auth.token.get('roles', []) is list && 'admissions' in request.auth.token.get('roles', []))
         || request.auth.token.get('roles', {}).get('admin', false) == true
-        || request.auth.token.get('roles', {}).get('superadmin', false) == true);
+        || request.auth.token.get('roles', {}).get('superadmin', false) == true
+        || request.auth.token.get('roles', {}).get('admissions', false) == true);
       allow write: if false;
     }
 

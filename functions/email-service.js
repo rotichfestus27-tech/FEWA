@@ -26,6 +26,14 @@ function buildTransporter(smtpUser, smtpPass) {
         host: 'smtp.zoho.com',
         port: 465,
         secure: true,
+        // Zoho's SMTP server rejects nodemailer's default AUTH PLAIN
+        // negotiation with "501 5.5.2 Could not decode user and password for
+        // AUTH PLAIN" even with correct credentials -- confirmed by a
+        // connection-only test (no email sent) against the real production
+        // secrets: AUTH PLAIN failed, AUTH LOGIN succeeded immediately with
+        // the identical credentials. This is the root cause of the earlier
+        // SMTP 535/auth failures, not invalid credentials.
+        authMethod: 'LOGIN',
         auth: { user: smtpUser, pass: smtpPass }
     });
 }
@@ -110,7 +118,7 @@ function escapeHtml(value) {
     return String(value ?? '').replace(/[&<>"']/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
 }
 
-async function sendAcceptanceNotification(transporter, application, studentId) {
+async function sendAcceptanceNotification(transporter, application, studentId, letterAttachment) {
     const person = application.personalInformation || {};
     const programme = application.programInformation || {};
     if (!person.email) return;
@@ -122,11 +130,12 @@ async function sendAcceptanceNotification(transporter, application, studentId) {
     await transporter.sendMail({
         from: `"FEWA Beauty & Fashion College" <${ADMISSIONS_EMAIL}>`,
         to: person.email,
-        subject: 'Congratulations! Your FEWA Application Has Been Accepted',
+        subject: 'FEWA Application Accepted – Your Official Acceptance Letter',
+        attachments: letterAttachment ? [letterAttachment] : [],
         html: `
             <div style="font-family: Arial, Helvetica, sans-serif; max-width: 600px; margin: 0 auto; color: #222;">
                 <h2 style="color: #7a1f3d;">Congratulations, ${escapeHtml(name)}!</h2>
-                <p>We are delighted to inform you that your application to <strong>FEWA Beauty &amp; Fashion College</strong> has been <strong>accepted</strong>.</p>
+                <p>We are delighted to inform you that your application to <strong>FEWA Beauty &amp; Fashion College</strong> has been <strong>accepted</strong>. Your official acceptance letter is attached to this email as a PDF.</p>
                 <table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
                     <tr><td style="padding: 6px 0; color: #555;">Programme</td><td style="padding: 6px 0;"><strong>${escapeHtml(program)}</strong></td></tr>
                     <tr><td style="padding: 6px 0; color: #555;">Intake</td><td style="padding: 6px 0;"><strong>${escapeHtml(intake)}</strong></td></tr>
@@ -148,7 +157,7 @@ async function sendAcceptanceNotification(transporter, application, studentId) {
         text: [
             `Congratulations, ${name}!`,
             '',
-            'We are delighted to inform you that your application to FEWA Beauty & Fashion College has been accepted.',
+            'We are delighted to inform you that your application to FEWA Beauty & Fashion College has been accepted. Your official acceptance letter is attached to this email as a PDF.',
             '',
             `Programme: ${program}`,
             `Intake: ${intake}`,
@@ -181,8 +190,8 @@ function createAcceptanceEmailSender(smtpUser, smtpPass) {
         };
     }
     const transporter = buildTransporter(smtpUser, smtpPass);
-    return async function sendAcceptanceEmail(application, studentId) {
-        await sendAcceptanceNotification(transporter, application, studentId);
+    return async function sendAcceptanceEmail(application, studentId, letterAttachment) {
+        await sendAcceptanceNotification(transporter, application, studentId, letterAttachment);
     };
 }
 
