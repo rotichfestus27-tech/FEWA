@@ -3197,6 +3197,12 @@ h4 {
     font-weight: 600;
 }
 
+.field-optional-tag {
+    font-weight: 400;
+    color: var(--text-muted);
+    text-transform: none;
+}
+
 .form-grid input,
 .form-grid select,
 .form-grid textarea {

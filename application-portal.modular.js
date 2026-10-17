@@ -315,12 +315,40 @@ import { getFunctions, httpsCallable, connectFunctionsEmulator } from 'firebase/
     }
 
     async function saveDraft(showStatus = true) {
+        // ensureDraft() already writes a full, current payload when it creates a
+        // brand-new draft -- writing the exact same data again immediately after
+        // (the merge write below) would be a second, redundant commit for every
+        // applicant's very first save. Only re-save when a draft already existed
+        // (i.e. this call is persisting an actual field change, not a fresh create).
+        const hadDraftAlready = Boolean(currentApplication?.id);
         const draft = await ensureDraft();
-        const payload = applicationPayload(values(), draft.status === 'Submitted' ? draft.status : 'Draft');
-        await setDoc(doc(db, 'applications', draft.id), payload, { merge: true });
-        currentApplication = { ...currentApplication, ...payload };
+        if (hadDraftAlready) {
+            const payload = applicationPayload(values(), draft.status === 'Submitted' ? draft.status : 'Draft');
+            await setDoc(doc(db, 'applications', draft.id), payload, { merge: true });
+            currentApplication = { ...currentApplication, ...payload };
+        }
         if (showStatus) showMessage(formMessage, 'Your application draft has been saved securely.', 'success');
         renderDashboard(currentApplication);
+    }
+
+    // Chains draft saves one after another instead of letting them fire
+    // concurrently -- Next (background, silent) and Save & Continue Later
+    // (explicit, shows a status message) both go through this, so a fast
+    // double-click or a Next immediately followed by Save can never race each
+    // other into writing stale data over newer data. Callers never await this
+    // for navigation purposes -- the step transition itself doesn't need the
+    // write to finish first (see the next-button handler below), only later
+    // actions that truly depend on the save (e.g. submit) await it.
+    let draftSaveChain = Promise.resolve();
+    function queueDraftSave(showStatus = false) {
+        draftSaveChain = draftSaveChain
+            .catch(() => {}) // a previous failure must not permanently wedge the queue
+            .then(() => saveDraft(showStatus))
+            .catch((error) => {
+                showMessage(formMessage, error.message || 'Your progress could not be saved automatically -- check your connection.', 'error');
+                throw error;
+            });
+        return draftSaveChain;
     }
 
     async function uploadDocuments(application) {
@@ -398,6 +426,11 @@ import { getFunctions, httpsCallable, connectFunctionsEmulator } from 'firebase/
         submitting = true;
         const button = document.getElementById('submit-button'); button.disabled = true; showMessage(formMessage, 'Submitting your application securely...', 'loading');
         try {
+            // Wait for any still-in-flight background save (queued by the Next
+            // button on the way into this step) to finish first, so this
+            // function's own writes below are never racing it and can't be
+            // overwritten by a slightly-stale save landing after them.
+            await draftSaveChain.catch(() => {});
             const draft = await ensureDraft();
             if (!storage) throw new Error('Secure document storage is unavailable. Please try again later.');
             await uploadDocuments(draft);
@@ -540,7 +573,27 @@ import { getFunctions, httpsCallable, connectFunctionsEmulator } from 'firebase/
     });
     continueCancelButton?.addEventListener('click', closeContinuePanel);
 
-    document.getElementById('applicant-signin-form').addEventListener('submit', async (event) => { event.preventDefault(); const button = document.getElementById('applicant-signin-button'); button.disabled = true; showMessage(authMessage, 'Signing you in...', 'loading'); try { await signInWithEmailAndPassword(auth, document.getElementById('applicant-signin-email').value.trim(), document.getElementById('applicant-signin-password').value); } catch (error) { showMessage(authMessage, error.message || 'Sign in failed.', 'error'); button.disabled = false; } });
+    document.getElementById('applicant-signin-form').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const button = document.getElementById('applicant-signin-button');
+        button.disabled = true;
+        showMessage(authMessage, 'Signing you in...', 'loading');
+        try {
+            await signInWithEmailAndPassword(auth, document.getElementById('applicant-signin-email').value.trim(), document.getElementById('applicant-signin-password').value);
+        } catch (error) {
+            // Firebase's raw error.message ("Firebase: Error (auth/invalid-credential).")
+            // leaked straight to applicants on the single most common failure here --
+            // wrong email/password -- so map the common auth codes to plain language,
+            // matching the friendly-message pattern already used elsewhere in this file.
+            const friendly = ['auth/invalid-credential', 'auth/wrong-password', 'auth/user-not-found', 'auth/invalid-email'].includes(error?.code)
+                ? 'Incorrect email or password. Please try again.'
+                : error?.code === 'auth/too-many-requests'
+                    ? 'Too many attempts. Please wait a moment and try again.'
+                    : (error.message || 'Sign in failed.');
+            showMessage(authMessage, friendly, 'error');
+            button.disabled = false;
+        }
+    });
     document.getElementById('applicant-reset-button').addEventListener('click', async () => { const email = document.getElementById('applicant-signin-email').value.trim(); if (!email) return showMessage(authMessage, 'Enter your email address first.', 'error'); try { await sendPasswordResetEmail(auth, email); } catch (error) { } showMessage(authMessage, 'If an account exists for that email, a password reset link has been sent.', 'success'); });
     document.getElementById('applicant-logout').addEventListener('click', () => {
         if (currentUser?.isAnonymous && !window.confirm('You have not secured your application with a password yet. If you sign out now on this device, you will not be able to access it again unless you sign back in. Sign out anyway?')) return;
@@ -548,9 +601,25 @@ import { getFunctions, httpsCallable, connectFunctionsEmulator } from 'firebase/
     });
     document.getElementById('continue-application').addEventListener('click', () => showApplicationForm());
     document.getElementById('view-application').addEventListener('click', () => showApplicationForm(6));
-    document.getElementById('next-button').addEventListener('click', async () => { if (!validateStep(currentStep)) return; try { await saveDraft(false); currentStep++; await saveDraft(false); renderStep(); } catch (error) { showMessage(formMessage, error.message || 'Draft could not be saved.', 'error'); } });
+    // Validation is synchronous and the step transition itself needs nothing
+    // from the network, so the UI advances immediately -- the draft save (the
+    // only genuinely async part) runs in the background via queueDraftSave
+    // and never blocks or delays what the applicant sees. A failure is
+    // reported without losing their place or their entered data (still live
+    // in the DOM form fields regardless of whether this particular save
+    // succeeded) -- queueDraftSave's own catch already shows that message.
+    document.getElementById('next-button').addEventListener('click', () => {
+        if (!validateStep(currentStep)) return;
+        currentStep++;
+        renderStep();
+        queueDraftSave(false).catch(() => {});
+    });
     document.getElementById('previous-button').addEventListener('click', () => { if (currentStep > 1) { currentStep--; renderStep(); } });
-    document.getElementById('save-button').addEventListener('click', () => saveDraft(true).catch((error) => showMessage(formMessage, error.message || 'Draft could not be saved.', 'error')));
+    document.getElementById('save-button').addEventListener('click', (event) => {
+        const button = event.currentTarget;
+        button.disabled = true;
+        queueDraftSave(true).catch(() => {}).finally(() => { button.disabled = false; });
+    });
     form.addEventListener('input', (event) => { if (event.target.name === 'program') document.getElementById('program-summary').innerHTML = event.target.value ? `<strong>${escapeHtml(event.target.value)}</strong><br><span>${escapeHtml(programSummaryText(event.target.value))}</span>` : '<strong>Select a program to see its summary.</strong>'; if (event.target.type === 'file' && event.target.files[0]) event.target.closest('.upload-card').querySelector('.upload-status').textContent = event.target.files[0].name; });
     form.addEventListener('submit', (event) => { event.preventDefault(); submitApplication(); });
     progress.forEach((button, index) => button.addEventListener('click', () => { if (index + 1 < currentStep) { currentStep = index + 1; renderStep(); } }));
