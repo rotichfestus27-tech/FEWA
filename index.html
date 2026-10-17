@@ -101,28 +101,26 @@
     <main>
         <!-- HERO SECTION -->
         <section class="hero-section" id="home">
-            <div class="hero-bg-wrapper">
-                <picture>
-                    <source srcset="assets/fewa-hero.webp" type="image/webp">
-                    <img src="assets/fewa hero.png" alt="FEWA Beauty &amp; Fashion College student" class="hero-image" fetchpriority="high">
-                </picture>
-                <div class="hero-overlay"></div>
-            </div>
             <div class="hero-container">
-                <div class="hero-content">
-                    <span class="hero-eyebrow">SHAPE YOUR FUTURE</span>
-                    <h1 class="hero-title">CRAFT YOUR GLOW.<br>DESIGN YOUR.<br><span class="gold-gradient-text">STYLE.</span>
-                    </h1>
-                    <div class="hero-gold-line"></div>
-                    <p class="hero-subtitle">Join FEWA Beauty &amp; Fashion College and turn your passion into a
-                        profession.</p>
-                    <div class="hero-buttons">
-                        <a href="apply.html" class="btn btn-hero-primary">Enroll
-                            Now <i class="fas fa-arrow-right"></i></a>
-                        <a href="courses.html" target="_blank" rel="noopener" class="btn btn-hero-secondary">Explore
-                            Courses <i class="fas fa-arrow-right"></i></a>
-                        <a href="admissions.html" class="btn btn-hero-secondary">Admissions <i
-                                class="fas fa-arrow-right"></i></a>
+                <div class="hero-columns">
+                    <div class="hero-content">
+                        <span class="hero-eyebrow">SHAPE YOUR FUTURE</span>
+                        <h1 class="hero-title">CRAFT YOUR GLOW<br>DESIGN YOUR<br><span class="violet-gradient-text">STYLE.</span>
+                        </h1>
+                        <div class="hero-gold-line"></div>
+                        <p class="hero-subtitle">Join FEWA Beauty &amp; Fashion College and turn your passion into a
+                            profession.</p>
+                        <div class="hero-buttons">
+                            <a href="apply.html" class="btn btn-hero-primary">Enroll
+                                Now <i class="fas fa-arrow-right"></i></a>
+                            <a href="courses.html" target="_blank" rel="noopener" class="btn btn-hero-secondary">Explore
+                                Courses <i class="fas fa-arrow-right"></i></a>
+                            <a href="admissions.html" class="btn btn-hero-secondary">Admissions <i
+                                    class="fas fa-arrow-right"></i></a>
+                        </div>
+                    </div>
+                    <div class="hero-visual">
+                        <img src="assets/logo-transparent.png" alt="FEWA Beauty &amp; Fashion College logo" class="hero-logo-image" fetchpriority="high">
                     </div>
                 </div>
 
@@ -165,9 +163,12 @@
             <div class="about-container">
                 <div class="about-text">
                     <span class="section-kicker">Welcome to FEWA</span>
-                    <h2>A name born from Faith and Family<br></h2>
+                    <h2>Fewa Beauty and Fashion College<br></h2>
                     <div class="gold-rule"></div>
-                    <p>Where faith fuels passion, and passion becomes craft. Your journey to glow, style, and shine starts here.</p>
+                    <p>Is an insitution dedicated to providing quality education and practical training in cosmmetology
+                        and fashion design.
+                        Fewa aims to empower the youth and adults to acquire skills, creativity, and professionalism. Learners
+                        will receive personalised training from qualified trainers through one- on- one sessions.</p>
                     <a href="about.html" class="btn btn-primary">Discover FEWA <i
                             class="fas fa-arrow-right"></i></a>
                 </div>
@@ -243,7 +244,11 @@
                 </article>
                 <article class="course-card">
                     <div class="course-img">
-                        <picture><source srcset="assets/makeup-img.webp" type="image/webp"><img src="assets/makeup-img.png" alt="Short courses and workshops" loading="lazy"></picture>
+                        <div class="course-image-placeholder" aria-hidden="true">
+                            <span class="placeholder-icon"><i class="fas fa-lightbulb"></i></span>
+                            <span class="placeholder-tagline">Master Your Craft</span>
+                            <span class="placeholder-photo-note">Official photo coming soon</span>
+                        </div>
                     </div>
                     <div class="course-body">
                         <span class="course-tag">Flexible</span>
@@ -325,10 +330,6 @@
                 </figure>
                 <figure class="experience-gallery-item" role="listitem">
                     <picture><source srcset="assets/man-fewa.webp" type="image/webp"><img src="assets/man-fewa.jpg" alt="Fashion design training at FEWA" loading="lazy"></picture>
-                </figure>
-                <figure class="experience-gallery-item" role="listitem">
-                    <picture><source srcset="assets/makeup-img.webp" type="image/webp"><img src="assets/makeup-img.png" alt="Professional beauty and hairdressing training at FEWA"
-                        loading="lazy"></picture>
                 </figure>
             </div>
             <div class="experience-features">
@@ -660,7 +661,7 @@
             </div>
         </div>
         <div class="footer-bottom">
-            <p>&copy; 2026 FEWA Beauty and Fashion College. All Rights Reserved.</p>
+            <p>&copy; <span id="footer-year">2026</span> FEWA Beauty and Fashion College. All Rights Reserved.</p>
         </div>
     </footer>
 
@@ -720,33 +721,40 @@
             const target = document.querySelector('#faq-durations-answer');
             if (!target || !catalogCourses.length) return;
 
-            const monthsByQualification = {};
-            let hasFlexible = false;
+            // Short Courses are grouped by category (they intentionally carry no
+            // qualification), everything else by qualification tier. Courses with
+            // an unparseable/unconfirmed duration are simply excluded rather than
+            // guessed at.
+            const monthsByGroup = {};
             catalogCourses.forEach((course) => {
-                // Courses with a duration pending FEWA's confirmation are excluded
-                // entirely rather than folded into the "flexible" sentence below --
-                // "pending confirmation" and "flexible by design" are not the same claim.
-                if (course.duration === window.FEWA_UNCONFIRMED_META) return;
                 const months = monthsFromDuration(course.duration);
-                if (months === null) { hasFlexible = true; return; }
-                (monthsByQualification[course.qualification] ||= []).push(months);
+                if (months === null) return;
+                const groupKey = course.category === 'Short Courses' ? 'ShortCourses' : course.qualification;
+                (monthsByGroup[groupKey] ||= []).push(months);
             });
 
             const sentences = [];
-            if (monthsByQualification.Diploma) {
-                sentences.push(`Diploma programmes run for ${durationRangeText(monthsByQualification.Diploma)}, with intensive practical studio sessions.`);
+            if (monthsByGroup.Diploma) {
+                sentences.push(`Diploma programmes run for ${durationRangeText(monthsByGroup.Diploma)}, with intensive practical studio sessions.`);
             }
-            if (monthsByQualification.Certificate) {
-                sentences.push(`Certificate programmes range from ${durationRangeText(monthsByQualification.Certificate)} depending on the course.`);
+            if (monthsByGroup.Certificate) {
+                sentences.push(`Certificate programmes run for ${durationRangeText(monthsByGroup.Certificate)}.`);
             }
-            if (hasFlexible) {
-                sentences.push('Short courses and workshops offer flexible durations to fit your schedule.');
+            if (monthsByGroup.ShortCourses) {
+                const distinctShort = [...new Set(monthsByGroup.ShortCourses)];
+                sentences.push(distinctShort.length === 1
+                    ? `Short courses run for a minimum of ${humanizeMonths(distinctShort[0])}.`
+                    : `Short courses range from ${durationRangeText(monthsByGroup.ShortCourses)}.`);
             }
             target.textContent = sentences.join(' ');
         }
 
         function initFEWAApp() {
             renderCatalogReferences();
+            // Footer copyright year was hardcoded and would silently go stale
+            // every January -- compute it instead.
+            const footerYear = document.getElementById('footer-year');
+            if (footerYear) footerYear.textContent = new Date().getFullYear();
             // Responsive mobile navigation toggle
             const mobileMenu = document.getElementById('mobile-menu');
             const navLinks = document.querySelector('.nav-links');

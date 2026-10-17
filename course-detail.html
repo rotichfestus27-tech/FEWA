@@ -114,7 +114,11 @@
             });
             const aboutSection = renderAboutSection(course.about);
             const heroImageMarkup = window.FEWA_coursePlaceholderMarkup(course);
-            const metaParts = window.FEWA_courseMetaBadges(course)
+            // Entry requirement is shown on the course-detail page only (not
+            // on course cards) -- Short Courses intentionally have none.
+            const detailBadges = window.FEWA_courseMetaBadges(course);
+            if (course.entryRequirement) detailBadges.push({ icon: 'fa-list-check', text: `Entry: ${course.entryRequirement}` });
+            const metaParts = detailBadges
                 .map((b) => `<span><i class="fas ${b.icon}"></i>${escapeHtml(b.text)}</span>`)
                 .join('');
             const courseMetaMarkup = metaParts ? `<div class="course-meta">${metaParts}</div>` : '';

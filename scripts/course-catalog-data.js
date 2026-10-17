@@ -12,11 +12,16 @@
 // index.html) ahead of that page's own display logic.
 //
 // Restructured into 3 schools (School of Cosmetology / School of Fashion
-// Design / Short Courses) per approved direction. qualification/duration are
-// left as '' (not invented) for any course with no verified figure at all,
-// and set to FEWA_UNCONFIRMED_META for courses whose previously-displayed
-// figure was checked against FEWA's own source documents and found to be
-// either unsupported or inconsistent with them (see pre-deployment review).
+// Design / Short Courses) per approved direction.
+//
+// qualification/qualificationLevel/duration/entryRequirement reflect FEWA's
+// confirmed course tiers: the 7 School of Cosmetology / School of Fashion
+// Design courses are all Certificate (Level 4, 1 Year, minimum KCSE
+// Certificate entry); the 3 Short Courses run a minimum of 3 months and
+// intentionally show no qualification level or entry requirement.
+// qualification holds the plain tier name ("Certificate") so pages can group
+// by it; qualificationLevel ("Level 4") is a separate display-only field
+// combined with it when rendering a badge.
 //
 // about.overview holds the official programme description supplied by FEWA
 // for each course, as one or more paragraphs (array of strings). For the 3
@@ -31,8 +36,9 @@ window.FEWA_UNCONFIRMED_META = UNCONFIRMED;
 window.FEWA_SHORT_COURSES_INTRO = 'Designed for beginners, career changers, entrepreneurs and working professionals, our short courses provide focused, hands-on training in specific areas of beauty. They offer a practical way to develop new skills, strengthen existing abilities or prepare for income-generating opportunities.';
 
 // Shared badge builder so every page that displays qualification/duration
-// (course cards, course-detail hero) renders a single combined badge instead
-// of two duplicate "To be confirmed by FEWA" badges side by side.
+// (course cards, course-detail hero) renders consistent badges. If a course
+// still has an unconfirmed figure, both collapse into one combined badge
+// instead of two duplicate "To be confirmed by FEWA" badges side by side.
 window.FEWA_courseMetaBadges = function (course) {
     const q = course.qualification;
     const d = course.duration;
@@ -40,7 +46,7 @@ window.FEWA_courseMetaBadges = function (course) {
         return [{ icon: 'fa-circle-info', text: 'Qualification & duration to be confirmed by FEWA' }];
     }
     const badges = [];
-    if (q) badges.push({ icon: 'fa-award', text: q });
+    if (q) badges.push({ icon: 'fa-award', text: course.qualificationLevel ? `${q} (${course.qualificationLevel})` : q });
     if (d) badges.push({ icon: 'fa-clock', text: d });
     return badges;
 };
@@ -63,8 +69,10 @@ window.FEWA_COURSES = [
         title: 'Cosmetology',
         tagline: 'The Art of Beauty',
         category: 'School of Cosmetology',
-        qualification: '',
-        duration: '',
+        qualification: 'Certificate',
+        qualificationLevel: 'Level 4',
+        duration: '1 Year',
+        entryRequirement: 'KCSE Certificate',
         description: 'Professional cosmetology training covering skin science, treatments and salon practice.',
         image: 'assets/01_cosmetology_beauty_therapy.png',
         icon: 'fa-star',
@@ -80,8 +88,10 @@ window.FEWA_COURSES = [
         title: 'Beauty Therapy',
         tagline: 'Craft Your Glow',
         category: 'School of Cosmetology',
-        qualification: '',
-        duration: '',
+        qualification: 'Certificate',
+        qualificationLevel: 'Level 4',
+        duration: '1 Year',
+        entryRequirement: 'KCSE Certificate',
         description: 'Comprehensive beauty therapy training in facials, treatments and client care.',
         // No dedicated photo exists yet -- reuses the Cosmetology image (closest
         // existing match) per approved direction.
@@ -99,8 +109,10 @@ window.FEWA_COURSES = [
         title: 'Hairdressing',
         tagline: 'Create Your Signature Style',
         category: 'School of Cosmetology',
-        qualification: UNCONFIRMED,
-        duration: UNCONFIRMED,
+        qualification: 'Certificate',
+        qualificationLevel: 'Level 4',
+        duration: '1 Year',
+        entryRequirement: 'KCSE Certificate',
         description: 'Cutting, colour systems, chemical work and scalp health.',
         image: 'assets/03_professional_hairdressing_trichology.png',
         icon: 'fa-wand-magic-sparkles',
@@ -118,8 +130,10 @@ window.FEWA_COURSES = [
         title: 'Pattern Drafting & Garment Construction',
         tagline: 'Design Your Future',
         category: 'School of Fashion Design',
-        qualification: UNCONFIRMED,
-        duration: UNCONFIRMED,
+        qualification: 'Certificate',
+        qualificationLevel: 'Level 4',
+        duration: '1 Year',
+        entryRequirement: 'KCSE Certificate',
         description: 'Specialize in pattern drafting and garment construction for gowns, menswear, suits and childrenswear.',
         image: 'assets/02_fashion_design_creative_styling.png',
         icon: 'fa-shirt',
@@ -135,8 +149,10 @@ window.FEWA_COURSES = [
         title: 'Fashion Illustration & CAD',
         tagline: 'Sketch Your Vision',
         category: 'School of Fashion Design',
-        qualification: '',
-        duration: '',
+        qualification: 'Certificate',
+        qualificationLevel: 'Level 4',
+        duration: '1 Year',
+        entryRequirement: 'KCSE Certificate',
         description: 'Fashion illustration and computer-aided design skills for the modern fashion designer.',
         image: 'assets/10_short_courses_workshops.png',
         icon: 'fa-lightbulb',
@@ -152,8 +168,10 @@ window.FEWA_COURSES = [
         title: 'Fashion Marketing & Fashion Brands',
         tagline: 'Build Your Brand',
         category: 'School of Fashion Design',
-        qualification: UNCONFIRMED,
-        duration: UNCONFIRMED,
+        qualification: 'Certificate',
+        qualificationLevel: 'Level 4',
+        duration: '1 Year',
+        entryRequirement: 'KCSE Certificate',
         description: 'Marketing, branding and business skills for the fashion industry.',
         image: 'assets/02_fashion_design_creative_styling.png',
         icon: 'fa-bullhorn',
@@ -169,8 +187,10 @@ window.FEWA_COURSES = [
         title: 'Fashion & Textile Design',
         tagline: 'Weave Your Story',
         category: 'School of Fashion Design',
-        qualification: '',
-        duration: '',
+        qualification: 'Certificate',
+        qualificationLevel: 'Level 4',
+        duration: '1 Year',
+        entryRequirement: 'KCSE Certificate',
         description: 'Explore textile design and its role in creating original fashion pieces.',
         // No dedicated photo exists yet -- reuses the Fashion Design image
         // (closest existing match) per approved direction.
@@ -190,8 +210,8 @@ window.FEWA_COURSES = [
         title: 'Makeup',
         tagline: 'Define Your Beauty',
         category: 'Short Courses',
-        qualification: UNCONFIRMED,
-        duration: UNCONFIRMED,
+        qualification: '',
+        duration: 'Minimum 3 Months',
         description: 'Makeup techniques for beauty, bridal and editorial styles.',
         image: 'assets/04_professional_makeup_artistry.png',
         icon: 'fa-paint-brush',
@@ -208,8 +228,8 @@ window.FEWA_COURSES = [
         title: 'Nail Technology',
         tagline: 'Polish Your Craft',
         category: 'Short Courses',
-        qualification: UNCONFIRMED,
-        duration: UNCONFIRMED,
+        qualification: '',
+        duration: 'Minimum 3 Months',
         description: 'Manicure, pedicure, nail extensions and nail art.',
         image: 'assets/05_nail_technology_art.png',
         icon: 'fa-hand-sparkles',
@@ -227,7 +247,7 @@ window.FEWA_COURSES = [
         tagline: 'Crown Your Style',
         category: 'Short Courses',
         qualification: '',
-        duration: '',
+        duration: 'Minimum 3 Months',
         description: 'Professional braiding and plaiting techniques for a range of styles.',
         // No dedicated photo exists yet -- reuses the Hairdressing image
         // (closest existing match) per approved direction.

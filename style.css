@@ -450,32 +450,8 @@ h4 {
     display: flex;
     flex-direction: column;
     justify-content: center;
-    background: var(--purple-deep);
+    background: var(--white);
     overflow: hidden;
-}
-
-.hero-bg-wrapper {
-    position: absolute;
-    inset: 0;
-    z-index: 1;
-}
-
-.hero-image {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    object-position: 78% center;
-}
-
-.hero-overlay {
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(90deg,
-            rgba(20, 0, 27, 0.96) 0%,
-            rgba(20, 0, 27, 0.88) 38%,
-            rgba(20, 0, 27, 0.50) 60%,
-            rgba(20, 0, 27, 0.12) 100%),
-        linear-gradient(0deg, rgba(20, 0, 27, 0.90) 0%, transparent 40%);
 }
 
 .hero-container {
@@ -491,6 +467,41 @@ h4 {
     min-height: calc(88vh - 40px);
 }
 
+.hero-columns {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 48px;
+}
+
+.hero-visual {
+    position: relative;
+    flex-shrink: 0;
+    width: clamp(360px, 42vw, 520px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Very subtle gold circular glow behind the logo -- not a rectangular
+   container, just a soft radial tint so the (now transparent) logo doesn't
+   sit flatly on the plain white background. */
+.hero-visual::before {
+    content: '';
+    position: absolute;
+    inset: 6%;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(212, 175, 55, 0.16) 0%, rgba(212, 175, 55, 0.05) 55%, transparent 75%);
+}
+
+.hero-logo-image {
+    position: relative;
+    display: block;
+    width: auto;
+    height: auto;
+    max-width: 100%;
+}
+
 .hero-content {
     max-width: 660px;
     text-align: left;
@@ -499,7 +510,7 @@ h4 {
 
 .hero-eyebrow {
     display: inline-block;
-    color: var(--gold-primary);
+    color: var(--gold-dark);
     font-size: 0.78rem;
     font-weight: 700;
     letter-spacing: 0.22em;
@@ -513,10 +524,9 @@ h4 {
     font-weight: 700;
     line-height: 1.04;
     letter-spacing: 0.01em;
-    color: var(--white);
+    color: var(--text-primary);
     text-transform: uppercase;
     margin: 0 0 16px;
-    text-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
 }
 
 .gold-gradient-text {
@@ -539,7 +549,7 @@ h4 {
 .hero-subtitle {
     font-size: 1rem;
     line-height: 1.75;
-    color: rgba(255, 255, 255, 0.88);
+    color: var(--text-secondary);
     margin: 0 0 32px;
     max-width: 480px;
     font-weight: 400;
@@ -601,6 +611,23 @@ h4 {
     border-color: var(--white);
     transform: translateY(-2px);
     color: var(--gold-light);
+}
+
+/* .btn-hero-secondary's default dark-glass styling (above) is tuned for a
+   dark background and is still used as-is on apply.html. The homepage hero
+   is now a white background, so it needs a light-appropriate variant here,
+   scoped to .hero-section only. */
+.hero-section .btn-hero-secondary {
+    background: var(--white);
+    color: var(--purple-deep);
+    border: 1.5px solid var(--gold-primary);
+    backdrop-filter: none;
+}
+
+.hero-section .btn-hero-secondary:hover {
+    background: var(--purple-deep);
+    color: var(--white);
+    border-color: var(--purple-deep);
 }
 
 /* ==========================================================================
@@ -944,6 +971,44 @@ h4 {
     line-height: 1.6;
 }
 
+/* Contact page "Reach the Right Department" cards -- journey-card already
+   gives icon/heading/description; this is just the mailto link between
+   them. */
+.contact-dept-email {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--purple-primary);
+    font-weight: 700;
+    font-size: 0.92rem;
+    text-decoration: none;
+    word-break: break-word;
+}
+
+.contact-dept-email:hover {
+    color: var(--gold-dark);
+    text-decoration: underline;
+}
+
+.contact-departments-heading {
+    margin: 56px 0 28px;
+    text-align: center;
+    font-size: clamp(1.6rem, 3vw, 2.2rem);
+}
+
+/* Staff/Student Portal "need help" line near the login form, matching the
+   existing centered, muted-gold helper-link style used by Forgot password. */
+.admin-help-contact {
+    margin-top: 10px;
+    text-align: center;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.admin-help-contact a {
+    color: var(--gold-dark);
+    font-weight: 600;
+}
+
 .journey-cta {
     text-align: center;
 }
@@ -1275,25 +1340,6 @@ h4 {
    5-column modifier; the closing banner reuses .course-cta exactly.
    ========================================================================== */
 
-/* Deep purple hero with white text and gold accents -- overrides the
-   shared .courses-intro (light bg) used by other pages; scoped so those
-   pages are unaffected. */
-.about-page .courses-intro {
-    background: linear-gradient(135deg, #24002F 0%, #17001F 100%);
-}
-
-.about-page .courses-intro .courses-eyebrow {
-    color: var(--gold-bright);
-}
-
-.about-page .courses-intro h1 {
-    color: #fff;
-}
-
-.about-page .courses-intro p {
-    color: rgba(255, 255, 255, 0.78);
-}
-
 .about-page .about-info-section {
     padding: 72px 0;
     background: var(--white);
@@ -1316,6 +1362,7 @@ h4 {
     box-shadow: var(--shadow-sm);
 }
 
+.about-page .about-card h1,
 .about-page .about-card h2 {
     margin-bottom: 18px;
     color: var(--purple-deep);
@@ -1456,7 +1503,9 @@ h4 {
     margin: 0 auto 40px;
     padding: 0 24px;
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    /* 3 photos: one large photo on the left, the other two stacked on the
+       right -- see .experience-gallery-item--wide below. */
+    grid-template-columns: repeat(2, 1fr);
     grid-template-rows: 240px 240px;
     gap: 16px;
 }
@@ -1480,7 +1529,6 @@ h4 {
 }
 
 .experience-gallery-item--wide {
-    grid-column: span 2;
     grid-row: span 2;
 }
 
@@ -3450,8 +3498,14 @@ h4 {
         color: var(--purple-deep);
     }
 
-    .hero-image {
-        object-position: 85% center;
+    .hero-columns {
+        flex-direction: column-reverse;
+        gap: 28px;
+    }
+
+    .hero-visual {
+        align-self: center;
+        width: clamp(230px, 53vw, 330px);
     }
 
     .hero-title {
@@ -3729,6 +3783,12 @@ h4 {
 
     .entry-actions .btn {
         width: 100%;
+        /* .btn's base white-space: nowrap keeps "Continue Existing
+           Application" on one line, which is wider than very narrow phones
+           (~320px) and forces horizontal page scroll. Letting it wrap here
+           only (this button, this breakpoint) fixes that without touching
+           every other button on the site. */
+        white-space: normal;
     }
 
     .shell-security-status {
