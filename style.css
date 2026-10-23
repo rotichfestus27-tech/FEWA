@@ -773,66 +773,55 @@ h4 {
     margin: 12px auto 36px;
 }
 
-/* Editorial Two-Column Open Layout */
-.editorial-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    column-gap: 56px;
-    row-gap: 32px;
-    width: 100%;
-    text-align: left;
-}
-
-.editorial-item {
+/* Why Choose FEWA - Long Horizontal Rectangular Boxes */
+.why-choose-boxes {
     display: flex;
-    align-items: flex-start;
-    gap: 18px;
-    padding-top: 18px;
-    border-top: 1px solid var(--border-light);
-    background: transparent;
-    border-radius: 0;
-    box-shadow: none;
-    transition: border-color 0.25s ease;
+    flex-direction: column;
+    gap: 14px;
+    width: 100%;
+    max-width: 900px;
+    margin: 0 auto;
 }
 
-.editorial-item:hover {
-    border-top-color: var(--gold-primary);
-}
-
-.editorial-num {
-    font-family: var(--font-serif);
-    font-size: 1.15rem;
+.why-choose-box {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    width: 100%;
+    min-height: 58px;
+    padding: 16px 28px;
+    background: var(--purple-soft);
+    border: 1.5px solid var(--border-light);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-sm);
+    font-family: var(--font-sans);
+    font-size: clamp(0.92rem, 1.35vw, 1.05rem);
     font-weight: 700;
-    color: var(--gold-dark);
-    letter-spacing: 0.05em;
-    line-height: 1.2;
-    flex-shrink: 0;
-    padding-top: 2px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--purple-dark);
+    line-height: 1.4;
+    transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease, background 0.25s ease;
 }
 
-.editorial-content {
-    flex: 1;
+.why-choose-box:hover {
+    background: var(--white);
+    border-color: var(--gold-primary);
+    box-shadow: 0 6px 20px rgba(212, 175, 55, 0.2);
+    transform: translateY(-2px);
 }
 
-.editorial-content h3 {
-    font-size: 1.12rem;
-    font-weight: 700;
-    color: var(--text-primary);
-    margin-bottom: 8px;
-    line-height: 1.35;
-}
+@media (max-width: 768px) {
+    .why-choose-boxes {
+        gap: 12px;
+    }
 
-.editorial-content p {
-    font-size: 0.92rem;
-    color: var(--text-secondary);
-    line-height: 1.65;
-    margin: 0;
-}
-
-@media (max-width: 860px) {
-    .editorial-grid {
-        grid-template-columns: 1fr;
-        row-gap: 24px;
+    .why-choose-box {
+        min-height: 52px;
+        padding: 14px 18px;
+        font-size: 0.88rem;
+        letter-spacing: 0.03em;
     }
 }
 
