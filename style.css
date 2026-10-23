@@ -777,7 +777,7 @@ h4 {
 .why-choose-boxes {
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 16px;
     width: 100%;
     max-width: 900px;
     margin: 0 auto;
@@ -789,26 +789,27 @@ h4 {
     justify-content: center;
     text-align: center;
     width: 100%;
-    min-height: 58px;
-    padding: 16px 28px;
-    background: var(--purple-soft);
-    border: 1.5px solid var(--border-light);
+    min-height: 60px;
+    padding: 16px 32px;
+    box-sizing: border-box;
+    background: #FCF9FE;
+    border: 1.5px solid rgba(212, 175, 55, 0.75);
     border-radius: var(--radius-sm);
-    box-shadow: var(--shadow-sm);
+    box-shadow: 0 4px 14px rgba(36, 0, 47, 0.06);
     font-family: var(--font-sans);
-    font-size: clamp(0.92rem, 1.35vw, 1.05rem);
+    font-size: clamp(0.95rem, 1.35vw, 1.05rem);
     font-weight: 700;
     letter-spacing: 0.04em;
     text-transform: uppercase;
     color: var(--purple-dark);
-    line-height: 1.4;
-    transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease, background 0.25s ease;
+    line-height: 1.45;
+    transition: all 0.25s ease;
 }
 
 .why-choose-box:hover {
     background: var(--white);
     border-color: var(--gold-primary);
-    box-shadow: 0 6px 20px rgba(212, 175, 55, 0.2);
+    box-shadow: 0 8px 24px rgba(212, 175, 55, 0.28);
     transform: translateY(-2px);
 }
 
@@ -818,8 +819,8 @@ h4 {
     }
 
     .why-choose-box {
-        min-height: 52px;
-        padding: 14px 18px;
+        min-height: 56px;
+        padding: 14px 20px;
         font-size: 0.88rem;
         letter-spacing: 0.03em;
     }
