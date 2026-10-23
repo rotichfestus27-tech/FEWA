@@ -134,7 +134,7 @@ window.FEWA_COURSES = [
         qualificationLevel: 'Level 4',
         duration: '1 Year',
         entryRequirement: 'KCSE Certificate',
-        description: 'Specialize in pattern drafting and garment construction for gowns, menswear, suits and childrenswear.',
+        description: 'Specialise in pattern drafting and garment construction for gowns, menswear, suits and childrenswear.',
         image: 'assets/02_fashion_design_creative_styling.png',
         icon: 'fa-shirt',
         slug: 'pattern-drafting-and-garment-construction',

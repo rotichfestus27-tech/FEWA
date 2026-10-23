@@ -92,7 +92,7 @@ async function main() {
     await sendAcceptanceNotification(stubTransporter, testApplication, '2026/042');
     assert.strictEqual(captured.from, `"FEWA Beauty & Fashion College" <${ADMISSIONS_EMAIL}>`);
     assert.strictEqual(captured.to, testApplication.personalInformation.email);
-    assert.strictEqual(captured.subject, 'Congratulations! Your FEWA Application Has Been Accepted');
+    assert.strictEqual(captured.subject, 'FEWA Application Accepted – Your Official Acceptance Letter');
     for (const expected of ['Grace Njeri', 'Professional Makeup Artistry', 'September 2026', testApplication.applicationNumber, '2026/042']) {
         assert.ok(captured.html.includes(expected), `expected HTML body to include "${expected}"`);
         assert.ok(captured.text.includes(expected), `expected plain-text body to include "${expected}"`);

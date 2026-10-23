@@ -122,7 +122,7 @@ window.FEWA_FEES = {
             {
                 name: 'Pattern Drafting & Garment Construction',
                 amount: 15500,
-                note: "Specialize in either gowns, Men's Wear, Suits, Children's Wear, etc."
+                note: "Specialise in either gowns, menswear, suits, childrenswear, etc."
             },
             { name: 'Fashion Marketing & Fashion Brands', amount: 15500 },
             { name: 'Fashion Illustration', amount: 15500 },
